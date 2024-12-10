@@ -21,6 +21,7 @@
 	},
 	"dependencies": {
 		"@sveltejs/adapter-static": "^3.0.6",
+		"@xyflow/svelte": "^0.1.25",
 		"lodash": "^4.17.21",
 		"svelte-portal": "^2.2.1"
 	}

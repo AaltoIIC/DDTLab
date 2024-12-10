@@ -71,3 +71,17 @@ h1, h2, h3, h4, p, a {
 ::-webkit-scrollbar-thumb:hover {
     background: rgb(200, 200, 200);
 }
+
+.svelte-flow__controls {
+    box-shadow: none !important;
+    border: var(--main-border) !important; 
+}
+.svelte-flow__controls button:first-of-type {
+    border-top-left-radius: var(--main-border-radius) !important;
+    border-top-right-radius: var(--main-border-radius) !important;
+}
+
+.svelte-flow__controls button:last-of-type {
+    border-bottom-left-radius: var(--main-border-radius) !important;
+    border-bottom-right-radius: var(--main-border-radius) !important;
+}

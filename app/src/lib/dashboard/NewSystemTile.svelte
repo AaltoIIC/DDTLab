@@ -46,11 +46,11 @@
     }
     .bg-icon .outline {
         color: rgba(0, 0, 0, 0.06);
+        outline-style: initial;
     }
     .icon-arrow {
         width: 18px;
         height: 18px;
-        margin: 0 -2px -4.2px 0;
     }
     .main-tile {
         width: 175px;

@@ -32,10 +32,12 @@
     </div>
 </div>
 <style>
+    .resource-tile h4 {
+        font-weight: 550;
+    }
     .icon-arrow {
         width: 18px;
         height: 18px;
-        margin: 0 -2px -4.5px 0;
     }
     .links-cont {
         position: absolute;
@@ -74,6 +76,7 @@
     p {
         font-size: 14px;
         color: rgba(0, 0, 0, 0.6);
+        line-height: 1.2;
     }
     h4, p {
         margin: 4px;

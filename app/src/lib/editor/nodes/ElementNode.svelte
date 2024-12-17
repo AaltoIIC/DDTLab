@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { SvelteComponent } from "svelte";
     import ElementLayover from "../element-layover/ElementLayover.svelte";
+    import Connectors from "./Connectors.svelte";
    
     let hover = false;
     let layover: SvelteComponent;
@@ -15,6 +16,8 @@
     on:mouseleave={() => hover = false}
     on:click={() => {layover ? layover.nodeClick() : ''}}>
     <p>{id}</p>
+    <Connectors type="input" bind:nodeOnHover={hover} />
+    <Connectors type="output" bind:nodeOnHover={hover} />
 </div>
 <ElementLayover bind:this={layover} id={id} nodeOnHover={hover} />
 <style>
@@ -31,6 +34,7 @@
         border-radius: 5px;
         backdrop-filter: blur(5px);
         transition: .2s;
+        position: relative;
     }
     .main-element-node:hover {
         background: rgba(255, 255, 255, 0.4);

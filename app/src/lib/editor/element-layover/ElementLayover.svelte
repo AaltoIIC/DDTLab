@@ -4,6 +4,7 @@
     import {
         currentNodes
     } from '$lib/stores/stores';
+    import { writable } from 'svelte/store';
     
     export let id;
     
@@ -20,37 +21,41 @@
     let onHover = false;
     let isOpen = false;
     let isEditing = false;
-    let x = 0;
-    let y = 0;
+    let x = writable<number>(0);
+    let y = writable<number>(0);
     export const show = (parentX: number, parentY: number) => {
-        x = parentX;
-        y = parentY;
+        x.set(parentX);
+        y.set(parentY);
 
         isEditing = true;
     }
     export let nodeOnHover = false;
-    $: isOpen = (x !== 0) && (isEditing || nodeOnHover || onHover);
+    $: isOpen = ($x !== 0) && (isEditing || nodeOnHover || onHover);
 
     export const nodeClick = () => {isEditing = true;}
 
     const handleMouseMove = (event: any) => {
         if (isEditing) return;
-        x = event.clientX;
-        y = event.clientY;
+        x.set(event.clientX);
+        y.set(event.clientY);
     };
 
     // update transform based on the position of the layover
     const transform = ['0', '0'];
-    $: if (x > window.innerWidth/2) {
-        transform[0] = 'calc(-100% - 15px)';
-    } else {
-        transform[0] = '15px';
-    }
-    $: if (y > window.innerHeight/2) {
-        transform[1] = 'calc(-100% - 15px)';
-    } else {
-        transform[1] = '15px';
-    }
+    x.subscribe(value => {
+        if (value > window.innerWidth/2) {
+            transform[0] = 'calc(-100% - 15px)';
+        } else {
+            transform[0] = '15px';
+        }
+    });
+    y.subscribe(value => {
+        if (value > window.innerHeight/2) {
+            transform[1] = 'calc(-100% - 15px)';
+        } else {
+            transform[1] = '15px';
+        }
+    });
 
     const closeLayover = () => {
         isOpen = false;
@@ -92,8 +97,8 @@
 <Portal target="body">
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="main-layover-cont {isOpen ? 'active' : ''}"
-        style={`top: ${y}px;
-                left: ${x}px;
+        style={`top: ${$y}px;
+                left: ${$x}px;
                 border: ${isEditing ? 'solid 1px var(--main-color)' : 'solid 1px rgba(0, 0, 0, 0.06)'};
                 transform: translate(${transform[0]},${transform[1]});
             `}
@@ -160,7 +165,7 @@
         position: absolute;
         width: 268px;
         height: fit-content;
-        background-color: rgba(255, 255, 255, 1);
+        background-color: white;
         border: solid 1px rgba(0, 0, 0, 0.06);
         z-index: 1000000;
         font-family: 'Inter', sans-serif;

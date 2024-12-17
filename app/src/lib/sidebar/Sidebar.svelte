@@ -2,7 +2,7 @@
     import { goto } from "$app/navigation";
     import MenuOption from "$lib/sidebar/MenuOption.svelte";
     import { currentNodes } from "$lib/stores/stores";
-    import { nameElement } from "$lib/utils";
+    import { nameElement } from "$lib/helpers";
 
     const handleAdd = (option: string) => {
         if (option === 'Component') {
@@ -38,7 +38,7 @@
         }
     }
 </script>
-<div class="main-sidebar">
+<div class="main-sidebar no-tailwind">
     <div class="top-buttons">
         <button class="menu-option-logo" on:click={() => {goto('/')}}>
             <div class="logo-cont">
@@ -78,6 +78,7 @@
 </div>
 <style>
     .main-sidebar {
+        all: unset;
         position: fixed;
         top: 15px;
         left: 15px;
@@ -144,5 +145,6 @@
         width: 20px;
         height: 20px;
         color: rgba(255, 255, 255, 0.9);
+        display: inline;
     }
 </style>

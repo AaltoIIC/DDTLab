@@ -1,6 +1,7 @@
 <script lang="ts">
     import {
       SvelteFlow,
+      SvelteFlowProvider,
       Controls,
       Background,
       BackgroundVariant,
@@ -21,12 +22,15 @@
     } as {} as NodeTypes; 
 
 </script>
-<SvelteFlow
-  nodes={currentNodes}
-  edges={currentEdges}
-  nodeTypes={nodeTypes}
-  deleteKey={null}
->
-  <Controls position="bottom-right" />
-  <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
-</SvelteFlow>
+<SvelteFlowProvider>
+  <SvelteFlow
+    nodes={currentNodes}
+    edges={currentEdges}
+    nodeTypes={nodeTypes}
+    deleteKey={null}
+    minZoom={0.9}
+  >
+    <Controls position="bottom-right" />
+    <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
+  </SvelteFlow>
+</SvelteFlowProvider>

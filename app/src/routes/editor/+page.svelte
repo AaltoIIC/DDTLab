@@ -1,6 +1,6 @@
 <script lang="ts">
     import Sidebar from "$lib/sidebar/Sidebar.svelte";
-    import { getScreenSize } from "$lib/utils";
+    import { getScreenSize } from "$lib/helpers";
     import Editor from "$lib/editor/Editor.svelte";
     import TopBar from '$lib/editor/TopBar.svelte';
     import Button from "$lib/Button.svelte";

@@ -11,13 +11,13 @@
 <button
     on:click={onClick}
     class={`btn ${lightMode ? "lightmode" : ""} ${isActive ? '' : 'disabled'} ${border ? 'border' : ''}`}
-    style={`background-color: ${color}; color: ${textColor};`}>
-    {#if icon}
-        <span class="main-icon">
-                {@html icon} 
-        </span>             
-    {/if}   
+    style={`background-color: ${color}; color: ${textColor};`}>  
     <span class="main-text" style="{icon ? '' : 'padding-left: 14px !important;'}">
+        {#if icon}
+            <span class="main-icon">
+                    {@html icon} 
+            </span>             
+        {/if}
         <slot></slot>
     </span>
 </button>
@@ -25,6 +25,7 @@
     .btn {
         padding: 0;
         display: inline-flex;
+        font-size: 14px;
     }
     .btn.border {
         border: var(--main-border);
@@ -33,15 +34,17 @@
         box-shadow: var(--main-shadow);
     }
     .main-text {
-        padding: 8.5px 14px 9px 12px;
+        padding: 6.5px 12px 6.5px 10px;
         font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 5px;
     }
     .main-icon {
         width: 18px;
         height: 18px;
-        padding: 8px 6px 13px 8px;
         border-right: solid 2px rgba(0, 0, 0, 0.04);
-        margin: 0 -2px -5px 0;
+        display: inline;
     }
     button {
         padding: 10px 12px;

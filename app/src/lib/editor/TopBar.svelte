@@ -47,6 +47,7 @@
         width: 16px;
         height: 16px;
         opacity: 0.9;
+        display: inline;
     }
     .main-name-cont {
         color: rgba(255, 255, 255, 0.9);

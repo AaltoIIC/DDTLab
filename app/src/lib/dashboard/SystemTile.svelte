@@ -72,6 +72,7 @@
     }
     .tile h4 {
         margin: 0;
+        font-weight: 550;
     }
     .system-name-cont {
         display: flex;

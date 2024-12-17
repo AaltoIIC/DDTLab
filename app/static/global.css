@@ -39,6 +39,9 @@ h1, h2, h3, h4, p, a {
     margin: 0;
     padding: 0;
 }
+.no-tailwind {
+    all: revert;
+}
 
 @keyframes placeHolderShimmer{
     0%{

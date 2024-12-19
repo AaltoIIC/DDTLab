@@ -2,7 +2,7 @@
     import Button from "$lib/Button.svelte";
 </script>
 <div class="main-top-bar">
-    <span>
+    <span class="undo-redo-cont">
         <button class="top-btn undo" aria-label="Undo">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
@@ -37,6 +37,10 @@
         border: var(--main-border);
         border-radius: var(--main-border-radius);
     }
+    .undo-redo-cont {
+        display: flex;
+        gap: 8px;
+    }
     .top-btn {
         background: none;
         border: none;
@@ -48,6 +52,7 @@
         height: 16px;
         opacity: 0.9;
         display: inline;
+        margin-bottom: 4px;
     }
     .main-name-cont {
         color: rgba(255, 255, 255, 0.9);

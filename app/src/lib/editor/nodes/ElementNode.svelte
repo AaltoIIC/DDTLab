@@ -2,11 +2,15 @@
     import type { SvelteComponent } from "svelte";
     import ElementLayover from "../element-layover/ElementLayover.svelte";
     import Connectors from "./Connectors.svelte";
+    import { type ElementDataType } from "$lib/types/types";
    
     let hover = false;
     let layover: SvelteComponent;
 
     export let id: string;
+    export let data: {
+        element: ElementDataType;
+    };
     $$restProps
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -16,8 +20,8 @@
     on:mouseleave={() => hover = false}
     on:click={() => {layover ? layover.nodeClick() : ''}}>
     <p>{id}</p>
-    <Connectors type="input" bind:nodeOnHover={hover} />
-    <Connectors type="output" bind:nodeOnHover={hover} />
+    <Connectors type="input" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
+    <Connectors type="output" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
 </div>
 <ElementLayover bind:this={layover} id={id} nodeOnHover={hover} />
 <style>

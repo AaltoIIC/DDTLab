@@ -1,31 +1,60 @@
 <script lang="ts">
     import {
         Handle,
-        useSvelteFlow
+        Position,
+        useSvelteFlow,
+        type Node
     } from '@xyflow/svelte';
     import * as Select from "$lib/components/ui/select";
+    import { Input } from "$lib/components/ui/input";
     import { onMount } from 'svelte';
+    import { type ElementDataType } from '$lib/types/types';
+    import { currentEdges } from '$lib/stores/stores';
+    import { currentNodes } from '$lib/stores/stores';
 
     export let type: 'input' | 'output' = 'output';
+    export let elementName: string;
+    export let elementData: ElementDataType;
+
     export let nodeOnHover: boolean = false;
     let btnOnHover: boolean = false;
     let isAddingNew: boolean = false;
 
     let btnAddCont: HTMLSpanElement;
 
+    // Make layover component compensate for zoom level
     const { viewport } = useSvelteFlow();
     let zoomLevel = 1;
     viewport.subscribe((value) => {
         zoomLevel = value.zoom;
     });
 
+    const addConnector = () => {
+        currentNodes.update((nodes) => {
+            const nodeIndex = nodes.findIndex((node) => node.id === elementName);
+            const newNodes: Node[] = [...nodes];
+            (newNodes[nodeIndex].data.element as any).connectors = [
+                ...(newNodes[nodeIndex].data.element as any).connectors,
+                {
+                    name: 'new-connector-' + Math.random().toString(36).substring(7),
+                    type: type,
+                    dataType: 'real',
+                    unit: 'none'
+                }
+            ]
+            return newNodes;
+        });
+        isAddingNew = false;
+    }
+
     onMount(() => {
         btnAddCont.addEventListener('click', (e: Event) => {
             e.stopPropagation();
             isAddingNew = true;
         });
-        document.addEventListener('pointerdown', () => {
-            if (!btnOnHover) {
+        document.addEventListener('pointerdown', (e: Event) => {
+            const eventTarget = e.target as HTMLElement;
+            if (!btnOnHover && eventTarget.getAttribute('role') !== 'option') {
                 isAddingNew = false;
             }
         });
@@ -35,9 +64,20 @@
         }
     });
 </script>
-<div class="main-connectors {type} {nodeOnHover || btnOnHover || isAddingNew ? 'hover' : ''}">
+<div class="main-connectors {type}">
+    <div class="handle-outer">
+        {#each elementData.connectors.filter(c => c.type === type) as connector, i}
+            <Handle
+                id={`${elementName}.${connector.name}`}
+                type="{type === 'input' ? 'source' : 'target'}"
+                position={type === 'input' ? Position.Right : Position.Left}
+                style="position: relative; top: 0; left: 0; transform: none;"
+            />
+        {/each}
+    </div>
+
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <span class="btn-add-cont"
+    <span class="btn-add-cont {nodeOnHover || btnOnHover || isAddingNew ? 'hover' : ''}"
         bind:this={btnAddCont}
         style="transform: scale({1/zoomLevel});"
         on:mouseenter={() => {btnOnHover = true; nodeOnHover = false;}}
@@ -50,7 +90,7 @@
         <div class="main-add-layover {isAddingNew ? 'open' : ''}">
             <div class="connector-param">
                 <span>Name:</span>
-                <input type="text" />
+                <Input class="w-[148px]" />
             </div>
             <div class="connector-param">
                 <span>Data Type:</span>
@@ -88,15 +128,15 @@
                     </Select.Content>
                 </Select.Root>
             </div>
-            <button class="done-btn">
+            <button class="done-btn" on:click={addConnector}>
                 Add {type === 'input' ? 'Input' : 'Output'}
             </button>
         </div>
     </span>
 </div>
 <style>
-    .connector-param span {
-        font-size: 14px;
+    .handle-outer {
+        position: relative;
     }
     .done-btn {
         width: 100%;
@@ -108,21 +148,35 @@
         font-size: 12px;
         cursor: pointer;
         border-radius: 0 0 var(--main-border-radius) var(--main-border-radius);
+        margin-top: 6px;
     }
     .done-btn:hover {
         filter: brightness(1.05);
     }
     .btn-add-cont {
         position: relative;
+        opacity: 0;
+        transition: opacity .3s;
+        pointer-events: none;
+    }
+    .btn-add-cont.hover {
+        opacity: 1;
+        pointer-events: all;
     }
     .connector-param {
         display: flex;
         align-items: center;
         justify-content: space-between;
         width: 100%;
-        margin: 4px 0;
-        padding: 0 12px;
+        margin: 0 6px;
+        width: calc(100% - 12px);
+        padding: 8px 12px;
         box-sizing: border-box;
+        border-radius: var(--main-border-radius);
+        font-size: 14px;
+    }
+    .connector-param:nth-last-of-type(2n - 1) {
+        background-color: rgba(0, 0, 0, 0.03);
     }
     .main-add-layover {
         position: absolute;
@@ -133,10 +187,11 @@
         background: white;
         border-radius: var(--main-border-radius);
         border: solid 1px var(--main-color);
-        z-index: 10;
+        z-index: 1000;
         opacity: 0;
         pointer-events: none;
         transition: opacity .3s;
+        padding-top: 8px;
     }
     .main-add-layover.open {
         opacity: 1;
@@ -165,24 +220,17 @@
         width: 10px;
         height: 100%;
         top: 0;
-        left: 0;
-        transform: translateX(-50%);
+        right: 0;
+        transform: translateX(50%);
         z-index: 100;
-        opacity: 0;
-        transition: opacity .3s;
-        pointer-events: none;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center
-    }
-    .main-connectors.hover {
-        opacity: 1;
-        pointer-events: all;
+        justify-content: center;
     }
     .main-connectors.output {
-        right: 0;
-        transform: translateX(50%);
-        left: auto;
+        left: 0;
+        transform: translateX(-50%);
+        right: auto;
     }
 </style>

@@ -29,6 +29,7 @@
     nodeTypes={nodeTypes}
     deleteKey={null}
     minZoom={0.9}
+    maxZoom={2.5}
   >
     <Controls position="bottom-right" />
     <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />

@@ -30,3 +30,24 @@ export const nameElement = (type: 'component'|'system') => {
 
     return newSystemName;
 }
+
+// Check if a name is valid
+export const isNameValid = (name: string) => {
+    return (
+        (name !== "") && (!name.includes("'")) && (!name.includes('"')) &&
+        (!name.includes("`")) && (!name.includes("\\")) && (!name.includes("/")) &&
+        (!name.includes("\n")) && (!name.includes("\t")) && (!name.includes("."))
+    )
+}
+
+// function to automatically give a unique name
+export const generateName = (nameBasis: string, names: string[]) => {
+    let newName = nameBasis;
+    let i = 2;
+    while (names.includes(newName)) {
+        newName = `${nameBasis} (${i})`
+        i++;
+    }
+
+    return newName;
+}

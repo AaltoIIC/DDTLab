@@ -15,6 +15,7 @@
     --main-border-radius: 0.5em;
     --main-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
     --main-border: solid 2px var(--main-grey-color-2);
+    --list-dark-color: rgba(0, 0, 0, 0.03);
 }
 body {
     background: white;
@@ -38,6 +39,11 @@ h1, h2, h3, h4, p, a {
     cursor: pointer;
     margin: 0;
     padding: 0;
+}
+.error-outline {
+    box-shadow: none !important;
+    outline: 2.5px solid rgba(244, 108, 108, 0.8) !important;
+    outline-offset: 2px;
 }
 .no-tailwind {
     all: revert;

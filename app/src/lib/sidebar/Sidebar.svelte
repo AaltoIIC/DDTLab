@@ -83,7 +83,7 @@
         left: 15px;
         width: 68px;
         height: calc(100vh - 30px);
-        background-color: var(--main-dark-color);
+        background-color: white;
         border: var(--main-border);
         border-radius: var(--main-border-radius);
         z-index: 100;
@@ -132,7 +132,7 @@
         opacity: 0.9;
     }
     .logo-cont {
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: var(--main-dark-color);
         border-radius: var(--main-border-radius);
         width: 42px;
         height: 42px;
@@ -143,7 +143,15 @@
     .option-icon {
         width: 20px;
         height: 20px;
-        color: rgba(255, 255, 255, 0.9);
+        color: rgba(0, 0, 0, 0.9);
         display: inline;
+    }
+    .bottom-buttons {
+        background-color: var(--main-dark-color);
+        border-radius: var(--main-border-radius);
+        width: 42px;
+    }
+    .bottom-buttons .option-icon {
+        color: rgba(255, 255, 255, 0.9);
     }
 </style>

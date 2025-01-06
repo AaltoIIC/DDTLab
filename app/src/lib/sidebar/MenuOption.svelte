@@ -40,16 +40,26 @@
             <span class="option-text">
                 {option}
             </span>
+            <svg class="option-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>              
         </button>
     {/each}
 </div>
 </div>
 <style>
+    .option-chevron {
+        display: inline;
+        width: 16px;
+        height: 16px;
+        margin: 8.5px 0 0 8px;
+        float: right;
+    }
     .btn {
         width: 20px;
         height: 20px;
         margin: 0 -2px -2px 0;
-        color: rgba(255, 255, 255, 0.9);
+        color: rgba(0, 0, 0, 0.9);
         cursor: pointer;
         visibility: hidden;
     }
@@ -59,12 +69,13 @@
     .option-text {
         line-height: 34px;
         white-space: nowrap;
+        flex-grow: 1;
     }
     .option-icon {
         display: block;
         width: 16px;
         height: 16px;
-        color: rgba(255, 255, 255, 0.9);
+        color: rgba(0, 0, 0, 0.9);
         margin: 8px 4px 0px 0;
     }
     .main-dropdown button {
@@ -75,7 +86,7 @@
         font-family: 'Inter', sans-serif;
         font-size: 14px;
         width: 100%;
-        color: rgba(255, 255, 255, 0.9);
+        color: rgba(0, 0, 0, 0.9);
         font-weight: 500;
         padding: 2px 10px;
         overflow: hidden;
@@ -85,7 +96,7 @@
         transition: 0.4s;
     }
     .main-dropdown button:hover {
-        background-color: rgba(255, 255, 255, 0.05);
+        background-color: rgba(0, 0, 0, 0.03);
     }
     .main-dropdown {
         position: absolute;
@@ -93,7 +104,7 @@
         right: 0;
         width: fit-content;
         padding: 0;
-        background-color: var(--main-dark-color);
+        background-color: white;
         transition: opacity 0.2s;
         visibility: hidden;
         z-index: 10000002;

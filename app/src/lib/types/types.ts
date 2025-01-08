@@ -28,5 +28,6 @@ export interface ConnectorType {
 }
 
 export interface ElementDataType {
+    type: 'system' | 'component';
     connectors: ConnectorType[];
 }

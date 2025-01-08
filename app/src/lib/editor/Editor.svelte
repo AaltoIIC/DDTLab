@@ -6,6 +6,8 @@
       Background,
       BackgroundVariant,
       type NodeTypes,
+      type EdgeTypes,
+      ConnectionLineType,
       type Node
     } from '@xyflow/svelte';
     import '@xyflow/svelte/dist/style.css';
@@ -15,11 +17,17 @@
     } from '../stores/stores';
     import RootSystemNode from './nodes/RootSystemNode.svelte';
     import ElementNode from './nodes/ElementNode.svelte';
+    import RemovableEdge from './nodes/RemovableEdge.svelte';
+    import './editor.css';
 
     const nodeTypes = {
       'RootSystem': RootSystemNode,
       'Element': ElementNode
-    } as {} as NodeTypes; 
+    } as {} as NodeTypes;
+
+    const edgeTypes: EdgeTypes = {
+      'default': RemovableEdge
+    } as {} as EdgeTypes;
 
 </script>
 <SvelteFlowProvider>
@@ -27,6 +35,12 @@
     nodes={currentNodes}
     edges={currentEdges}
     nodeTypes={nodeTypes}
+    edgeTypes={edgeTypes}
+    defaultEdgeOptions={{
+      animated: true,
+      deletable: true,
+    }}
+    connectionLineType={ConnectionLineType.SmoothStep}
     deleteKey={null}
     minZoom={0.9}
     maxZoom={2.5}

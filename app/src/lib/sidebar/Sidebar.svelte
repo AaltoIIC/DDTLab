@@ -14,6 +14,7 @@
                     position: { x: 30, y: 30 },
                     data: {
                         element: {
+                            type: 'component',
                             connectors: []
                         } as ElementDataType
                     },
@@ -28,6 +29,7 @@
                     position: { x: 30, y: 30 },
                     data: {
                         element: {
+                            type: 'system',
                             connectors: []
                         } as ElementDataType
                     },

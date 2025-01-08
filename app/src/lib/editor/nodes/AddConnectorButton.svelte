@@ -31,9 +31,14 @@
     let newConnectorName: string = nameNewConnector();
     let newConnectorDataType = { value: "real", label: "Real" };
     let newConnectorUnit = { value: "-", label: "-" };
+    $: if (isAddingNew) {
+        newConnectorName = nameNewConnector();
+        newConnectorDataType = { value: "real", label: "Real" };
+        newConnectorUnit = { value: "-", label: "-" };
+    }
 
     let isNameError = false;
-    $: if (newConnectorName) {
+    const validateName = () => {
         const nodeData = $currentNodes.find((node) => node.id === elementName)?.data;
         const isNameTaken = (nodeData?.element as any).connectors
             .some((connector: any) => (
@@ -66,9 +71,6 @@
             );
             return newNodes;
         });
-        newConnectorName = nameNewConnector();
-        newConnectorDataType = { value: "real", label: "Real" };
-        newConnectorUnit = { value: "-", label: "-" };
 
         isAddingNew = false;
     }
@@ -107,7 +109,8 @@
         <div class="connector-param">
             <span>Name:</span>
             <Input class="w-[142px] h-8 {isNameError ? 'error-outline' : ''}"
-                bind:value={newConnectorName} 
+                bind:value={newConnectorName}
+                on:input={validateName}
             />
         </div>
         <div class="connector-param">
@@ -178,6 +181,7 @@
         opacity: 0;
         transition: opacity .3s;
         pointer-events: none;
+        z-index: 5;
     }
     .input.btn-add-cont {
         position: absolute;

@@ -1,12 +1,11 @@
 <script lang="ts">
     import type { SvelteComponent } from "svelte";
     import { useUpdateNodeInternals } from '@xyflow/svelte';
-    import ElementLayover from "../element-layover/ElementLayover.svelte";
     import Connectors from "./Connectors.svelte";
     import { type ElementDataType } from "$lib/types/types";
+    import VSSo from '../VSSo.json';
    
     let hover = false;
-    let layover: SvelteComponent;
 
     export let id: string;
     export let data: {
@@ -18,15 +17,18 @@
         updateNodeInternals(id);
     }
 
+    let currentName = id;
+
+
+
     $$restProps
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="element-node-outer"
-    on:mouseenter={() => hover = true}
-    on:mouseleave={() => hover = false}
-    on:click={() => {layover ? layover.nodeClick() : ''}}>
-    <div class="main-element-node">
+<div class="main-element-node"
+    on:mouseenter={() => {hover = true;}}
+    on:mouseleave={() => hover = false}>
+    <div class="element-node-inner">
         <div class="element-type-cont">
             {#if data.element.type === 'system'}
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -38,12 +40,11 @@
                 </svg>
             {/if}
         </div>
-        <p>{id}</p>
-        <Connectors type="output" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
-        <Connectors type="input" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
+        <input class="main-name-field" type="text" value={currentName} />
     </div>
+    <Connectors type="output" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
+    <Connectors type="input" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
 </div>
-<ElementLayover bind:this={layover} id={id} nodeOnHover={hover} />
 <style>
     .element-type-cont {
         width: 14px;
@@ -66,18 +67,25 @@
         transform: translate(-50%, -50%);
     }
 
-    .element-node-outer {
-        height: fit-content;
-        width: fit-content;
-        padding: 0 14px;
-    }
-    p {
+    .main-name-field {
         font-family: 'Inter', sans-serif;
+        width: calc(100% - 8px);
+        box-sizing: border-box;
         font-size: 5px;
         color: rgba(0, 0, 0, 0.8);
-        margin: 4px 4px;
+        padding: 2px;
+        line-height: 1;
         position: absolute;
-        bottom: 0;
+        bottom: 4px;
+        left: 4px;
+        background: none;
+        border-radius: 2px;
+        transition: .1s;
+        outline: solid 1px rgba(0, 0, 0, 0);
+    }
+    .main-name-field:focus {
+        outline: solid 1px rgba(0, 0, 0, 0.07);
+        background: var(--list-dark-color);
     }
     .main-element-node {
         width: 64px;
@@ -91,5 +99,9 @@
     }
     .main-element-node:hover {
         background: white;
+    }
+    .element-node-inner {
+        width: 100%;
+        height: 100%;
     }
 </style>

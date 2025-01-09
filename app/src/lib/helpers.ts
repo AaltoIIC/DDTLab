@@ -51,3 +51,22 @@ export const generateName = (nameBasis: string, names: string[]) => {
 
     return newName;
 }
+
+// function to set selected node
+export const selectNode = (nodeId: string) => {
+    currentNodes.update((nodes) => {
+        return nodes.map(node => {
+            if (node.id === nodeId) {
+                return {
+                    ...node,
+                    selected: true
+                }
+            } else {
+                return {
+                    ...node,
+                    selected: false
+                }
+            }
+        });
+    });
+}

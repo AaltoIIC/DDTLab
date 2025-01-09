@@ -8,6 +8,7 @@
     import _ from 'lodash';
     import { currentNodes } from '$lib/stores/stores';
     import AddConnectorButton from './AddConnectorButton.svelte';
+    import { selectNode } from '$lib/helpers';
 
     export let type: 'input' | 'output' = 'output';
     export let elementName: string;
@@ -45,7 +46,7 @@
         {#each elementData.connectors.filter(c => c.type === type) as connector, i}
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div class="handle-wrapper {handleHovered === connector.name ? 'hovered' : ''}"
-                on:mouseenter={() => {handleHovered = connector.name;}}
+                on:mouseenter={() => {handleHovered = connector.name; selectNode(elementName);}}
                 on:mouseleave={() => {handleHovered = '';}}>
                 <div class="handle-back">
                 </div>

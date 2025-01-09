@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
 
     export let icon: string = '';
+    export let iconColor: string = 'black';
     export let options: string[] = [];
     export let optionIcons: string[] = [];
     export let onClick: (option: string) => void = () => {};
@@ -26,7 +27,8 @@
 <button
     class="btn"
     aria-label="Dropdown"
-    on:click={(e) => {e.stopPropagation(); isDropdownOpen = !isDropdownOpen}}>
+    on:click={(e) => {e.stopPropagation(); isDropdownOpen = !isDropdownOpen}}
+    style:color={iconColor}>
         {@html icon}
 </button>
 <div class="main-dropdown">
@@ -59,9 +61,9 @@
         width: 20px;
         height: 20px;
         margin: 0 -2px -2px 0;
-        color: rgba(0, 0, 0, 0.9);
         cursor: pointer;
         visibility: hidden;
+        opacity: 0.9;
     }
     .visible .btn {
         visibility: visible;
@@ -101,7 +103,7 @@
     .main-dropdown {
         position: absolute;
         top: 0;
-        right: 0;
+        right: -13px;
         width: fit-content;
         padding: 0;
         background-color: white;
@@ -121,7 +123,7 @@
     }
     .main-button-cont {
         position: relative;
-        width: 68px;
+        width: 42px;
         height: 42px;
         display: flex;
         align-items: center;

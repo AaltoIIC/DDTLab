@@ -10,7 +10,8 @@
     import { Input } from "$lib/components/ui/input";
     import {
         isNameValid,
-        generateName
+        generateName,
+        selectNode
     } from '$lib/helpers';
 
     export let elementName: string;
@@ -78,6 +79,7 @@
     onMount(() => {
         addBtn.addEventListener('click', (e: Event) => {
             isAddingNew = true;
+            selectNode(elementName);
         });
         document.addEventListener('pointerdown', (e: Event) => {
             const eventTarget = e.target as HTMLElement;
@@ -105,7 +107,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
         </svg>        
     </button>
-    <div class="main-add-layover {isAddingNew ? 'open' : ''}">
+    <div class="main-add-layover {isAddingNew ? 'open' : ''}"
+        on:mouseenter={() => {selectNode(elementName);}}>
         <div class="connector-param">
             <span>Name:</span>
             <Input class="w-[142px] h-8 {isNameError ? 'error-outline' : ''}"
@@ -177,16 +180,16 @@
     }
     .btn-add-cont {
         position: absolute;
-        right: -26px;
+        right: -22px;
         opacity: 0;
         transition: opacity .3s;
         pointer-events: none;
         z-index: 5;
     }
-    .input.btn-add-cont {
+    .output.btn-add-cont {
         position: absolute;
         right: unset;
-        left: -26px;
+        left: -22px;
     }
     .btn-add-cont.hover {
         opacity: 1;

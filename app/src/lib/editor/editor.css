@@ -4,22 +4,22 @@
     --xy-connectionline-stroke-hover: var(--main-color);
     --xy-edge-stroke-selected-default: var(--main-color);
     --xy-connectionline-stroke-default: var(--main-color);
-    --xy-edge-stroke-width-default: 1.3;
+    --xy-edge-stroke-width-default: 4;
 }
 
 .svelte-flow__handle {
-    width: 6px;
-    height: 6px;
-    border-width: 1px;
+    width: 18px;
+    height: 18px;
+    border-width: 3px;
 }
 
 .svelte-flow__edge.animated path {
-    stroke-dasharray: 6;
+    stroke-dasharray: 18;
     animation: dashdraw 0.8s linear infinite;
 }
 
 @keyframes dashdraw {
     to {
-        stroke-dashoffset: -12;
+        stroke-dashoffset: -36;
     }
 }

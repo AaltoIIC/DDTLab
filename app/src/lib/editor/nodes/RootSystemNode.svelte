@@ -19,14 +19,14 @@
 <style>
     p {
         font-family: 'Robot Mono', monospace;
-        font-size: 8px;
+        font-size: 24px;
         color: rgba(0, 0, 0, 0.8);
-        margin: 4px 4px;
+        margin: 12px 12px;
     }
     .node-body {
-        width: 600px;
-        height: 400px;
-        border: dashed 2px rgba(0, 0, 0, 0.15);
-        border-radius: 6px;
+        width: 1800px;
+        height: 1200px;
+        border: dashed 6px rgba(0, 0, 0, 0.15);
+        border-radius: 18px;
     }
 </style>

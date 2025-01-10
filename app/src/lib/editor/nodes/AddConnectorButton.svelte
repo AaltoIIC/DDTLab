@@ -8,6 +8,7 @@
     import _ from 'lodash';
     import * as Select from "$lib/components/ui/select";
     import { Input } from "$lib/components/ui/input";
+    import VSSoSelect from './VSSoSelect.svelte';
     import {
         isNameValid,
         generateName,
@@ -99,13 +100,12 @@
 <span class="btn-add-cont {nodeOnHover || btnOnHover || isAddingNew ? 'hover' : ''} {type}"
     style="transform: scale({1/zoomLevel});"
     on:mouseenter={() => {btnOnHover = true; nodeOnHover = false;}}
-    on:mouseleave={() => {btnOnHover = false; nodeOnHover = true;}}
-    on:click={(e) => {e.stopPropagation();}}>
+    on:mouseleave={() => {btnOnHover = false; nodeOnHover = true;}}>
     <button class="add-btn" aria-label="Add Connector"
         bind:this={addBtn}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>        
+        </svg>
     </button>
     <div class="main-add-layover {isAddingNew ? 'open' : ''}"
         on:mouseenter={() => {selectNode(elementName);}}>
@@ -115,6 +115,12 @@
                 bind:value={newConnectorName}
                 on:input={validateName}
             />
+        </div>
+        <div class="connector-param">
+            <span>Class:</span>
+            <div class="w-[142px] h-8">
+                <VSSoSelect id={elementName} type="connector"/>
+            </div>
         </div>
         <div class="connector-param">
             <span>Data Type:</span>
@@ -180,7 +186,7 @@
     }
     .btn-add-cont {
         position: absolute;
-        right: -22px;
+        right: -46px;
         opacity: 0;
         transition: opacity .3s;
         pointer-events: none;
@@ -189,7 +195,7 @@
     .output.btn-add-cont {
         position: absolute;
         right: unset;
-        left: -22px;
+        left: -46px;
     }
     .btn-add-cont.hover {
         opacity: 1;

@@ -15,6 +15,7 @@
                     data: {
                         element: {
                             type: 'component',
+                            VSSoClass: null,
                             connectors: []
                         } as ElementDataType
                     },
@@ -31,6 +32,7 @@
                     data: {
                         element: {
                             type: 'system',
+                            VSSoClass: null,
                             connectors: []
                         } as ElementDataType
                     },
@@ -144,8 +146,8 @@
         justify-content: center;
     }
     .logo-icon {
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
         filter: brightness(10);
         opacity: 0.9;
     }

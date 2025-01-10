@@ -29,5 +29,6 @@ export interface ConnectorType {
 
 export interface ElementDataType {
     type: 'system' | 'component';
+    VSSoClass: string | null;
     connectors: ConnectorType[];
 }

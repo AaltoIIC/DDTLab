@@ -69,13 +69,14 @@ h1, h2, h3, h4, p, a {
 }
 
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
     background: rgb(215, 215, 215);
     cursor: pointer;
+    border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
     background: rgb(200, 200, 200);

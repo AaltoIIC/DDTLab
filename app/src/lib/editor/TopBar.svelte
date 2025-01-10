@@ -24,7 +24,7 @@
         position: fixed;
         top: 15px;
         right: 15px;
-        height: 68px;
+        height: 66px;
         width: fit-content;
         display: flex;
         gap: 20px;
@@ -34,7 +34,6 @@
         box-sizing: border-box;
         background: var(--main-dark-color);
         z-index: 100;
-        border: var(--main-border);
         border-radius: var(--main-border-radius);
     }
     .undo-redo-cont {

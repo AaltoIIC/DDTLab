@@ -22,6 +22,7 @@ export interface SystemType extends SystemMetaType {
 
 export interface ConnectorType {
     name: string;
+    VSSoClass: string | null;
     type: 'input' | 'output';
     dataType: string;
     unit: string;

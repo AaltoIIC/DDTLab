@@ -9,6 +9,7 @@
 
     export let id: string;
     export let type: 'element' | 'connector' = 'element';
+    export let onSelect: (VSSoClass: string) => void = () => {};
 
     let isPopoverOpen = false;
 
@@ -36,7 +37,8 @@
     let currentSearch: string = "";
     export let currentClass: string | null = null;
 
-    const classes = Object.keys(VSSo.elementTypes);
+    const classes = (type === 'element' ? Object.keys(VSSo.elementTypes) :
+        Object.values(VSSo.elementTypes).flat());
 
     let shownClasses: string[] = classes;
     const updateResults = () => {
@@ -47,25 +49,18 @@
 
     const selectClass = (VSSoClass: string) => {
         currentClass = VSSoClass;
-        currentNodes.update((nodes) => {
-            return nodes.map((node) => {
-                if (node.id === id) {
-                    (node.data as any).element.VSSoClass = VSSoClass;
-                }
-                return node;
-            });
-        });
+        onSelect(VSSoClass);
         isPopoverOpen = false;
     }
-
-
 
     // Make popover element compensate for zoom level
     const { viewport } = useSvelteFlow();
     let zoomLevel = 1;
-    viewport.subscribe((value) => {
-        zoomLevel = value.zoom;
-    });
+    if (type === 'element') {
+        viewport.subscribe((value) => {
+            zoomLevel = value.zoom;
+        });
+    }
 
     // Make scroll work in popover
     let selectOnHover = false;

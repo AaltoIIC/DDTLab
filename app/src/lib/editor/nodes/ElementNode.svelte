@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { SvelteComponent } from "svelte";
     import { useUpdateNodeInternals } from '@xyflow/svelte';
     import Connectors from "./Connectors.svelte";
     import { type ElementDataType } from "$lib/types/types";
@@ -47,6 +46,18 @@
 
     }
 
+    // handle VSSo class selection
+    const selectClass = (VSSoClass: string) => {
+        currentNodes.update((nodes) => {
+            return nodes.map((node) => {
+                if (node.id === id) {
+                    (node.data as any).element.VSSoClass = VSSoClass;
+                }
+                return node;
+            });
+        });
+    }
+
     $$restProps
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -75,7 +86,10 @@
         </div>
 
         <div class="bottom-param-cont">
-            <VSSoSelect {id} currentClass={data.element.VSSoClass} />
+            <VSSoSelect {id}
+                currentClass={data.element.VSSoClass}
+                onSelect={selectClass}
+            />
         </div>
     </div>
     <Connectors type="output" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />

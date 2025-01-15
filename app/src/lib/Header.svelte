@@ -63,8 +63,8 @@
         pointer-events: none;
     }
     .main-logo {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         display: block;
         margin-right: 10px;
     }
@@ -74,7 +74,7 @@
         height: 100%;
         margin: 0 24px;
         text-decoration: none;
-        font-weight: 550;
+        font-weight: 450;
     }
     .logo-cont sub {
         font-size: 10px;

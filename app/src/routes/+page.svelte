@@ -1,18 +1,13 @@
 <script lang="ts">
     import NewSystemTile from "$lib/dashboard/NewSystemTile.svelte";
-    import ImportSystemTile from "$lib/dashboard/ImportSystemTile.svelte";
     import SystemTile from "$lib/dashboard/SystemTile.svelte";
     import { notification } from "$lib/stores/stores";
     import ResourceTile from "$lib/dashboard/ResourceTile.svelte";
     import Header from "$lib/Header.svelte";
-    import Button from "$lib/Button.svelte";
-    import Link from "$lib/Link.svelte";
 
     setTimeout(() => {
         notification.set(null);
     }, 1000);
-
-    let fileInput: HTMLInputElement;
 </script>
 <svelte:head>
     <title>Dashboard | SSP Lab</title>
@@ -24,28 +19,18 @@
             <div class="title-cont">
                 <h2>Your Systems:</h2>
                 <div class="controls">
-                    <a data-sveltekit-preload-data="hover" href="/system-editor" aria-label="Add system">
+                    <a data-sveltekit-preload-data="hover" href="/editor" aria-label="Add system">
                         <button aria-label="Add system">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                             </svg>                      
                         </button>
                     </a>
-                    <button on:click={() => fileInput.click()} aria-label="Import system">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                        </svg>                                       
-                    </button>
-                    <input type="file" style:display="none"
-                        name="DDT-file"
-                        bind:this={fileInput}
-                        accept=".tors"/>
                 </div>
             </div>
             <div class="ddt-cont">
                 <SystemTile id="1" />
                 <NewSystemTile />
-                <ImportSystemTile />
             </div>
         </div>
         <div class="resources-cont">

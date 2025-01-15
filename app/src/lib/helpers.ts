@@ -70,3 +70,23 @@ export const selectNode = (nodeId: string) => {
         });
     });
 }
+
+// generate unique string of 6 characters
+export const generateId = (ids: string[]) => {
+    const generateRandomString = () => {
+        const utf8Chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+
+        let randomString = '';
+        for (let i = 0; i < 6; i++) {
+            randomString +=utf8Chars.charAt(Math.floor(Math.random() * utf8Chars.length));
+        }
+
+        return randomString;
+    }
+    let randomString = generateRandomString();
+    while (ids.includes(randomString)) {
+        randomString = generateRandomString();
+    }
+
+    return randomString;
+}

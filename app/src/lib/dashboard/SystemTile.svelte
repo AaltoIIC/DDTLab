@@ -13,7 +13,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="tile"
-    on:click={() => {goto(`/system-editor/${id}`)}}>
+    on:click={() => {goto(`/editor/${id}`)}}>
     <div class="illustration-cont">
         <p class="empty-system-txt">Foo</p>
     </div>

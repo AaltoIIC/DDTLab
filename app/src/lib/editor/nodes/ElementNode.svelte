@@ -47,11 +47,12 @@
     }
 
     // handle VSSo class selection
-    const selectClass = (VSSoClass: string) => {
+    let currentVSSoClass = data.element.VSSoClass;
+    $: if (currentVSSoClass) {
         currentNodes.update((nodes) => {
             return nodes.map((node) => {
                 if (node.id === id) {
-                    (node.data as any).element.VSSoClass = VSSoClass;
+                    (node.data as any).element.VSSoClass = currentVSSoClass;
                 }
                 return node;
             });
@@ -87,8 +88,7 @@
 
         <div class="bottom-param-cont">
             <VSSoSelect {id}
-                currentClass={data.element.VSSoClass}
-                onSelect={selectClass}
+                bind:currentClass={currentVSSoClass}
             />
         </div>
     </div>

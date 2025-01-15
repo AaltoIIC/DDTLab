@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.dev/svgjs" width="861" height="861"><svg width="861" height="861" viewBox="0 0 861 861" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="861" height="861" rx="178" fill="#1E1E1E"></rect>
+<circle cx="228.858" cy="431.372" r="111.858" stroke="white" stroke-width="26"></circle>
+<circle cx="631.696" cy="431.372" r="111.858" stroke="white" stroke-width="26"></circle>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M500.649 237H360.649C306.365 237 260.227 271.882 243.429 320.454C238.66 319.834 233.796 319.514 228.858 319.514C224.599 319.514 220.395 319.752 216.26 320.215C234.026 257.192 291.943 211 360.649 211H500.649C569.387 211 627.326 257.236 645.062 320.304C640.68 319.782 636.219 319.514 631.696 319.514C627.003 319.514 622.378 319.802 617.837 320.364C601.013 271.839 554.899 237 500.649 237ZM216.478 542.552C234.497 605.182 292.222 651 360.649 651H500.649C569.107 651 626.854 605.14 644.844 542.465C640.531 542.97 636.144 543.23 631.696 543.23C626.917 543.23 622.208 542.93 617.587 542.349C600.561 590.502 554.633 625 500.649 625H360.649C306.63 625 260.678 590.458 243.677 542.257C238.829 542.899 233.882 543.23 228.858 543.23C224.674 543.23 220.543 543 216.478 542.552Z" fill="white"></path>
+</svg><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
+@media (prefers-color-scheme: dark) { :root { filter: none; } }
+</style></svg>

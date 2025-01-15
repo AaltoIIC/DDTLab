@@ -9,7 +9,7 @@
 
     export let id: string;
     export let type: 'element' | 'connector' = 'element';
-    export let onSelect: (VSSoClass: string) => void = () => {};
+    export let currentClass: string | null = null;
 
     let isPopoverOpen = false;
 
@@ -35,7 +35,6 @@
     }
 
     let currentSearch: string = "";
-    export let currentClass: string | null = null;
 
     const classes = (type === 'element' ? Object.keys(VSSo.elementTypes) :
         Object.values(VSSo.elementTypes).flat());
@@ -49,7 +48,6 @@
 
     const selectClass = (VSSoClass: string) => {
         currentClass = VSSoClass;
-        onSelect(VSSoClass);
         isPopoverOpen = false;
     }
 

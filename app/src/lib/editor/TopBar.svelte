@@ -1,5 +1,36 @@
 <script lang="ts">
     import Button from "$lib/Button.svelte";
+    import {
+        currentSystemMeta,
+        systems,
+        saveCurrentSystem
+    } from "$lib/stores/stores";
+    import { isNameValid } from "$lib/helpers";
+
+    let currentName = $currentSystemMeta.name;
+    let isNameError = false;
+
+    const checkAndUpdateName = () => {
+        const isNameTaken = $systems.filter(s => s.id !== $currentSystemMeta.id)
+            .map(s => s.name.replace(/\s+/g, '').toLowerCase())
+            .includes(currentName.replace(/\s+/g, '').toLowerCase());
+    
+        if (!isNameTaken && isNameValid(currentName)) {
+            isNameError = false;
+            currentSystemMeta.update(meta => {
+                meta.name = currentName;
+                return meta;
+            });
+        } else {
+            isNameError = true;
+        }
+    }
+    const handleBlur = () => {
+        if (isNameError) {
+            currentName = $currentSystemMeta.name;
+            isNameError = false;
+        }
+    }
 </script>
 <div class="main-top-bar">
     <span class="undo-redo-cont">
@@ -14,10 +45,14 @@
             </svg>              
         </button> 
     </span>
-    <div class="main-name-cont">
-        System: <input type="text" />
+    <div class="main-name-cont {isNameError ? 'error' : ''}">
+        System: <input type="text"
+            bind:value={currentName}
+            on:input={checkAndUpdateName}
+            on:blur={handleBlur}
+            />
     </div>
-    <Button>Save</Button>
+    <Button on:click={() => saveCurrentSystem()}>Save</Button>
 </div>
 <style>
     .main-top-bar {
@@ -69,5 +104,8 @@
         font-weight: 600;
         margin-left: 8px;
         width: 18ch;
+    }
+    .main-name-cont.error input {
+        outline: solid 2px var(--main-error-color);
     }
 </style>

@@ -151,7 +151,7 @@
             <VSSoSelect
                 id={elementName}
                 type="connector"
-                onSelect={(VSSoClass: string) => newConnectorClass = VSSoClass}
+                bind:currentClass={newConnectorClass}
             />
         </div>
     </div>

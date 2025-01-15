@@ -2,7 +2,6 @@ import {
     type Node,
     type Edge
 } from '@xyflow/svelte';
-import type { Connect } from 'vite';
 
 export interface NotificationType {
     message: string;
@@ -12,6 +11,7 @@ export interface NotificationType {
 
 export interface SystemMetaType {
     name: string;
+    id: string;
     date: string;
 }
 

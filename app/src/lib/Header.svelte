@@ -13,66 +13,127 @@
         {
             name: 'Docs',
             link: 'https://github.com/AaltoIIC/SSPLab/wiki/Developer-Docs'
-        },
-        {
-            name: 'GitHub',
-            link: 'https://github.com/AaltoIIC/SSPLab'
         }
     ];
 
 </script>
 <div class="main-header {noTap ? 'no-tap' : ''}">
-    <a href="/" class="logo-cont">
-        <img class="main-logo" src="./../icon.svg" alt="SSP Lab Logo">
-        SSP Lab <sub>{version}</sub>
-    </a>
-    <p class="links-desktop">
-        {#each menuItems as item}
-            <a href={item.link}>
-                {item.name}
-            </a>
-        {/each}
-    </p>
-    <div class="links-mobile">
-        <DropdownMenu
-            options={menuItems.map(item => item.name)}
-            onClick={(option) => {
-                const item = menuItems.find(item => item.name === option);
-                if (item) {
-                    goto(item.link);
-                }
-            }}
-        />
+    <div class="header-content">
+        <a href="/" class="logo-cont">
+            <span class="main-logo">
+                <img class="logo-icon" src="./../header-logo.svg" alt="SSP Lab Logo">
+            </span>
+            SSP Lab <sub>{version}</sub>
+        </a>
+        <p class="links-desktop">
+            {#each menuItems as item}
+                <a href={item.link}>
+                    {item.name}
+                </a>
+            {/each}
+        </p>
+        <div class="menu-break"></div>
+        <a href="https://github.com/AaltoIIC/SSPLab" class="gh-btn" aria-label="GitHub">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path>
+            </svg>
+        </a>
+        <a href="./editor" class="header-btn create-sys-btn">
+            Create System
+            <svg class="icon-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+            </svg>
+        </a>
+
+        <div class="links-mobile">
+            <DropdownMenu
+                options={menuItems.map(item => item.name)}
+                onClick={(option) => {
+                    const item = menuItems.find(item => item.name === option);
+                    if (item) {
+                        goto(item.link);
+                    }
+                }}
+            />
+        </div>
     </div>
 </div>
 <style>
-    .main-header {
-        border-radius: var(--main-border-radius);
-        background: white;
-        position: fixed;
-        top:10px;
-        left: calc(50vw - 550px);
-        width: 1100px;
-        height: 68px;
+    .menu-break {
+        flex-grow: 1;
+    }
+    .gh-btn {
+        width: 20px;
+        height: 20px;
+        color: rgba(0, 0, 0, 0.8);
+    }
+    .icon-arrow {
+        width: 16px;
+        height: 16px;
+        margin-top: 2px;
+    }
+    .header-btn {
+        width: fit-content;
         border: var(--main-border);
-        z-index: 10000;
+        border-radius: 50px;
+        padding: 6.5px 14px;
+        backdrop-filter: var(--main-backdrop);
+        font-size: 14px;
+        color: rgba(0, 0, 0, 0.7);
         display: flex;
-        justify-content: space-between;
+        gap: 4px;
+        background-color: transparent;
+        transition: background-color 0.2s;
+    }
+    .header-btn:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    .main-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        box-sizing: border-box;
+        width: 100%;
+        height: 68px;
+        z-index: 10000;
+        backdrop-filter: var(--main-backdrop);
+        border-bottom: var(--main-border);
+    }
+    .header-content {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        height: 100%;
+        width: 100%;
+        max-width: 1300px;
+        margin: 0 auto;
+        gap: 14px;
     }
     .main-header.no-tap {
         pointer-events: none;
     }
     .main-logo {
-        width: 32px;
-        height: 32px;
+        width: 38px;
+        height: 38px;
         display: block;
         margin-right: 10px;
+        border-radius: var(--main-border-radius);
+        background-color: var(--main-dark-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
+    .logo-icon {
+        filter: brightness(0.94);
+        width: 21px;
+        height: 21px;
+    }
+
     .logo-cont {
         display: flex;
         align-items: center;
         height: 100%;
-        margin: 0 24px;
+        margin-left: 24px;
         text-decoration: none;
         font-weight: 450;
     }
@@ -92,16 +153,13 @@
     .links-desktop a {
         text-decoration: none;
         font-size: 14px;
+        color: rgba(0, 0, 0, 0.7)
     }
     .links-mobile {
         display: none;
     }
 
     @media (max-width: 1100px) {
-        .main-header {
-            width: calc(100% - 20px);
-            left: 10px;
-        }
         .links-desktop {
             display: none;
         }
@@ -111,6 +169,9 @@
             display: flex;
             align-items: center;
             margin-right: 12px;
+        }
+        .create-sys-btn {
+            display: none;
         }
     }
 </style>

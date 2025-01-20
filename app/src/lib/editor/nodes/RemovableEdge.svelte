@@ -50,7 +50,7 @@
 <EdgeLabelRenderer>
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <!-- svelte-ignore a11y-mouse-events-have-key-events -->
-  <div class="hover-helper nodrag nopan"
+  <div class="hover-helper"
       style:transform="translate(-50%, -50%) translate({labelX}px,{labelY}px)"
       style:width="{Math.abs(sourceX - targetX)}px"
       style:height="{Math.abs(sourceY - targetY)}px"

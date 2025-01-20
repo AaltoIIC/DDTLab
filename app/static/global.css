@@ -3,8 +3,8 @@
     --main-color-dark: rgb(221, 83, 18);
     --main-color-dark-2: rgb(61, 197, 167);
     --main-color-light: rgb(98, 247, 214);
-    --main-color-tr: rgba(253, 82, 0, 0.1);
-    --main-color-tr-2: rgba(253, 82, 0, 0.16);
+    --main-color-tr: rgba(253, 82, 0, 0.07);
+    --main-color-tr-2: rgba(253, 82, 0, 0.12);
     --main-color-tr-3: rgba(253, 82, 0, 0.24);
     --main-error-color: rgb(244, 108, 108);
     --main-error-color-dark: rgb(227, 97, 97);
@@ -14,8 +14,9 @@
     --main-dark-color: rgb(30, 30, 30);
     --main-border-radius: 0.5em;
     --main-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-    --main-border: solid 2px var(--main-grey-color-2);
+    --main-border: solid 1px #0a0a0a1a;
     --list-dark-color: rgba(0, 0, 0, 0.03);
+    --main-backdrop: blur(12px) brightness(0.98);
 }
 body {
     background: white;

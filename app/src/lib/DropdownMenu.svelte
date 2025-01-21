@@ -24,6 +24,7 @@
     on:mouseleave={() => {onHover = false}}>
 <button
     class="btn"
+    aria-label="Open dropdown"
     on:click={(e) => {e.stopPropagation(); isDropdownOpen = !isDropdownOpen}}>
         <svg class="icon-menu" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
@@ -52,6 +53,7 @@
         stroke: rgba(0, 0, 0, 0.4);
         cursor: pointer;
         visibility: hidden;
+        display: inline;
     }
     .visible .icon-menu {
         visibility: visible;
@@ -76,7 +78,7 @@
         font-size: 14px;
         width: 100%;
         color: rgba(0, 0, 0, 0.9);
-        font-weight: 500;
+        font-weight: 450;
         padding: 2px 10px;
         overflow: hidden;
         display: flex;
@@ -110,6 +112,8 @@
     .main-button-cont {
         position: relative;
         display: inline-flex;
+        width: 20px;
+        height: 20px;
     }
 
     .btn {

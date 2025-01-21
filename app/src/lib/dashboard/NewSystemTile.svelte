@@ -11,7 +11,7 @@
     on:mouseenter={() => hover = true}
     on:mouseleave={() => hover = false}>
     <span class="bg-icon">
-        <svg class="outline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.85" stroke="currentColor">
+        <svg class="outline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
         </svg>
         <svg class="inside" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -45,7 +45,7 @@
         color: var(--main-hover-color);
     }
     .bg-icon .outline {
-        color: rgba(0, 0, 0, 0.06);
+        color: rgba(10, 10, 10, 0.102);
         outline-style: initial;
     }
     .icon-arrow {
@@ -72,7 +72,7 @@
         opacity: 0.9;
         width: max-content;
         position: absolute;
-        top: calc(50% - 22px);
+        top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
     }

@@ -30,6 +30,7 @@
     targetY,
     targetPosition
   });
+  $: console.log(edgePath, labelX, labelY);
 
   const onEdgeClick = () => {
     currentEdges.update((edges) => {

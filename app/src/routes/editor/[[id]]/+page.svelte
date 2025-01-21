@@ -11,6 +11,7 @@
         currentSystemMeta,
         currentEdges,
         currentNodes,
+        saveCurrentSystem,
         systems
     } from "$lib/stores/stores.js";
 
@@ -55,6 +56,18 @@
         });
     }
 
+    // handle autosave
+    currentSystemMeta.subscribe(() => {
+        saveCurrentSystem();
+    });
+    currentEdges.subscribe(() => {
+        saveCurrentSystem();
+    });
+    currentNodes.subscribe(() => {
+        saveCurrentSystem();
+    });
+
+
     // handle different screen sizes
     let isMobile = false;
     let defaultFirstSize = 360;
@@ -70,7 +83,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-    <title>Edit | SSP Lab</title>
+    <title>Edit | DDT Lab</title>
 </svelte:head>
 <div class="main-screen">
     <Editor />

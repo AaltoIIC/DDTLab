@@ -8,11 +8,11 @@
     const menuItems = [
         {
             name: 'User Guide',
-            link: 'https://github.com/AaltoIIC/SSPLab/wiki/User-Guide'
+            link: 'https://github.com/AaltoIIC/DDTLab/wiki/User-Guide'
         },
         {
             name: 'Docs',
-            link: 'https://github.com/AaltoIIC/SSPLab/wiki/Developer-Docs'
+            link: 'https://github.com/AaltoIIC/DDTLab/wiki/Developer-Docs'
         }
     ];
 
@@ -21,9 +21,9 @@
     <div class="header-content">
         <a href="/" class="logo-cont">
             <span class="main-logo">
-                <img class="logo-icon" src="./../header-logo.svg" alt="SSP Lab Logo">
+                <img class="logo-icon" src="./../header-logo.svg" alt="DDT Lab Logo">
             </span>
-            SSP Lab <sub>{version}</sub>
+            DDT Lab
         </a>
         <p class="links-desktop">
             {#each menuItems as item}
@@ -33,7 +33,7 @@
             {/each}
         </p>
         <div class="menu-break"></div>
-        <a href="https://github.com/AaltoIIC/SSPLab" class="gh-btn" aria-label="GitHub">
+        <a href="https://github.com/AaltoIIC/DDTLab" target="_blank" class="gh-btn" aria-label="GitHub">
             <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path>
             </svg>
@@ -89,10 +89,9 @@
         background-color: rgba(0, 0, 0, 0.02);
     }
     .main-header {
-        position: fixed;
+        position: sticky;
         top: 0;
         left: 0;
-        box-sizing: border-box;
         width: 100%;
         height: 68px;
         z-index: 10000;
@@ -116,17 +115,18 @@
         width: 38px;
         height: 38px;
         display: block;
-        margin-right: 10px;
+        margin-right: 6px;
         border-radius: var(--main-border-radius);
-        background-color: var(--main-dark-color);
+        
         display: flex;
         align-items: center;
         justify-content: center;
     }
     .logo-icon {
-        filter: brightness(0.94);
-        width: 21px;
-        height: 21px;
+        width: 34px;
+        height: 34px;
+        opacity: 0.94;
+        filter: brightness(0);
     }
 
     .logo-cont {
@@ -135,14 +135,8 @@
         height: 100%;
         margin-left: 24px;
         text-decoration: none;
-        font-weight: 450;
-    }
-    .logo-cont sub {
-        font-size: 10px;
-        position: relative;
-        top: -3.5px;
-        left: 3px;
-        color: rgba(0, 0, 0, 0.6);
+        font-weight: 550;
+        color: rgba(0, 0, 0, 0.94);
     }
     .links-desktop {
         display: flex;

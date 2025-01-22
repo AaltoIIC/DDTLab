@@ -117,7 +117,6 @@
         display: block;
         margin-right: 6px;
         border-radius: var(--main-border-radius);
-        
         display: flex;
         align-items: center;
         justify-content: center;
@@ -126,7 +125,6 @@
         width: 34px;
         height: 34px;
         opacity: 0.94;
-        filter: brightness(0);
     }
 
     .logo-cont {
@@ -136,7 +134,7 @@
         margin-left: 24px;
         text-decoration: none;
         font-weight: 550;
-        color: rgba(0, 0, 0, 0.94);
+        color: rgba(0, 0, 0, 0.8);
     }
     .links-desktop {
         display: flex;

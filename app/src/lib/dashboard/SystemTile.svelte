@@ -15,14 +15,10 @@
 </script>
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="tile"
+<div class="tile shadow"
     on:click={() => {goto(`/editor/${system.id}`)}}>
     <div class="illustration-cont">
-        {#if system.nodes.filter(n => n.type !== 'RootSystem').length > 0}
-            <SystemIllustration {system} />
-        {:else}
-            <p class="empty-system-txt">System is empty</p>
-        {/if}
+        <SystemIllustration {system} />
     </div>
     <div class="system-info">
         <div class="system-name-cont">
@@ -50,16 +46,6 @@
         position: relative;
         margin: auto;
     }
-    .empty-system-txt {
-        font-size: 14px;
-        opacity: 0.7;
-        width: 100%;
-        text-align: center;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
     span {
         margin: 0;
         display: block;
@@ -74,8 +60,7 @@
         cursor: pointer;
         border-radius: var(--main-border-radius);
         border: var(--main-border);
-        background: linear-gradient(0deg, rgba(0,0,0,0) 10%, var(--main-color-tr) 100%);
-        overflow: hidden;
+        background-color: white;
     }
     .tile:hover {
         background-color: var(--main-hover-color);

@@ -30,7 +30,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
         </svg>
 </button>
-<div class="main-dropdown">
+<div class="main-dropdown shadow-md">
     {#each options as option, index}
         <button on:click={(e) => {e.stopPropagation(); onClick(option); isDropdownOpen = false;}}>
             {#if optionIcons.length > index}

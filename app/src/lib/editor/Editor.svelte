@@ -44,6 +44,7 @@
     deleteKey={null}
     minZoom={0.48}
     maxZoom={1}
+    fitView
   >
     <Controls position="bottom-right" />
     <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />

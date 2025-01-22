@@ -7,7 +7,7 @@
     export let links: string[];
 
 </script>
-<div class="resource-tile">
+<div class="resource-tile shadow">
     <h4>{name}</h4>
     <p>
         <slot></slot>
@@ -67,7 +67,9 @@
         overflow: hidden;
         height: 220px;
         position: relative;
-        background: linear-gradient(rgba(0,0,0,0) 47%, var(--main-color-tr) 100%);
+        backdrop-filter: var(--main-backdrop);
+        background-color: rgba(255, 255, 255, 0.6);
+        background-image: linear-gradient(rgba(0,0,0,0) 47%, var(--main-color-tr) 100%);
         flex: 1 1 228px;
     }
     .resource-tile:hover {

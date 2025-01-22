@@ -54,6 +54,8 @@
         font-family: 'Inter', sans-serif;
         border-radius: 50px;
         border: none;
+        display: flex;
+        align-items: center;
     }
     button:hover {
         filter: brightness(1.05);

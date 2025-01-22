@@ -135,7 +135,7 @@
     });
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="main-add-layover {isOpen ? 'open' : ''}"
+<div class="main-add-layover {isOpen ? 'open' : ''} shadow-md"
     on:mouseenter={() => {selectNode(elementName); onHover = true;}}
     on:mouseleave={() => {onHover = false;}}>
     <div class="connector-param">

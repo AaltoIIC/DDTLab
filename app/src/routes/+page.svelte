@@ -131,7 +131,7 @@
         margin: 26px 0;
     }
     .resources-list {
-        padding: 15px 0;
+        padding: 24px 0;
         display: flex;
         flex-wrap: wrap;
     }
@@ -173,7 +173,7 @@
         height: 36px;
     }
     .main-page-content {
-        margin: 72px auto 38px auto;
+        margin: 38px auto 38px auto;
         width: 80%;
         max-width: 975px;
         min-height: calc(100vh - 214px);
@@ -205,8 +205,8 @@
         align-items: center;
     }
     .title-cont h2 {
-        font-size: 18px;
-        font-weight: 550;
+        font-size: 26px;
+        font-weight: 600;
     }
     .systems-outer {
         width: 100%;
@@ -217,7 +217,7 @@
         justify-content: start;
         flex-wrap: wrap;
         height: fit-content;
-        padding: 10px 0;
+        padding: 24px 0;
     }
 
     @media (max-width: 775px) {

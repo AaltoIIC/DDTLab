@@ -44,7 +44,7 @@
           </svg>
     </span>
 </button>
-<div class="main-dropdown">
+<div class="main-dropdown shadow-md">
     {#each options as option, index}
         <button on:click={() => {onClick(option); isDropdownOpen = false;}}>
             {#if optionIcons.length > index}

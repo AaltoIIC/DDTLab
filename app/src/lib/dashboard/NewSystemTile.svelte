@@ -6,7 +6,7 @@
 </script>
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="main-tile {hover ? 'hover' : ''}"
+<div class="main-tile {hover ? 'hover' : ''} shadow"
     on:click={() => goto("/editor")}
     on:mouseenter={() => hover = true}
     on:mouseleave={() => hover = false}>

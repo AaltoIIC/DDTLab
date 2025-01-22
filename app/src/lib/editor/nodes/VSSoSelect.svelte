@@ -96,7 +96,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15 12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
         </svg>      
     </button>
-    <div class="main-popover {isPopoverOpen ? 'open' : ''}"
+    <div class="main-popover {isPopoverOpen ? 'open' : ''} shadow-md"
         style:transform="scale({1/zoomLevel}) translate(-50%, 0)">
         <Input
             type="text"

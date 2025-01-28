@@ -4,6 +4,9 @@
     import { currentNodes } from "$lib/stores/stores";
     import { nameElement } from "$lib/helpers";
     import { type ElementDataType } from "$lib/types/types";
+    import ReqsPopover from "./ReqsPopover.svelte";
+
+    let isReqsOpen = false;
 
     const handleAdd = (option: string) => {
         if (option === 'Component') {
@@ -43,7 +46,7 @@
         }
     }
 </script>
-<div class="main-sidebar shadow-md">
+<div class="main-sidebar shadow">
     <div class="top-buttons">
         <button class="menu-option-logo" on:click={() => {goto('/')}}>
             <div class="logo-cont">
@@ -68,8 +71,8 @@
             </svg>`}
         />
         <button class="menu-option" aria-label="Add requirements"
-            on:click={() => {goto('/')}}>
-            <svg class="option-icon req" width="23" height="14" viewBox="0 0 23 14" fill="none" xmlns="http://www.w3.org/2000/svg" stroke-width="1.2" stroke="currentColor">
+            on:click={() => {isReqsOpen = !isReqsOpen}}>
+            <svg class="option-icon req {isReqsOpen ? 'active' : ''}" width="23" height="14" viewBox="0 0 23 14" fill="none" xmlns="http://www.w3.org/2000/svg" stroke-width="1.2" stroke="currentColor">
                 <path d="M9.875 1.375H21.875M11.0742 6.625H21.875M9.875 11.875H21.875" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M1 11L3.25 13.25L7 8" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>                                                            
@@ -95,9 +98,9 @@
         </button>
     </div>
 </div>
+<ReqsPopover bind:isOpen={isReqsOpen} />
 <style>
     .main-sidebar {
-        all: unset;
         position: fixed;
         top: 15px;
         left: 15px;
@@ -165,6 +168,9 @@
         height: 20px;
         color: rgba(0, 0, 0, 0.9);
         display: inline;
+    }
+    .option-icon.req.active {
+        stroke-width: 1.5;
     }
     .bottom-buttons {
         background-color: var(--main-dark-color);

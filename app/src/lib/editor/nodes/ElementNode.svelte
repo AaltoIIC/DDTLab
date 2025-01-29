@@ -1,11 +1,11 @@
 <script lang="ts">
-    import { useUpdateNodeInternals } from '@xyflow/svelte';
+    import { useUpdateNodeInternals, useSvelteFlow } from '@xyflow/svelte';
     import Connectors from "./Connectors.svelte";
     import { type ElementDataType } from "$lib/types/types";
     import {
         isNameValid
      } from "$lib/helpers";
-    import { currentNodes } from "$lib/stores/stores";
+    import { currentEdges, currentNodes } from "$lib/stores/stores";
     import VSSoSelect from "./VSSoSelect.svelte";
    
     let hover = false;
@@ -59,6 +59,22 @@
         });
     }
 
+    // Make delete button compensate for zoom level
+    const { viewport } = useSvelteFlow();
+    let zoomLevel = 1;
+    viewport.subscribe((value) => {
+        zoomLevel = value.zoom;
+    });
+
+    const deleteComponent = () => {
+        currentNodes.update((nodes) => {
+            return nodes.filter((node) => node.id !== id);
+        });
+        currentEdges.update((edges) => {
+            return edges.filter((edge) => edge.source !== id && edge.target !== id);
+        });
+    }
+
     $$restProps
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -92,10 +108,55 @@
             />
         </div>
     </div>
+    <div class="delete-btn-wrapper">
+        <button class="delete-btn {hover ? 'hover' : ''}" aria-label="Delete"
+        on:click={deleteComponent}
+        style="transform: scale({1/zoomLevel});">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>          
+        </button>
+    </div>
     <Connectors type="output" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
     <Connectors type="input" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
 </div>
 <style>
+    .delete-btn svg {
+        width: 20px;
+        height: 20px;
+        color: rgba(255, 255, 255, 0.9);
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    .delete-btn {
+        border: solid 1px rgba(255, 255, 255, 0.1);
+        background: var(--main-dark-color);
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        position: absolute;
+        top: 0px;
+        right: 0;
+        opacity: 0;
+        transition: opacity .3s;
+        pointer-events: none;
+        transform-origin: bottom right;
+    }
+    .delete-btn.hover {
+        opacity: 1;
+        pointer-events: all;
+    }
+    .delete-btn-wrapper {
+        width: 52px;
+        height: 40px;
+        position: absolute;
+        top: -40px;
+        right: 0;
+    }
+
     .top-param-cont {
         position: absolute;
         top: 10px;

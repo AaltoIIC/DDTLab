@@ -15,6 +15,12 @@ export interface SystemMetaType {
     date: string;
 }
 
+export interface RequirementType {
+    name: string;
+    description: string;
+    
+}
+
 export interface SystemType extends SystemMetaType {
     nodes: Node[];
     edges: Edge[];

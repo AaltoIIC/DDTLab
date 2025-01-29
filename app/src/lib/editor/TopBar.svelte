@@ -6,6 +6,7 @@
         saveCurrentSystem
     } from "$lib/stores/stores";
     import { isNameValid } from "$lib/helpers";
+    import { goto } from "$app/navigation";
 
     let currentName = $currentSystemMeta.name;
     let isNameError = false;
@@ -52,7 +53,7 @@
             on:blur={handleBlur}
             />
     </div>
-    <Button on:click={() => saveCurrentSystem()}>Save</Button>
+    <Button onClick={() => {goto('/');}}>Save</Button>
 </div>
 <style>
     .main-top-bar {

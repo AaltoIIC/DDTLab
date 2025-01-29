@@ -31,14 +31,6 @@
     targetPosition
   });
 
-  console.log(sourceX)
-  console.log(sourceY)
-  console.log(sourcePosition)
-  console.log(targetX)
-  console.log(targetY)
-  console.log(targetPosition)
-  console.log("========")
-
   const onEdgeClick = () => {
     currentEdges.update((edges) => {
       return edges.filter((edge) => edge.id !== id);

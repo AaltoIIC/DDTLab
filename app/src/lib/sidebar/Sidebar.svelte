@@ -46,7 +46,7 @@
         }
     }
 </script>
-<div class="main-sidebar shadow">
+<div class="main-sidebar shadow-sm">
     <div class="top-buttons">
         <button class="menu-option-logo" on:click={() => {goto('/')}}>
             <div class="logo-cont">

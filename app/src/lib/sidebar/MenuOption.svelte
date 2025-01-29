@@ -31,7 +31,7 @@
     style:color={iconColor}>
         {@html icon}
 </button>
-<div class="main-dropdown shadow-md">
+<div class="main-dropdown shadow">
     {#each options as option, index}
         <button on:click={(e) => {e.stopPropagation(); onClick(option); isDropdownOpen = false;}}>
             {#if optionIcons.length > index}

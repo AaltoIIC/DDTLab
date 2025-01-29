@@ -5,12 +5,24 @@
     import DropdownMenu from "$lib/DropdownMenu.svelte";
     import { formatDate } from "$lib/helpers";
     import SystemIllustration from "./SystemIllustration.svelte";
+    import { cloneSystem, removeSystem } from "$lib/stores/stores";
 
     export let system: SystemType;
     let dialogBox: DialogBox;
 
     const handleMenu = (option: string) => {
-        return
+        if (option === "Duplicate") {
+            cloneSystem(system.id);
+        } else if (option === "Edit") {
+            goto(`/editor/${system.id}`);
+        } else if (option === "Delete") {
+            dialogBox.openDialog("Are you sure you want to delete this system?", "Delete", "Cancel")
+            .then((result: boolean) => {
+                if (result) {
+                    removeSystem(system.id);
+                }
+            });
+        }
     }
 </script>
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -68,6 +80,9 @@
     .tile h4 {
         margin: 0;
         font-weight: 550;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .system-name-cont {
         display: flex;

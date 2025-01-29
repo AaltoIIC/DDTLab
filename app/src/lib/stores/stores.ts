@@ -91,3 +91,16 @@ export const removeSystem = (id: string) => {
         });
     }
 }
+
+export const cloneSystem = (id: string) => {
+    const system = getSystem(id);
+    if (system) {
+        const newSystem = _.cloneDeep(system);
+        newSystem.id = generateId(get(systems).map(s => s.id));
+        newSystem.name = `Copy of ${newSystem.name}`;
+        systems.update((systems) => {
+            systems.push(newSystem);
+            return systems;
+        });
+    }
+}

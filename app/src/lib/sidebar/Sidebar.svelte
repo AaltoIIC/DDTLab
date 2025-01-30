@@ -4,7 +4,7 @@
     import { currentNodes } from "$lib/stores/stores";
     import { nameElement } from "$lib/helpers";
     import { type ElementDataType } from "$lib/types/types";
-    import ReqsPopover from "./ReqsPopover.svelte";
+    import ReqsPopover from "./requirements/ReqsPopover.svelte";
 
     let isReqsOpen = false;
 

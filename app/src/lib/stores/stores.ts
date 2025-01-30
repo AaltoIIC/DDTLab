@@ -1,7 +1,8 @@
 import type {
     NotificationType,
     SystemMetaType,
-    SystemType
+    SystemType,
+    RequirementType
 } from '../types/types';
 import {    
     type Node,
@@ -29,6 +30,7 @@ export const currentNodes = persistentStore<Node[]>('currentNodes', [
     } as {} as Node
 ]);
 export const currentEdges = persistentStore<Edge[]>('currentEdges', []);
+export const currentReqs = persistentStore<RequirementType[]>('currentReqs', []);
 
 export const systems = persistentStore<SystemType[]>('systems', []);
 
@@ -51,7 +53,8 @@ export const saveCurrentSystem = () => {
         name: get(currentSystemMeta).name,
         date: new Date().toISOString(),
         nodes: get(currentNodes),
-        edges: get(currentEdges)
+        edges: get(currentEdges),
+        requirements: get(currentReqs)
     });
 }
 

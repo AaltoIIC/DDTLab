@@ -15,15 +15,31 @@ export interface SystemMetaType {
     date: string;
 }
 
+// Types for requirements
+
+export interface LogicalExpressionType {
+    leftHandSide: string | number | boolean;
+    operator: '=' | '>' | '<';
+    rightHandSide: string | number | boolean;
+}
+export interface IntervalType {
+    lowerBound: number;
+    upperBound: number;
+}
+
 export interface RequirementType {
     name: string;
     description: string;
-    
+    temporalOperator: 'Until' | 'Globally' | 'Eventually' | 'Next' | 'Since' | 'Release';
+    leftHandSide?: LogicalExpressionType;
+    rightHandSide: LogicalExpressionType;
+    interval?: IntervalType;
 }
 
 export interface SystemType extends SystemMetaType {
     nodes: Node[];
     edges: Edge[];
+    requirements: RequirementType[];
 }
 
 export interface ConnectorType {

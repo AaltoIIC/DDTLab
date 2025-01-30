@@ -8,6 +8,7 @@
     import { currentNodes } from '$lib/stores/stores';
     import { selectNode } from '$lib/helpers';
     import EditConnectorPopup from './EditConnectorPopup.svelte';
+    import { stopPropagation } from 'svelte/legacy';
 
     export let elementName: string;
     export let connectorName: string;
@@ -30,6 +31,18 @@
         });
     }
 
+    // Dispatch a custom event on click (so that it can be read in requirements tab)
+    const dispatchCustomEvent = () => {
+        const event = new CustomEvent('connector-click', {
+            detail: {
+                connectorName,
+                elementName,
+                type
+            }
+        });
+        document.dispatchEvent(event);
+    }
+
     // Make tooltips compensate for zoom level
     const { viewport } = useSvelteFlow();
     let zoomLevel = 1;
@@ -38,9 +51,11 @@
     });
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div class="handle-wrapper {onHover || isEditing ? 'hovered' : ''} {type}"
     on:mouseenter={() => {onHover = true; selectNode(elementName);}}
-    on:mouseleave={() => {onHover = false;}}>
+    on:mouseleave={() => {onHover = false;}}
+    on:click={(e) => {e.stopPropagation(); dispatchCustomEvent();}}>
     <div class="handle-back">
     </div>
     <Handle

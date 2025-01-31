@@ -1,13 +1,31 @@
 <script lang="ts">
     import type { RequirementType } from "$lib/types/types";
+    import DialogBox from "$lib/DialogBox.svelte";
+    import type { SvelteComponent } from "svelte";
+    import { currentReqs, addToHistory } from "$lib/stores/stores";
 
     export let requirement: RequirementType;
+
+    let dialogBox: SvelteComponent;
+
+    const handleDelete = () => {
+        dialogBox.openDialog("Are you sure you want to delete requirement?", "Yes", "No")
+            .then((result: boolean) => {
+                if (result) {
+                    currentReqs.update((reqs) => {
+                        return reqs.filter((req) => req.name !== requirement.name);
+                    });
+                    addToHistory();
+                }
+            });
+    }
 </script>
 <div class="main-tile">
-    <button class="btn-remove" aria-label="Remove Requirement">
+    <button class="btn-remove" aria-label="Remove Requirement"
+        on:click={handleDelete}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-        </svg>          
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>                   
     </button>
     <h4>{requirement.name}</h4>
     <p>{requirement.description}</p>
@@ -27,12 +45,36 @@
         </div>
     </div>
 </div>
+<DialogBox bind:this={dialogBox} />
 
 <style>
-    .btn-remove svg {
-        width: 18px;
-        height: 18px;
+    .temp-op {
+        font-size: 12px;
+        margin: 4px;
+        border-radius: var(--main-border-radius);
+        border: solid 1px rgba(0, 0, 0, 0.7);
+        padding: 2px 4px;
         color: rgba(0, 0, 0, 0.7);
+    }
+    .formula {
+        font-size: 14px;
+        font-family: 'Roboto Mono', monospace;
+        color: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        margin: 10px 4px 4px 4px;
+        flex-direction: column;
+        border-radius: var(--main-border-radius);
+        background-color: var(--list-dark-color);
+        padding: 4px;
+    }
+    .btn-remove svg {
+        width: 16px;
+        height: 16px;
+        color: rgba(0, 0, 0, 0.45);
+    }
+    .btn-remove svg:hover {
+        color: rgba(0, 0, 0, 0.9);
     }
     .btn-remove {
         position: absolute;
@@ -53,9 +95,12 @@
         line-height: 1.2;
         font-weight: 500;
     }
-    p {
+    .main-tile p {
         font-size: 12px;
         margin: 0;
         line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;  
     }
 </style>

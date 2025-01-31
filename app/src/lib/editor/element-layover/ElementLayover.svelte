@@ -2,7 +2,8 @@
     import { onMount } from 'svelte';
     import Portal from "svelte-portal";
     import {
-        currentNodes
+        currentNodes,
+        addToHistory
     } from '$lib/stores/stores';
     import { writable } from 'svelte/store';
     
@@ -15,6 +16,7 @@
         currentNodes.update(nodes => {
             return nodes.filter(node => node.id !== id);
         })
+        addToHistory();
     }
 
     // handle layover behavior (position, visibility, etc.)

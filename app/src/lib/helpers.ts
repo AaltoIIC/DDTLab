@@ -105,3 +105,7 @@ export const formatDate = (isoString: string) => {
 
     return `${day}.${month}.${year} ${hours}:${minutes}`;
 }
+
+export const makeValidFileName = (name: string) => {
+    return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+}

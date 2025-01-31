@@ -1,12 +1,43 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import MenuOption from "$lib/sidebar/MenuOption.svelte";
-    import { currentNodes } from "$lib/stores/stores";
-    import { nameElement } from "$lib/helpers";
+    import {
+        currentNodes,
+        addToHistory,
+        currentSystemMeta
+    } from "$lib/stores/stores";
+    import { nameElement, makeValidFileName } from "$lib/helpers";
     import { type ElementDataType } from "$lib/types/types";
     import ReqsPopover from "./requirements/ReqsPopover.svelte";
+    import {
+        convertToTTL,
+        convertToSSD
+    } from "./conversions";
 
     let isReqsOpen = false;
+
+    const downloadFile = (format: string) => {
+        let content = '';
+        let filename = '';
+
+        if (format === 'TTL') {
+            content = convertToTTL();
+            filename = `${makeValidFileName($currentSystemMeta.name)}.ttl`;
+        } else if (format === 'SSD') {
+            content = convertToSSD();
+            filename = `${makeValidFileName($currentSystemMeta.name)}.ssd`;
+        }
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
 
     const handleAdd = (option: string) => {
         if (option === 'Component') {
@@ -26,6 +57,7 @@
                     parentId: 'root'
                 }];
             });
+            addToHistory();
         } else if (option === 'System') {
             currentNodes.update((nodes) => {
                 return [...nodes, {
@@ -43,6 +75,7 @@
                     parentId: 'root'
                 }];
             });
+            addToHistory();
         }
     }
 </script>
@@ -85,17 +118,20 @@
                 '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" /></svg>',
                 '<svg viewBox="-3 -1 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 13V10.375C16 9.47989 15.6444 8.62145 15.0115 7.98851C14.3786 7.35558 13.5201 7 12.625 7H11.125C10.8266 7 10.5405 6.88147 10.3295 6.6705C10.1185 6.45952 10 6.17337 10 5.875V4.375C10 3.47989 9.64442 2.62145 9.01149 1.98851C8.37855 1.35558 7.52011 1 6.625 1H4.75M7 1H2.125C1.504 1 1 1.504 1 2.125V19.375C1 19.996 1.504 20.5 2.125 20.5H14.875C15.496 20.5 16 19.996 16 19.375V10C16 7.61305 15.0518 5.32387 13.364 3.63604C11.6761 1.94821 9.38695 1 7 1Z" /><path d="M10.75 11L13 13.25L10.75 15.5M6.25 15.5L4 13.25L6.25 11" /></svg>'
             ]}
-            onClick={handleAdd}
+            onClick={downloadFile}
             icon={`<svg class="option-icon download" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>  `}
             iconColor="white"
         />
-        <button class="menu-option" aria-label="Report bug">
-            <svg class="option-icon report" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-            </svg>              
-        </button>
+        <a href="https://github.com/AaltoIIC/DDTLab/issues"
+            aria-label="Report bug" target="_blank">
+            <button class="menu-option" aria-label="Report bug">
+                <svg class="option-icon report" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                </svg>              
+            </button>
+        </a>
     </div>
 </div>
 <ReqsPopover bind:isOpen={isReqsOpen} />

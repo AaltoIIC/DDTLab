@@ -5,10 +5,9 @@
         useSvelteFlow
     } from '@xyflow/svelte';
     import _ from 'lodash';
-    import { currentNodes } from '$lib/stores/stores';
+    import { currentNodes, addToHistory } from '$lib/stores/stores';
     import { selectNode } from '$lib/helpers';
     import EditConnectorPopup from './EditConnectorPopup.svelte';
-    import { stopPropagation } from 'svelte/legacy';
 
     export let elementName: string;
     export let connectorName: string;
@@ -29,6 +28,7 @@
 
             return newNodes;
         });
+        addToHistory();
     }
 
     // Dispatch a custom event on click (so that it can be read in requirements tab)

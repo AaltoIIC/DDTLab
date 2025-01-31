@@ -7,7 +7,7 @@
     useSvelteFlow
   } from '@xyflow/svelte';
   import _ from 'lodash';
-  import { currentEdges } from '$lib/stores/stores';
+  import { currentEdges, addToHistory } from '$lib/stores/stores';
 
   type $$Props = EdgeProps;
   $$restProps
@@ -35,6 +35,7 @@
     currentEdges.update((edges) => {
       return edges.filter((edge) => edge.id !== id);
     });
+    addToHistory();
   }
 
   let hover = false;

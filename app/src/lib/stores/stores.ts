@@ -2,7 +2,8 @@ import type {
     NotificationType,
     SystemMetaType,
     SystemType,
-    RequirementType
+    RequirementType,
+    HistoryEntryType
 } from '../types/types';
 import {    
     type Node,
@@ -105,5 +106,67 @@ export const cloneSystem = (id: string) => {
             systems.push(newSystem);
             return systems;
         });
+    }
+}
+
+// history
+export const history = writable<{currentIndex: number, data: HistoryEntryType[]}>({currentIndex: -1, data: []});
+
+export const addToHistory = () => {
+    history.update(h => {
+        if (h.currentIndex !== -1) {
+            h.data = h.data.slice(0, h.currentIndex + 1);
+        }
+
+        const entry = _.cloneDeep({
+            systemMeta: get(currentSystemMeta),
+            nodes: get(currentNodes),
+            edges: get(currentEdges),
+            requirements: get(currentReqs)
+        });
+        h.data.push(entry);
+        h.currentIndex = -1;
+        if (h.data.length > 10) {
+            h.data.shift();
+        }
+        return h;
+    });
+}
+
+const setHistoryEntry = (entry: HistoryEntryType) => {
+    currentSystemMeta.set(entry.systemMeta);
+    currentNodes.set(entry.nodes);
+    currentEdges.set(entry.edges);
+    currentReqs.set(entry.requirements);
+}
+
+export const handleUndo = () => {
+    let currentIndex = get(history).currentIndex === -1 ? get(history).data.length - 1 : get(history).currentIndex;
+    currentIndex -= 1;
+    if (currentIndex >= 0) {
+        history.update(h => {
+            h.currentIndex = currentIndex;
+            return h;
+        });
+
+        const entry = get(history).data[currentIndex];
+        setHistoryEntry(entry);
+    }
+}
+export const handleRedo = () => {
+    if (get(history).currentIndex !== -1 && get(history).currentIndex < get(history).data.length - 1) {
+        let currentIndex = get(history).currentIndex;
+        currentIndex += 1;
+        if (currentIndex === get(history).data.length - 1) currentIndex = -1;
+
+        history.update(h => {
+            h.currentIndex = currentIndex;
+            return h;
+        });
+
+        const entry = get(history).data.at(get(history).currentIndex);
+        if (entry) {
+            setHistoryEntry(entry);
+        }
     }
 }

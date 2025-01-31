@@ -5,7 +5,7 @@
     import * as Select from "$lib/components/ui/select";
     import { Input } from "$lib/components/ui/input";
     import VSSoSelect from './VSSoSelect.svelte';
-    import { currentNodes } from '$lib/stores/stores';
+    import { addToHistory, currentNodes } from '$lib/stores/stores';
     import _ from 'lodash';
     import { onMount } from 'svelte';
     import {
@@ -87,6 +87,7 @@
             );
             return newNodes;
         });
+        addToHistory();
 
         isOpen = false;
     }
@@ -104,6 +105,7 @@
             
             return newNodes;
         });
+        addToHistory();
 
         isOpen = false;
     }

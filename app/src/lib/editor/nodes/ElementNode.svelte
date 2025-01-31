@@ -5,7 +5,13 @@
     import {
         isNameValid
      } from "$lib/helpers";
-    import { currentEdges, currentNodes } from "$lib/stores/stores";
+    import {
+        currentEdges,
+        currentNodes,
+        currentSystemMeta,
+        currentReqs,
+        addToHistory
+    } from "$lib/stores/stores";
     import VSSoSelect from "./VSSoSelect.svelte";
    
     let hover = false;
@@ -38,6 +44,7 @@
                     nodes[nodeIndex].id = currentName;
                     return nodes;
                 });
+                addToHistory();
             }
         } else {
             currentName = id;
@@ -48,7 +55,7 @@
 
     // handle VSSo class selection
     let currentVSSoClass = data.element.VSSoClass;
-    $: if (currentVSSoClass) {
+    const updateVSSOClass = (value: string) => {
         currentNodes.update((nodes) => {
             return nodes.map((node) => {
                 if (node.id === id) {
@@ -57,6 +64,7 @@
                 return node;
             });
         });
+        addToHistory();
     }
 
     // Make delete button compensate for zoom level
@@ -73,6 +81,7 @@
         currentEdges.update((edges) => {
             return edges.filter((edge) => edge.source !== id && edge.target !== id);
         });
+        addToHistory();
     }
 
     $$restProps
@@ -105,6 +114,7 @@
         <div class="bottom-param-cont">
             <VSSoSelect {id}
                 bind:currentClass={currentVSSoClass}
+                onChange={updateVSSOClass}
             />
         </div>
     </div>

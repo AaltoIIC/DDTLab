@@ -5,12 +5,30 @@
     import LogicalExpressionField from "./LogicalExpressionField.svelte";
     import type { LogicalExpressionType, RequirementType } from "$lib/types/types";
     import { generateName, isNameValid } from "$lib/helpers";
-    import { currentReqs } from "$lib/stores/stores";
+    import { currentReqs, addToHistory } from "$lib/stores/stores";
+    import { useSvelteFlow } from "@xyflow/svelte";
     import ReqTile from "./ReqTile.svelte";
 
     export let isOpen: boolean = false;
 
     let isAddingNewReq = false;
+
+    // handle change of viewport when opening or closing popover
+    const { setViewport, getViewport } = useSvelteFlow();
+    const popoverWidth = 340;
+    $: if (isOpen) {
+        const currentViewport = getViewport();
+        setViewport({
+            ...currentViewport,
+            x: currentViewport.x + popoverWidth
+        });
+    } else {
+        const currentViewport = getViewport();
+        setViewport({
+            ...currentViewport,
+            x: currentViewport.x - popoverWidth
+        });
+    }
 
     let newReqName = generateName('Requirement', $currentReqs.map(r => r.name));
     let newReqDescription = '';
@@ -61,6 +79,7 @@
                 interval: newReqInterval
             } as RequirementType];
         });
+        addToHistory();
 
         isAddingNewReq = false;
         newReqName = generateName('Requirement', $currentReqs.map(r => r.name));
@@ -75,7 +94,7 @@
         newReqInterval = undefined;
     }
 </script>
-<div class="main-reqs-cont {isOpen ? 'open' : ''} shadow-sm">
+<div class="main-reqs-cont {isOpen ? 'open' : ''} shadow-sm" style:width={popoverWidth + 'px'}>
     <button class="btn-close" aria-label="Close" on:click={() => isOpen = false}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -350,7 +369,6 @@
         position: fixed;
         top: 15px;
         left: 93px;
-        width: 340px;
         height: calc(100vh - 30px);
         background-color: white;
         border: var(--main-border);

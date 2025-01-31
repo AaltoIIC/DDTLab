@@ -10,8 +10,11 @@
         operator: '='
     };
 
+
     let operator = {value: '=', label: '='};
-    $: value.operator = operator.value as typeof value.operator;
+    const updateOperator = (e: any) => {
+        value.operator = e.value;
+    };
 
     // Fill input fields with connector name on click
     let leftInFocus = false;
@@ -41,7 +44,8 @@
         on:mouseleave={() => {inputOnHover = false;}}
         class="flex-grow h-8 px-2.5" />
 
-   <Select.Root bind:selected={operator}>
+   <Select.Root bind:selected={operator}
+    onSelectedChange={updateOperator}>
         <Select.Trigger class="flex-shrink-0 w-16 h-8 px-2.5">
             <Select.Value />
         </Select.Trigger>

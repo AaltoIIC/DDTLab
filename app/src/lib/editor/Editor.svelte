@@ -1,7 +1,6 @@
 <script lang="ts">
     import {
       SvelteFlow,
-      SvelteFlowProvider,
       Controls,
       Background,
       BackgroundVariant,
@@ -13,7 +12,10 @@
     import '@xyflow/svelte/dist/style.css';
     import {
       currentNodes,
-      currentEdges
+      currentEdges,
+
+      addToHistory
+
     } from '../stores/stores';
     import RootSystemNode from './nodes/RootSystemNode.svelte';
     import ElementNode from './nodes/ElementNode.svelte';
@@ -30,23 +32,22 @@
     } as {} as EdgeTypes;
 
 </script>
-<SvelteFlowProvider>
-  <SvelteFlow
-    nodes={currentNodes}
-    edges={currentEdges}
-    nodeTypes={nodeTypes}
-    edgeTypes={edgeTypes}
-    defaultEdgeOptions={{
-      animated: true,
-      deletable: true,
-    }}
-    connectionLineType={ConnectionLineType.SmoothStep}
-    deleteKey={null}
-    minZoom={0.48}
-    maxZoom={1}
-    fitView
-  >
-    <Controls position="bottom-right" />
-    <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
-  </SvelteFlow>
-</SvelteFlowProvider>
+<SvelteFlow
+  nodes={currentNodes}
+  edges={currentEdges}
+  nodeTypes={nodeTypes}
+  edgeTypes={edgeTypes}
+  defaultEdgeOptions={{
+    animated: true,
+    deletable: true,
+  }}
+  connectionLineType={ConnectionLineType.SmoothStep}
+  deleteKey={null}
+  minZoom={0.48}
+  maxZoom={1}
+  onconnect={() => {addToHistory()}}
+  fitView
+>
+  <Controls position="bottom-right" />
+  <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
+</SvelteFlow>

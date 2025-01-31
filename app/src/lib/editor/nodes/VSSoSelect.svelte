@@ -10,6 +10,7 @@
     export let id: string;
     export let type: 'element' | 'connector' = 'element';
     export let currentClass: string | null = null;
+    export let onChange: (value: string) => void;
 
     let isPopoverOpen = false;
 
@@ -49,7 +50,18 @@
     const selectClass = (VSSoClass: string) => {
         currentClass = VSSoClass;
         isPopoverOpen = false;
+        onChange(VSSoClass);
     }
+
+    currentNodes.subscribe((value) => {
+        const node = value.find((node) => node.id === id);
+        if (node) {
+            if (type === 'element') {
+                currentClass = (node.data as any).element.VSSoClass;
+            }
+            
+        }
+    });
 
     // Make popover element compensate for zoom level
     const { viewport } = useSvelteFlow();

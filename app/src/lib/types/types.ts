@@ -55,3 +55,10 @@ export interface ElementDataType {
     VSSoClass: string | null;
     connectors: ConnectorType[];
 }
+
+export interface HistoryEntryType {
+    systemMeta: SystemMetaType;
+    nodes: Node[];
+    edges: Edge[];
+    requirements: RequirementType[];
+}

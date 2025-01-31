@@ -3,7 +3,10 @@
     import {
         currentSystemMeta,
         systems,
-        saveCurrentSystem
+        saveCurrentSystem,
+        history,
+        handleUndo,
+        handleRedo
     } from "$lib/stores/stores";
     import { isNameValid } from "$lib/helpers";
     import { goto } from "$app/navigation";
@@ -32,15 +35,19 @@
             isNameError = false;
         }
     }
+
 </script>
 <div class="main-top-bar shadow-md">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <span class="undo-redo-cont">
-        <button class="top-btn undo" aria-label="Undo">
+        <button class="top-btn undo {($history.currentIndex === 0 || $history.data.length === 1) ? "inactive" : "active"}" aria-label="Undo"
+            on:click={handleUndo}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
             </svg>
         </button>
-        <button class="top-btn redo" aria-label="Redo">
+        <button class="top-btn redo {($history.currentIndex === -1 || $history.data.length === 1) ? "inactive" : "active"}"
+            aria-label="Redo" on:click={handleRedo}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3" />
             </svg>              
@@ -81,6 +88,11 @@
         border: none;
         cursor: pointer;
         color: white;
+    }
+    .top-btn.inactive {
+        opacity: 0.5;
+        cursor: initial;
+        pointer-events: none;
     }
     .top-btn svg {
         width: 16px;

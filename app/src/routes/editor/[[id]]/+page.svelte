@@ -6,13 +6,17 @@
     import Editor from "$lib/editor/Editor.svelte";
     import TopBar from '$lib/editor/TopBar.svelte';
     import type { SystemType } from "$lib/types/types";
+    import { SvelteFlowProvider } from "@xyflow/svelte";
     import {
         createSystem,
         currentSystemMeta,
         currentEdges,
         currentNodes,
+        currentReqs,
         saveCurrentSystem,
-        systems
+        systems,
+        addToHistory,
+        history
     } from "$lib/stores/stores.js";
 
     // initialize the editor
@@ -30,6 +34,7 @@
             });
             currentNodes.set(sys.nodes);
             currentEdges.set(sys.edges);
+            currentReqs.set(sys.requirements);
         } else {
             // if system does not exist, redirect home
             onMount(() => {
@@ -51,12 +56,13 @@
             position: { x: 0, y: 150 }
         }]);
         currentEdges.set([]);
+        currentReqs.set([]);
         onMount(() => {
             goto(`/editor/${newSys.id}`, {replaceState: true});
         });
     }
 
-    // handle autosave
+    // handle autosave and history
     currentSystemMeta.subscribe(() => {
         saveCurrentSystem();
     });
@@ -64,6 +70,9 @@
         saveCurrentSystem();
     });
     currentNodes.subscribe(() => {
+        saveCurrentSystem();
+    });
+    currentReqs.subscribe(() => {
         saveCurrentSystem();
     });
 
@@ -78,6 +87,10 @@
         defaultFirstSize = 0;
         isMobile = true;
     }
+
+    onMount(() => {
+        addToHistory();
+    });
 </script>
 <svelte:head>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -85,11 +98,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <title>Edit | DDT Lab</title>
 </svelte:head>
-<div class="main-screen">
-    <Editor />
-    <TopBar />
-    <Sidebar />
-</div>
+<SvelteFlowProvider>
+    <div class="main-screen">
+        <Editor />
+        <TopBar />
+        <Sidebar />
+    </div>
+</SvelteFlowProvider>
 <style>
     .main-screen {
         position: fixed;

@@ -15,4 +15,4 @@ The app is available at [ddtlab.aalto.fi](https://ddtlab.aalto.fi)
 Usage doesn't require registration, systems and components are saved locally in the browser.
 
 ## Documentation:
-**The Developer Docs in the wiki of this repository contains documentation about the structure of the application, and contribution and deployment instructions.
+**The Developer Docs in the wiki of this repository contains documentation about the structure of the application, and contribution and deployment instructions.**

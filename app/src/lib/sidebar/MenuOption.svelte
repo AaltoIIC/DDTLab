@@ -7,14 +7,21 @@
     export let optionIcons: string[] = [];
     export let onClick: (option: string) => void = () => {};
     export let visible = true;
+    export let isOpen = false;
 
     let isDropdownOpen = false;
     let onHover = false;
+    
+    // Update parent when internal state changes
+    $: if (isDropdownOpen !== isOpen) {
+        isOpen = isDropdownOpen;
+    }
 
     onMount(() => {
         document.addEventListener('pointerdown', (event) => {
             if (!onHover) {
                 isDropdownOpen = false;
+                isOpen = false;
             }
         });
     });
@@ -27,13 +34,13 @@
 <button
     class="btn"
     aria-label="Dropdown"
-    on:click={(e) => {e.stopPropagation(); isDropdownOpen = !isDropdownOpen}}
+    on:click={(e) => {e.stopPropagation(); isDropdownOpen = !isDropdownOpen; isOpen = isDropdownOpen}}
     style:color={iconColor}>
         {@html icon}
 </button>
 <div class="main-dropdown shadow">
     {#each options as option, index}
-        <button on:click={(e) => {e.stopPropagation(); onClick(option); isDropdownOpen = false;}}>
+        <button on:click={(e) => {e.stopPropagation(); onClick(option); isDropdownOpen = false; isOpen = false;}}>
             {#if optionIcons.length > index}
                 <span class="option-icon">
                     {@html optionIcons[index]}

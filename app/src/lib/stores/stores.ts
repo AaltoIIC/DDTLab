@@ -3,7 +3,10 @@ import type {
     SystemMetaType,
     SystemType,
     RequirementType,
-    HistoryEntryType
+    HistoryEntryType,
+    NavigationContextType,
+    SubsystemDataType,
+    NodeDataType
 } from '../types/types';
 import {    
     type Node,
@@ -49,13 +52,15 @@ export const saveSystem = (system: SystemType) => {
 }
 
 export const saveCurrentSystem = () => {
+    const currentSystem = getSystem(get(currentSystemMeta).id);
     saveSystem({
         id: get(currentSystemMeta).id,
         name: get(currentSystemMeta).name,
         date: new Date().toISOString(),
         nodes: get(currentNodes),
         edges: get(currentEdges),
-        requirements: get(currentReqs)
+        requirements: get(currentReqs),
+        isSubsystem: currentSystem?.isSubsystem || false
     });
 }
 
@@ -169,4 +174,110 @@ export const handleRedo = () => {
             setHistoryEntry(entry);
         }
     }
+}
+
+export const navigationContext = writable<NavigationContextType>({
+    path: [],
+    currentSystemId: '',
+    parentSystemId: '',
+    rootSystemId: ''
+});
+
+export const currentViewSystemId = writable<string>('');
+
+export const createSubsystem = (parentSystemId: string, parentNodeId: string): SystemType => {
+    const subsystem = createSystem();
+    subsystem.name = `Subsystem of ${get(currentSystemMeta).name}`;
+
+    const subsystemRootNode = {
+        id: 'root',
+        type: 'RootSystem',
+        data: { 
+            label: subsystem.name,
+            parentSystemId: parentSystemId,
+            parentNodeId: parentNodeId,
+         },
+        position: { x: 0, y: 150 }
+    } as Node;
+
+    saveSystem({
+        ...subsystem,
+        nodes: [subsystemRootNode],
+        edges: [],
+        requirements: [],
+        isSubsystem: true,
+    });
+
+    return subsystem;
+}
+
+export const isSubsystemNode = (nodeData: any): boolean => {
+    return nodeData?.element?.type === 'system' && nodeData?.element?.hasSubsystems === true;
+};
+
+export const navigateToSubsystem = (subsystemId: string, parentNodeId: string) => {
+    const subsystem = getSystem(subsystemId);
+    if (!subsystem) {
+        console.error('Subsystem not found:', subsystemId);
+        return;
+    }
+
+    navigationContext.update(ctx => ({
+        ...ctx,
+        path: [...ctx.path, get(currentSystemMeta)],
+        currentSystemId: subsystem.id,
+    }));
+
+    currentSystemMeta.set({
+        id: subsystem.id,
+        name: subsystem.name,
+        date: subsystem.date
+    });
+    currentNodes.set(subsystem.nodes);
+    currentEdges.set(subsystem.edges);
+    currentReqs.set(subsystem.requirements);
+
+    currentViewSystemId.set(subsystem.id);
+    history.set({currentIndex: -1, data: []});
+    addToHistory();
+}
+
+export const navigateToParent = () => {
+    const ctx = get(navigationContext);
+    if (ctx.path.length === 0) return;
+
+    const parentMeta = ctx.path[ctx.path.length - 1];
+    const parentSystem = getSystem(parentMeta.id);
+
+    if (!parentSystem) {
+        console.error('Parent system not found:', parentMeta.id);
+        return;
+    }
+
+    navigationContext.update(ctx => ({
+        ...ctx,
+        path: ctx.path.slice(0, -1),
+        currentSystemId: parentMeta.id,
+        parentSystemId: ctx.path.length > 1 ? ctx.path[ctx.path.length - 2].id : '',
+    }));
+
+    currentSystemMeta.set(parentMeta);
+    currentNodes.set(parentSystem.nodes);
+    currentEdges.set(parentSystem.edges);
+    currentReqs.set(parentSystem.requirements);
+
+    currentViewSystemId.set(parentMeta.id);
+    history.set({currentIndex: -1, data: []});
+    addToHistory();
+}
+
+// root system
+export const resetNavigation = () => {
+    navigationContext.set({
+        path: [],
+        currentSystemId: get(currentSystemMeta).id,
+        parentSystemId: '',
+        rootSystemId: get(currentSystemMeta).id
+    });
+    currentViewSystemId.set(get(currentSystemMeta).id);
 }

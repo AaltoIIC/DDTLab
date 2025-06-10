@@ -9,11 +9,19 @@ const persistentStore = <T>(key: string, initValue: T): Writable<T> => {
 
     const storedValueStr = localStorage.getItem(key);
     if (storedValueStr != null) {
-        const parsedValue = JSON.parse(storedValueStr);
-        if ( initValue instanceof Map && Array.isArray(parsedValue)) {
-            store.set(new Map(parsedValue) as unknown as T);
-        } else {
-            store.set(parsedValue);
+        try {
+            const parsedValue = JSON.parse(storedValueStr);
+            if ( initValue instanceof Map && Array.isArray(parsedValue)) {
+                store.set(new Map(parsedValue) as unknown as T);
+            } else if (Array.isArray(initValue) && !Array.isArray(parsedValue)) {
+                console.warn(`Expected array for ${key}, got ${typeof parsedValue}. Using default value.`);
+                store.set(initValue);
+            } else {
+                store.set(parsedValue);
+            }
+        } catch (e) {
+            console.error(`Failed to parse stored value for ${key}:`, e);
+            store.set(initValue);
         }
     }
     store.subscribe((val) => {

@@ -16,8 +16,15 @@
         saveCurrentSystem,
         systems,
         addToHistory,
-        history
+        history,
+        navigateToParent,
+        resetNavigation,
+        navigationContext,
+
+        saveSystem
+
     } from "$lib/stores/stores.js";
+    import Breadcrumb from "$lib/editor/Breadcrumb.svelte";
 
     // initialize the editor
     export let data;
@@ -57,6 +64,20 @@
         }]);
         currentEdges.set([]);
         currentReqs.set([]);
+
+        saveSystem({
+            ...newSys,
+            nodes: [{
+                id: 'root',
+                type: 'RootSystem',
+                data: { label: 'Node' },
+                position: { x: 0, y: 150 }
+            }],
+            edges: [],
+            requirements: [],
+            isSubsystem: false
+        });
+
         onMount(() => {
             goto(`/editor/${newSys.id}`, {replaceState: true});
         });
@@ -88,8 +109,21 @@
         isMobile = true;
     }
 
+    function handleKeydown(event: KeyboardEvent) {
+        if (event.key === 'Escape' && $navigationContext.path.length > 0) {
+            navigateToParent();
+        }
+    }
+
     onMount(() => {
         addToHistory();
+
+        resetNavigation();
+
+        window.addEventListener('keydown', handleKeydown);
+        return () => {
+            window.removeEventListener('keydown', handleKeydown);
+        };
     });
 </script>
 <svelte:head>
@@ -103,6 +137,7 @@
         <Editor />
         <TopBar />
         <Sidebar />
+        <Breadcrumb />
     </div>
 </SvelteFlowProvider>
 <style>

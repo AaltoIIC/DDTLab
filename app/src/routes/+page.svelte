@@ -32,7 +32,7 @@
                 </div>
             </div>
             <div class="ddt-cont">
-                {#each $systems.reverse() as system}
+                {#each (Array.isArray($systems) ? $systems : []).filter(s => !s.isSubsystem).slice().reverse() as system}
                     <SystemTile {system} />
                 {/each}
                 <NewSystemTile />

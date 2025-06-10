@@ -4,7 +4,9 @@
     import {
         currentNodes,
         addToHistory,
-        currentSystemMeta
+        currentSystemMeta,
+        createSystem,
+        createSubsystem,
     } from "$lib/stores/stores";
     import { nameElement, makeValidFileName } from "$lib/helpers";
     import { type ElementDataType } from "$lib/types/types";
@@ -14,6 +16,7 @@
         convertToSSD
     } from "./conversions";
     import Tooltip from "$lib/Tooltip.svelte";
+    import type { SubsystemDataType } from "$lib/types/types";  
 
     let isReqsOpen = false;
     let isAddDropdownOpen = false;
@@ -63,16 +66,23 @@
             addToHistory();
         } else if (option === 'System') {
             currentNodes.update((nodes) => {
+                const nodeId = nameElement('system');
+                const subsystem = createSubsystem($currentSystemMeta.id, nodeId);
+
+                const elementData: SubsystemDataType = {
+                    type: 'system',
+                    VSSoClass: null,
+                    connectors: [],
+                    subsystemId: subsystem.id,
+                    hasSubsystems: true,
+                };
+
                 return [...nodes, {
-                    id: nameElement('system'),
+                    id: nodeId,
                     type: 'Element',
                     position: { x: 30, y: 30 },
                     data: {
-                        element: {
-                            type: 'system',
-                            VSSoClass: null,
-                            connectors: []
-                        } as ElementDataType
+                        element: elementData
                     },
                     dragHandle: '.element-node-inner',
                     parentId: 'root'

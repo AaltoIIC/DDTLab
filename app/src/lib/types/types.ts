@@ -40,6 +40,7 @@ export interface SystemType extends SystemMetaType {
     nodes: Node[];
     edges: Edge[];
     requirements: RequirementType[];
+    isSubsystem?: boolean;
 }
 
 export interface ConnectorType {
@@ -62,3 +63,17 @@ export interface HistoryEntryType {
     edges: Edge[];
     requirements: RequirementType[];
 }
+
+export interface SubsystemDataType extends ElementDataType {
+    subsystemId?: string;
+    hasSubsystems?: boolean;
+}
+
+export interface NavigationContextType {
+    path: SystemMetaType[];
+    currentSystemId: string;
+    parentSystemId: string;
+    rootSystemId: string;
+}
+
+export type NodeDataType = ElementDataType | SubsystemDataType;

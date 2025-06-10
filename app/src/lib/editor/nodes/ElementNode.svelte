@@ -1,7 +1,7 @@
 <script lang="ts">
     import { useUpdateNodeInternals, useSvelteFlow } from '@xyflow/svelte';
     import Connectors from "./Connectors.svelte";
-    import { type ElementDataType } from "$lib/types/types";
+    import { type ElementDataType, type SubsystemDataType } from "$lib/types/types";
     import {
         isNameValid
      } from "$lib/helpers";
@@ -10,7 +10,9 @@
         currentNodes,
         currentSystemMeta,
         currentReqs,
-        addToHistory
+        addToHistory,
+        navigateToSubsystem,
+        isSubsystemNode
     } from "$lib/stores/stores";
     import VSSoSelect from "./VSSoSelect.svelte";
    
@@ -18,7 +20,7 @@
 
     export let id: string;
     export let data: {
-        element: ElementDataType;
+        element: ElementDataType | SubsystemDataType;
     };
 
     const updateNodeInternals = useUpdateNodeInternals();
@@ -84,13 +86,23 @@
         addToHistory();
     }
 
+  const handleDoubleClick = () => {
+      if (isSubsystemNode(data)) {
+          const subsystemData = data.element as SubsystemDataType;
+          if (subsystemData.subsystemId) {
+              navigateToSubsystem(subsystemData.subsystemId, id);
+          }
+      }
+  };
+
     $$restProps
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div class="main-element-node"
     on:mouseenter={() => {hover = true;}}
-    on:mouseleave={() => hover = false}>
+    on:mouseleave={() => hover = false} on:dblclick={handleDoubleClick}
+    style:cursor={isSubsystemNode(data) ? 'pointer' : 'move'}>
     <div class="element-node-inner">
         <div class="top-param-cont">
             <input class="main-name-field {isNameError ? 'error' : ''}"
@@ -117,6 +129,7 @@
                 onChange={updateVSSOClass}
             />
         </div>
+
     </div>
     <div class="delete-btn-wrapper">
         <button class="delete-btn {hover ? 'hover' : ''}" aria-label="Delete"

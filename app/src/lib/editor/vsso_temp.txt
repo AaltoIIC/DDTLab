@@ -1,0 +1,599 @@
+// {
+//     "elementTypes": {
+//         "ADAS": [],
+//         "ADASTCS": [
+//             "TCSError",
+//             "TCSIsActive",
+//             "TCSIsEngaged"
+//         ],
+//         "ADASObstacleDetection": [
+//             "ObstacleDetectionError",
+//             "ObstacleDetectionIsActive"
+//         ],
+//         "ADASABS": [
+//             "ABSError",
+//             "ABSIsActive",
+//             "ABSIsEngaged"
+//         ],
+//         "ADASLaneDepartureDetection": [
+//             "LaneDepartureDetectionError",
+//             "LaneDepartureDetectionIsActive",
+//             "LaneDepartureDetectionWarning"
+//         ],
+//         "ADASCruiseControl": [
+//             "CruiseControlError",
+//             "CruiseControlIsActive",
+//             "CruiseControlSpeedSet"
+//         ],
+//         "ADASESC": [
+//             "ESCError",
+//             "ESCIsActive",
+//             "ESCIsEngaged"
+//         ],
+//         "SeatAirbag": [
+//             "AirbagIsDeployed"
+//         ],
+//         "ChassisAxle": [
+//             "AxleTireAspectRatio",
+//             "AxleTireDiameter",
+//             "AxleTireWidth",
+//             "AxleWheelCount",
+//             "AxleWheelDiameter",
+//             "AxleWheelWidth"
+//         ],
+//         "AxleWheel": [],
+//         "WheelTire": [
+//             "TirePressure",
+//             "TirePressureLow",
+//             "TireTemperature"
+//         ],
+//         "CatalystBank1": [
+//             "Bank1Temperature1",
+//             "Bank1Temperature2"
+//         ],
+//         "CatalystBank2": [
+//             "Bank2Temperature1",
+//             "Bank2Temperature2"
+//         ],
+//         "Powertrain": [
+//             "PowertrainAccumulatedBrakingEnergy",
+//             "PowertrainRange"
+//         ],
+//         "PowertrainTransmission": [
+//             "TransmissionClutchWear",
+//             "TransmissionCurrentGear",
+//             "TransmissionDriveType",
+//             "TransmissionGear",
+//             "TransmissionGearChangeMode",
+//             "TransmissionGearCount",
+//             "TransmissionPerformanceMode",
+//             "TransmissionSelectedGear",
+//             "TransmissionSpeed",
+//             "TransmissionTemperature",
+//             "TransmissionTravelledDistance",
+//             "TransmissionType"
+//         ],
+//         "PowertrainElectricMotor": [
+//             "ElectricMotorMaxPower",
+//             "ElectricMotorMaxRegenPower",
+//             "ElectricMotorMaxRegenTorque",
+//             "ElectricMotorMaxTorque"
+//         ],
+//         "ElectricMotorMotor": [
+//             "MotorCoolantTemperature",
+//             "MotorPower",
+//             "MotorRpm",
+//             "MotorTemperature",
+//             "MotorTorque"
+//         ],
+//         "PowertrainBattery": [
+//             "BatteryAccumulatedChargedEnergy",
+//             "BatteryAccumulatedConsumedEnergy",
+//             "BatteryGrossCapacity",
+//             "BatteryGroundConnected",
+//             "BatteryNetCapacity",
+//             "BatteryNominalVoltage",
+//             "BatteryPowerConnected",
+//             "BatteryRange",
+//             "BatteryReferentVoltage",
+//             "BatteryTemperature"
+//         ],
+//         "BatteryStateOfCharge": [
+//             "StateOfChargeCurrent",
+//             "StateOfChargeDisplayed",
+//             "StateOfChargeTarget"
+//         ],
+//         "BatteryCharging": [
+//             "ChargingChargeCurrent",
+//             "ChargingChargeLimit",
+//             "ChargingChargePlugStatus",
+//             "ChargingChargePlugType",
+//             "ChargingChargePortFlap",
+//             "ChargingChargeRate",
+//             "ChargingChargeVoltage",
+//             "ChargingMaximumChargingCurrent",
+//             "ChargingMode"
+//         ],
+//         "ChargingTimer": [
+//             "TimerMode",
+//             "TimerTime"
+//         ],
+//         "Body": [
+//             "BodyBodyType",
+//             "BodyRefuelPosition"
+//         ],
+//         "BodyTrunk": [
+//             "TrunkIsLocked",
+//             "TrunkIsOpen"
+//         ],
+//         "BodyRaindetection": [
+//             "Raindetectionintensity"
+//         ],
+//         "BodyMirrors": [
+//             "MirrorsPan",
+//             "MirrorsTilt"
+//         ],
+//         "MirrorsHeating": [
+//             "MirrorsHeatingStatus"
+//         ],
+//         "BodyLights": [
+//             "LightsIsBackupOn",
+//             "LightsIsBrakeOn",
+//             "LightsIsDomeOn",
+//             "LightsIsFrontFogOn",
+//             "LightsIsHazardOn",
+//             "LightsIsHighBeamOn",
+//             "LightsIsLeftIndicatorOn",
+//             "LightsIsLowBeamOn",
+//             "LightsIsParkingOn",
+//             "LightsIsRearFogOn",
+//             "LightsIsRightIndicatorOn",
+//             "LightsIsRunningOn"
+//         ],
+//         "BodyHood": [
+//             "HoodIsOpen"
+//         ],
+//         "BodyHorn": [
+//             "HornIsActive"
+//         ],
+//         "BodyWindshield": [],
+//         "WindshieldWiping": [
+//             "WipingStatus"
+//         ],
+//         "WindshieldWasherFluid": [
+//             "WasherFluidLevel",
+//             "WasherFluidLevelLow"
+//         ],
+//         "WindshieldHeating": [
+//             "HeatingStatus"
+//         ],
+//         "BodyChargingPort": [
+//             "ChargingPortType",
+//             "ChargingStartStopCharging",
+//             "ChargingStatus",
+//             "ChargingTimeToComplete"
+//         ],
+//         "WheelBrake": [
+//             "BrakeBrakesWorn",
+//             "BrakeFluidLevel",
+//             "BrakeFluidLevelLow",
+//             "BrakePadWear"
+//         ],
+//         "ChassisBrake": [
+//             "BrakePedalPosition"
+//         ],
+//         "Cabin": [
+//             "CabinDoorCount",
+//             "CabinDriverPosition",
+//             "CabinSeatPosCount",
+//             "CabinSeatRowCount"
+//         ],
+//         "CabinInfotainment": [],
+//         "CabinSunroof": [
+//             "SunroofPosition",
+//             "SunroofSwitch"
+//         ],
+//         "SunroofShade": [
+//             "ShadePosition",
+//             "ShadeSwitch"
+//         ],
+//         "CabinRearviewMirror": [
+//             "RearviewMirrorDimmingLevel"
+//         ],
+//         "CabinRearShade": [
+//             "RearShadePosition",
+//             "RearShadeSwitch"
+//         ],
+//         "CabinLights": [
+//             "LightsAmbientLight",
+//             "LightsIsGloveBoxOn",
+//             "LightsIsTrunkOn",
+//             "LightsLightIntensity"
+//         ],
+//         "LightsSpotlight": [
+//             "SpotlightIsLeftOn",
+//             "SpotlightIsRightOn",
+//             "SpotlightIsSharedOn"
+//         ],
+//         "CabinHVAC": [
+//             "HVACAmbientAirTemperature",
+//             "HVACIsAirConditioningActive",
+//             "HVACIsFrontDefrosterActive",
+//             "HVACIsRearDefrosterActive",
+//             "HVACIsRecirculationActive"
+//         ],
+//         "HVACStation": [
+//             "StationAirDistribution",
+//             "StationFanSpeed",
+//             "StationTemperature"
+//         ],
+//         "CabinConvertible": [
+//             "ConvertibleStatus"
+//         ],
+//         "CabinDoor": [
+//             "DoorIsChildLockActive",
+//             "DoorIsLocked",
+//             "DoorIsOpen"
+//         ],
+//         "DoorWindow": [
+//             "WindowChildLock",
+//             "WindowPosition",
+//             "WindowSwitch",
+//             "WindowisOpen"
+//         ],
+//         "DoorShade": [
+//             "DoorShadePosition",
+//             "DoorShadeSwitch"
+//         ],
+//         "CabinSeat": [
+//             "SeatHasPassenger",
+//             "SeatHeating",
+//             "SeatHeight",
+//             "SeatIsBelted",
+//             "SeatMassage",
+//             "SeatPosition",
+//             "SeatRecline"
+//         ],
+//         "SeatSideBolster": [
+//             "SideBolsterInflation"
+//         ],
+//         "SeatLumbar": [
+//             "LumbarHeight",
+//             "LumbarInflation"
+//         ],
+//         "SeatSwitch": [
+//             "SwitchBackward",
+//             "SwitchCooler",
+//             "SwitchDown",
+//             "SwitchForward",
+//             "SwitchUp",
+//             "SwitchWarmer"
+//         ],
+//         "SwitchLumbar": [
+//             "LumbarDeflate",
+//             "LumbarDown",
+//             "LumbarInflate",
+//             "LumbarUp"
+//         ],
+//         "SwitchHeadRestraint": [
+//             "HeadRestraintDown",
+//             "HeadRestraintHeight",
+//             "HeadRestraintUp"
+//         ],
+//         "SwitchMassage": [
+//             "MassageDecrease",
+//             "MassageIncrease"
+//         ],
+//         "SwitchRecline": [
+//             "ReclineBackward",
+//             "ReclineForward"
+//         ],
+//         "SwitchSideBolster": [
+//             "SideBolsterDeflate",
+//             "SideBolsterInflate"
+//         ],
+//         "SeatCushion": [
+//             "CushionHeight",
+//             "CushionLength"
+//         ],
+//         "Chassis": [
+//             "ChassisAxleCount",
+//             "ChassisCurbWeight",
+//             "ChassisGrossWeight",
+//             "ChassisHeight",
+//             "ChassisLength",
+//             "ChassisTowWeight",
+//             "ChassisTrack",
+//             "ChassisWheelbase",
+//             "ChassisWidth"
+//         ],
+//         "ChassisSteeringWheel": [
+//             "SteeringWheelAngle",
+//             "SteeringWheelExtension",
+//             "SteeringWheelPosition",
+//             "SteeringWheelTilt"
+//         ],
+//         "ChassisParkingBrake": [
+//             "ParkingBrakeIsEngaged"
+//         ],
+//         "ChassisTrailer": [
+//             "ChassisTrailerConnected"
+//         ],
+//         "PowertrainCombustionEngine": [
+//             "CombustionEngineAspirationType",
+//             "CombustionEngineBore",
+//             "CombustionEngineCompressionRatio",
+//             "CombustionEngineConfiguration",
+//             "CombustionEngineDisplacement",
+//             "CombustionEngineEngineCoolantCapacity",
+//             "CombustionEngineEngineOilCapacity",
+//             "CombustionEngineEngineOilLevel",
+//             "CombustionEngineFuelType",
+//             "CombustionEngineMaxPower",
+//             "CombustionEngineMaxTorque",
+//             "CombustionEngineNumberOfCylinders",
+//             "CombustionEngineNumberOfValvesPerCylinder",
+//             "CombustionEngineOilLifeRemaining",
+//             "CombustionEngineStrokeLength"
+//         ],
+//         "CombustionEngineEngine": [
+//             "EngineECT",
+//             "EngineEOP",
+//             "EngineEOT",
+//             "EngineMAF",
+//             "EngineMAP",
+//             "EnginePower",
+//             "EngineSpeed",
+//             "EngineTPS",
+//             "EngineTorque"
+//         ],
+//         "PowertrainFuelSystem": [
+//             "FuelSystemAverageConsumption",
+//             "FuelSystemConsumptionSinceStart",
+//             "FuelSystemEngineStopStartEnabled",
+//             "FuelSystemFuelType",
+//             "FuelSystemHybridType",
+//             "FuelSystemInstantConsumption",
+//             "FuelSystemLevel",
+//             "FuelSystemLowFuelLevel",
+//             "FuelSystemRange",
+//             "FuelSystemTankCapacity",
+//             "FuelSystemTimeSinceStart"
+//         ],
+//         "CombustionEngineDieselParticulateFilter": [
+//             "DieselParticulateFilterDeltaPressure",
+//             "DieselParticulateFilterInletTemperature",
+//             "DieselParticulateFilterOutletTemperature"
+//         ],
+//         "CurrentLocation": [
+//             "CurrentLocationAccuracy",
+//             "CurrentLocationAltitude",
+//             "CurrentLocationHeading",
+//             "CurrentLocationLatitude",
+//             "CurrentLocationLongitude",
+//             "CurrentLocationSpeed"
+//         ],
+//         "SwitchCushion": [
+//             "CushionBackward",
+//             "CushionDown",
+//             "CushionForward",
+//             "CushionUp"
+//         ],
+//         "NavigationDestinationSet": [
+//             "DestinationSetLatitude",
+//             "DestinationSetLongitude"
+//         ],
+//         "NavigationCurrentLocation": [
+//             "NavigationCurrentLocationAccuracy",
+//             "NavigationCurrentLocationAltitude",
+//             "NavigationCurrentLocationHeading",
+//             "NavigationCurrentLocationLatitude",
+//             "NavigationCurrentLocationLongitude"
+//         ],
+//         "OBD": [
+//             "OBDAbsoluteLoad",
+//             "OBDAcceleratorPositionD",
+//             "OBDAcceleratorPositionE",
+//             "OBDAcceleratorPositionF",
+//             "OBDAirStatus",
+//             "OBDAmbientAirTemperature",
+//             "OBDAuxInputStatus",
+//             "OBDBarometricPressure",
+//             "OBDCommandedEGR",
+//             "OBDCommandedEVAP",
+//             "OBDCommandedEquivalenceRatio",
+//             "OBDControlModuleVoltage",
+//             "OBDCoolantTemperature",
+//             "OBDDTCList",
+//             "OBDDistanceSinceDTCClear",
+//             "OBDDistanceWithMIL",
+//             "OBDEGRError",
+//             "OBDEVAPVaporPressure",
+//             "OBDEVAPVaporPressureAbsolute",
+//             "OBDEVAPVaporPressureAlternate",
+//             "OBDEngineLoad",
+//             "OBDEngineSpeed",
+//             "OBDEthanolPercent",
+//             "OBDFreezeDTC",
+//             "OBDFuelInjectionTiming",
+//             "OBDFuelLevel",
+//             "OBDFuelPressure",
+//             "OBDFuelRailPressureAbsolute",
+//             "OBDFuelRailPressureDirect",
+//             "OBDFuelRailPressureVac",
+//             "OBDFuelRate",
+//             "OBDFuelStatus",
+//             "OBDFuelType",
+//             "OBDHybridBatteryRemaining",
+//             "OBDIntakeTemp",
+//             "OBDLongTermFuelTrim1",
+//             "OBDLongTermFuelTrim2",
+//             "OBDLongTermO2Trim1",
+//             "OBDLongTermO2Trim2",
+//             "OBDLongTermO2Trim3",
+//             "OBDLongTermO2Trim4",
+//             "OBDMAF",
+//             "OBDMAP",
+//             "OBDMaxMAF",
+//             "OBDOBDStandards",
+//             "OBDOilTemperature",
+//             "OBDOxygenSensorsIn2Banks",
+//             "OBDOxygenSensorsIn4Banks",
+//             "OBDPidsA",
+//             "OBDPidsB",
+//             "OBDPidsC",
+//             "OBDRelativeAcceleratorPosition",
+//             "OBDRelativeThrottlePosition",
+//             "OBDRunTime",
+//             "OBDRunTimeMIL",
+//             "OBDShortTermFuelTrim1",
+//             "OBDShortTermFuelTrim2",
+//             "OBDShortTermO2Trim1",
+//             "OBDShortTermO2Trim2",
+//             "OBDShortTermO2Trim3",
+//             "OBDShortTermO2Trim4",
+//             "OBDSpeed",
+//             "OBDThrottleActuator",
+//             "OBDThrottlePosition",
+//             "OBDThrottlePositionB",
+//             "OBDThrottlePositionC",
+//             "OBDTimeSinceDTCCleared",
+//             "OBDTimingAdvance",
+//             "OBDWarmupsSinceDTCClear"
+//         ],
+//         "OBDCatalyst": [],
+//         "OBDStatus": [
+//             "StatusDTCCount",
+//             "StatusIgnitionType",
+//             "StatusMIL"
+//         ],
+//         "OBDO2": [
+//             "O2ShortTermFuelTrim",
+//             "O2Voltage"
+//         ],
+//         "OBDO2WR": [
+//             "O2WRCurrent",
+//             "O2WRLambda",
+//             "O2WRVoltage"
+//         ],
+//         "OBDDriveCycleStatus": [
+//             "DriveCycleStatusDTCCount",
+//             "DriveCycleStatusIgnitionType",
+//             "DriveCycleStatusMIL"
+//         ],
+//         "Driver": [
+//             "DriverAttentiveProbability",
+//             "DriverDistractionLevel",
+//             "DriverEyesOnRoad",
+//             "DriverFatigueLevel",
+//             "DriverHeartRate"
+//         ],
+//         "DriverIdentifier": [
+//             "DriverIdentifierIssuer",
+//             "DriverIdentifierSubject"
+//         ],
+//         "InfotainmentNavigation": [],
+//         "InfotainmentMedia": [
+//             "MediaAction",
+//             "MediaDeclinedURI",
+//             "MediaSelectedURI",
+//             "MediaVolume"
+//         ],
+//         "MediaPlayed": [
+//             "PlayedAlbum",
+//             "PlayedArtist",
+//             "PlayedSource",
+//             "PlayedTrack",
+//             "PlayedURI"
+//         ],
+//         "InfotainmentHMI": [
+//             "HMICurrentLanguage",
+//             "HMIDateFormat",
+//             "HMIDayNightMode",
+//             "HMIDistanceUnit",
+//             "HMIEVEconomyUnits",
+//             "HMIFuelEconomyUnits",
+//             "HMITemperatureUnit",
+//             "HMITimeFormat"
+//         ],
+//         "SeatOccupant": [],
+//         "OccupantIdentifier": [
+//             "IdentifierIssuer",
+//             "IdentifierSubject"
+//         ],
+//         "Service": [
+//             "ServiceDistanceToService",
+//             "ServiceServiceDue",
+//             "ServiceTimeToService"
+//         ],
+//         "Trailer": [
+//             "TrailerConnected"
+//         ],
+//         "VehicleIdentification": [
+//             "VehicleIdentificationACRISSCode",
+//             "VehicleIdentificationBrand",
+//             "VehicleIdentificationModel",
+//             "VehicleIdentificationVIN",
+//             "VehicleIdentificationWMI",
+//             "VehicleIdentificationYear",
+//             "VehicleIdentificationbodyType",
+//             "VehicleIdentificationdateVehicleFirstRegistered",
+//             "VehicleIdentificationknownVehicleDamages",
+//             "VehicleIdentificationmeetsEmissionStandard",
+//             "VehicleIdentificationproductionDate",
+//             "VehicleIdentificationpurchaseDate",
+//             "VehicleIdentificationvehicleConfiguration",
+//             "VehicleIdentificationvehicleModelDate",
+//             "VehicleIdentificationvehicleSeatingCapacity",
+//             "VehicleIdentificationvehicleSpecialUsage",
+//             "VehicleIdentificationvehicleinteriorColor",
+//             "VehicleIdentificationvehicleinteriorType"
+//         ],
+//         "VersionVSS": [
+//             "VersionVSSLabel",
+//             "VersionVSSMajor",
+//             "VersionVSSMinor",
+//             "VersionVSSPatch"
+//         ],
+//         "ChassisAccelerator": [
+//             "AcceleratorPedalPosition"
+//         ],
+//         "Acceleration": []
+//     },
+//     "systemParameters": [
+//         "AccelerationLateral",
+//         "AccelerationLongitudinal",
+//         "AccelerationVertical",
+//         "AmbientAirTemperature",
+//         "AngularVelocityPitch",
+//         "AngularVelocityRoll",
+//         "AngularVelocityYaw",
+//         "AverageSpeed",
+//         "CurbWeight",
+//         "CurrentOverallWeight",
+//         "DriveTime",
+//         "GrossWeight",
+//         "Height",
+//         "IdleTime",
+//         "IgnitionOffTime",
+//         "IgnitionOn",
+//         "IgnitionOnTime",
+//         "IsMoving",
+//         "Length",
+//         "LowVoltageSystemState",
+//         "MaxTowBallWeight",
+//         "MaxTowWeight",
+//         "Private",
+//         "RoofLoad",
+//         "Speed",
+//         "TravelledDistance",
+//         "TripMeterReading",
+//         "Width",
+//         "accelerationTime",
+//         "cargoVolume",
+//         "emissionsCO2",
+//         "AngularVelocity"
+//     ]
+// }
+
+// temporary definitions for VSSo.json

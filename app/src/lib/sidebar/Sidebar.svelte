@@ -11,6 +11,7 @@
     import { nameElement, makeValidFileName } from "$lib/helpers";
     import { type ElementDataType } from "$lib/types/types";
     import ReqsPopover from "./requirements/ReqsPopover.svelte";
+    import TestScenariosPopover from './testScenarios/TestScenariosPopover.svelte';
     import {
         convertToTTL,
         convertToSSD
@@ -21,6 +22,7 @@
     let isReqsOpen = false;
     let isAddDropdownOpen = false;
     let isDownloadDropdownOpen = false;
+    let isTestScenariosOpen = false;
 
     const downloadFile = (format: string) => {
         let content = '';
@@ -132,6 +134,14 @@
                 </svg>                                                            
             </button>
         </Tooltip>
+        <Tooltip text="Test Scenarios" position="right">
+            <button class="menu-option" aria-label="Test Scenarios"
+                on:click={() => {isTestScenariosOpen = !isTestScenariosOpen}}>
+            <svg class="option-icon test-scenarios {isTestScenariosOpen ? 'active' : ''}" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke-width="1.5" stroke="currentColor">
+                <path d="M5 3l14 9-14 9V3z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            </button>
+        </Tooltip>
     </div>
     <div class="bottom-buttons">
         <Tooltip text="Download TTL/SSD" position="right" disabled={isDownloadDropdownOpen}>
@@ -162,6 +172,9 @@
     </div>
 </div>
 <ReqsPopover bind:isOpen={isReqsOpen} />
+  {#if isTestScenariosOpen}
+      <TestScenariosPopover onclose={() => isTestScenariosOpen = false} />
+  {/if}
 <style>
     .main-sidebar {
         position: fixed;

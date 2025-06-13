@@ -148,7 +148,7 @@
         />
     </div>
     <div class="connector-param">
-        <span>Class:</span>
+        <span>Variable:</span>
         <div class="w-[142px] h-8">
             <VSSoSelect
                 id={elementName}

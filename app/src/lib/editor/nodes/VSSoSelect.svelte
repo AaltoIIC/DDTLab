@@ -102,7 +102,7 @@
     <button class="main-class-cont border-input border rounded-md bg-background text-sm h-8"
         on:click={() => isPopoverOpen = !isPopoverOpen}>
         <span>
-            {currentClass ? currentClass : "Select a class..."}
+            {currentClass ? currentClass : "Select Type..."}
         </span>
         <svg class="icon-updown" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15 12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
@@ -115,7 +115,7 @@
             class="h-8"
             bind:value={currentSearch}
             on:input={updateResults}
-            placeholder="Search classes..." 
+            placeholder="Search types..." 
         />
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="main-class-list"

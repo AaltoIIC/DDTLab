@@ -99,10 +99,11 @@
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="main-element-node"
+<div class="main-element-node {data.element.type === 'system' ? 'subsystem' : ''}" 
     on:mouseenter={() => {hover = true;}}
     on:mouseleave={() => hover = false} on:dblclick={handleDoubleClick}
     style:cursor={isSubsystemNode(data) ? 'pointer' : 'move'}>
+    
     <div class="element-node-inner">
         <div class="top-param-cont">
             <input class="main-name-field {isNameError ? 'error' : ''}"
@@ -110,7 +111,7 @@
                 bind:value={currentName}
                 on:input={validateName}
                 on:blur={saveName} />
-            <div class="element-type-cont">
+            <div class="element-type-cont {data.element.type === 'system' ? 'subsystem-type' : ''}">
                 {#if data.element.type === 'system'}
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
@@ -252,4 +253,8 @@
         width: 100%;
         height: 100%;
     }
+
+    .element-type-cont.subsystem-type {
+          background-color: #494974;
+      }
 </style>

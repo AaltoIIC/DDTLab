@@ -22,7 +22,14 @@
         "CO2Emissions": ["CO2Emissions"],
         "Voltage": ["Voltage"],
         "Current": ["Current"],
-        "Frequency": ["Frequency"]
+        "Frequency": ["Frequency"],
+        "MainEngine": ["MainEngine"],
+        "Propeller": ["Propeller"],
+        "TurboCharger": ["TurboCharger"],
+        "FuelSystem": ["FuelSystem"],
+        "CoolingSystem": ["CoolingSystem"],
+        "LubricationSystem": ["LubricationSystem"],
+        "PowerGenerator": ["PowerGenerator"]
     },
     "systemParameters": [
         "EngineSpeed",
@@ -47,6 +54,13 @@
         "CO2Emissions",
         "Voltage",
         "Current",
-        "Frequency"
+        "Frequency",
+        "MainEngine",
+        "Propeller",
+        "TurboCharger",
+        "FuelSystem",
+        "CoolingSystem",
+        "LubricationSystem",
+        "PowerGenerator"
     ]
 }

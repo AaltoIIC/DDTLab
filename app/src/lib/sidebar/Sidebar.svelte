@@ -12,6 +12,7 @@
     import { type ElementDataType } from "$lib/types/types";
     import ReqsPopover from "./requirements/ReqsPopover.svelte";
     import TestScenariosPopover from './testScenarios/TestScenariosPopover.svelte';
+    import FMIComponentsPopover from '$lib/fmi/FMIComponentsPopover.svelte';
     import {
         convertToTTL,
         convertToSSD
@@ -23,6 +24,7 @@
     let isAddDropdownOpen = false;
     let isDownloadDropdownOpen = false;
     let isTestScenariosOpen = false;
+    let isFMIOpen = false;
 
     const downloadFile = (format: string) => {
         let content = '';
@@ -142,6 +144,14 @@
             </svg>
             </button>
         </Tooltip>
+        <Tooltip text="FMI Components" position="right">
+            <button class="menu-option" aria-label="FMI Components"
+                on:click={() => {isFMIOpen = !isFMIOpen}}>
+                <svg class="option-icon fmi {isFMIOpen ? 'active' : ''}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                </svg>
+            </button>
+        </Tooltip>
     </div>
     <div class="bottom-buttons">
         <Tooltip text="Download TTL/SSD" position="right" disabled={isDownloadDropdownOpen}>
@@ -175,6 +185,7 @@
   {#if isTestScenariosOpen}
       <TestScenariosPopover onclose={() => isTestScenariosOpen = false} />
   {/if}
+<FMIComponentsPopover bind:isOpen={isFMIOpen} />
 <style>
     .main-sidebar {
         position: fixed;

@@ -12,7 +12,9 @@
         currentReqs,
         addToHistory,
         navigateToSubsystem,
-        isSubsystemNode
+        isSubsystemNode,
+        componentLinks,
+        fmiComponents
     } from "$lib/stores/stores";
     import VSSoSelect from "./VSSoSelect.svelte";
    
@@ -123,6 +125,14 @@
                 {/if}
             </div>
         </div>
+        
+        {#if $componentLinks[id]}
+            <div class="fmi-indicator" title="FMI: {$fmiComponents.find(c => c.id === $componentLinks[id])?.name || 'Unknown'}">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                </svg>
+            </div>
+        {/if}
 
         <div class="bottom-param-cont">
             <VSSoSelect {id}
@@ -257,4 +267,24 @@
     .element-type-cont.subsystem-type {
           background-color: #494974;
       }
+      
+    .fmi-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 24px;
+        height: 24px;
+        background: #3b82f6;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: help;
+    }
+    
+    .fmi-indicator svg {
+        width: 14px;
+        height: 14px;
+        color: white;
+    }
 </style>

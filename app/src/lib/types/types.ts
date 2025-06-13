@@ -55,6 +55,7 @@ export interface ElementDataType {
     type: 'system' | 'component';
     VSSoClass: string | null;
     connectors: ConnectorType[];
+    fmiComponentId?: string;
 }
 
 export interface HistoryEntryType {
@@ -86,9 +87,8 @@ export type NodeDataType = ElementDataType | SubsystemDataType;
       description: string;
       filePath?: string;  // For uploaded components
       modelIdentifier: string;
-      inputs: FMIVariableType[];
-      outputs: FMIVariableType[];
-      parameters: FMIVariableType[];
+      fmiVersion: '2.0' | '3.0';
+      fmiType: 'Co-Simulation' | 'Model Exchange' | 'Co-Simulation & Model Exchange';
       linkedElements: string[];  // IDs of linked editor elements
       uploadDate: string;
       isUserUploaded: boolean;

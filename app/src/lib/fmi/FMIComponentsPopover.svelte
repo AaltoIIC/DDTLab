@@ -32,7 +32,7 @@
     const mockComponents: FMIComponentType[] = [
         {
             id: 'fmi_1',
-            name: 'DC_Motor_v2',
+            name: 'DC_Motor - ABB',
             category: 'motors',
             description: 'DC motor with speed control',
             modelIdentifier: 'DCMotor',
@@ -56,7 +56,7 @@
         },
         {
             id: 'fmi_3',
-            name: 'Variable_Pitch_Propeller',
+            name: 'Variable_Pitch_Propeller - Kongsberg',
             category: 'propellers',
             description: 'Variable pitch propeller',
             modelIdentifier: 'Propeller',
@@ -195,9 +195,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                 </svg>
             </button>
-            <button class="btn-small auto-select" on:click={handleAutoSelect} title="Auto-Select">
-                Auto
-            </button>
         </div>
     </div>
     
@@ -267,6 +264,13 @@
         {/if}
     </div>
     
+    <div class="auto-select-section">
+        <button class="auto-select-btn" on:click={handleAutoSelect}>
+            <div class="auto-select-title">Auto</div>
+            <div class="auto-select-description">Run auto select of components based on test scenarios and requirements</div>
+        </button>
+    </div>
+    
     {#if selectedNodeId}
         <div class="selected-footer">
             <span>Selected: {selectedNodeId}</span>
@@ -281,13 +285,13 @@
 <style>
     .main-fmi-cont {
         position: fixed;
-        top: 15px;
+        top: 90px;
         right: 15px;
-        height: calc(100vh - 30px);
+        height: calc(100vh - 85px);
         background-color: white;
         border: var(--main-border);
         border-radius: var(--main-border-radius);
-        z-index: 99;
+        z-index: 150;
         display: flex;
         flex-direction: column;
         transform: translateX(100%);
@@ -300,19 +304,19 @@
     
     .btn-close {
         position: absolute;
-        top: 16px;
-        right: 16px;
-        width: 32px;
-        height: 32px;
+        top: 12px;
+        left: 12px;
+        width: 20px;
+        height: 20px;
         background: none;
         border: none;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 6px;
+        border-radius: 4px;
         transition: background-color 0.2s;
-        z-index: 1;
+        z-index: 10;
     }
     
     .btn-close:hover {
@@ -320,8 +324,8 @@
     }
     
     .btn-close svg {
-        width: 18px;
-        height: 18px;
+        width: 14px;
+        height: 14px;
     }
     
     .fmi-header {
@@ -366,9 +370,6 @@
         height: 14px;
     }
     
-    .btn-small.auto-select {
-        font-weight: 500;
-    }
     
     .search-container {
         padding: 12px 20px;
@@ -526,5 +527,38 @@
     .selected-footer.no-selection {
         background: rgba(0, 0, 0, 0.02);
         color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .auto-select-section {
+        padding: 16px 20px;
+        border-top: var(--main-border);
+    }
+    
+    .auto-select-btn {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--main-dark-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: left;
+        transition: filter 0.2s;
+    }
+    
+    .auto-select-btn:hover {
+        filter: brightness(1.1);
+    }
+    
+    .auto-select-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    
+    .auto-select-description {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.3;
     }
 </style>

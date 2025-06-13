@@ -77,3 +77,32 @@ export interface NavigationContextType {
 }
 
 export type NodeDataType = ElementDataType | SubsystemDataType;
+
+
+  export interface FMIComponentType {
+      id: string;
+      name: string;
+      category: 'motors' | 'propellers' | 'engines' | 'sensors' | 'controllers' | 'other';
+      description: string;
+      filePath?: string;  // For uploaded components
+      modelIdentifier: string;
+      inputs: FMIVariableType[];
+      outputs: FMIVariableType[];
+      parameters: FMIVariableType[];
+      linkedElements: string[];  // IDs of linked editor elements
+      uploadDate: string;
+      isUserUploaded: boolean;
+  }
+
+    export interface FMIVariableType {
+      name: string;
+      type: 'Real' | 'Integer' | 'Boolean' | 'String';
+      unit?: string;
+      description?: string;
+      causality: 'input' | 'output' | 'parameter';
+  }
+
+    export interface FMILibraryType {
+      components: FMIComponentType[];
+      categories: string[];
+  }

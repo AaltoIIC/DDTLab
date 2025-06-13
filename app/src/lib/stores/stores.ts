@@ -6,7 +6,8 @@ import type {
     HistoryEntryType,
     NavigationContextType,
     SubsystemDataType,
-    NodeDataType
+    NodeDataType,
+    FMIComponentType
 } from '../types/types';
 import {    
     type Node,
@@ -281,3 +282,6 @@ export const resetNavigation = () => {
     });
     currentViewSystemId.set(get(currentSystemMeta).id);
 }
+
+  export const fmiComponents = persistentStore<FMIComponentType[]>('fmiComponents', []);
+  export const componentLinks = persistentStore<Record<string, string>>('componentLinks', {});

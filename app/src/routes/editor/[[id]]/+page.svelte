@@ -25,6 +25,7 @@
 
     } from "$lib/stores/stores.js";
     import Breadcrumb from "$lib/editor/Breadcrumb.svelte";
+    import ConceptualStageLayout from "$lib/concept-phase/ConceptualStageLayout.svelte";
 
     // initialize the editor
     export let data;
@@ -46,6 +47,14 @@
             currentNodes.set(sys.nodes);
             currentEdges.set(sys.edges);
             currentReqs.set(sys.requirements);
+            
+            // If system has a different stage than URL, redirect to correct stage
+            if (sys.stage && sys.stage !== data.stage) {
+                onMount(() => {
+                    const stageParam = sys.stage === 'concept' ? '?stage=concept' : '';
+                    goto(`/editor/${sys.id}${stageParam}`, {replaceState: true});
+                });
+            }
         } else {
             // if system does not exist, redirect home
             onMount(() => {
@@ -155,14 +164,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <title>Edit | DDT Lab</title>
 </svelte:head>
-<SvelteFlowProvider>
-    <div class="main-screen">
-        <Editor />
-        <TopBar />
-        <Sidebar />
-        <Breadcrumb />
-    </div>
-</SvelteFlowProvider>
+{#if isConceptualStage}
+    <SvelteFlowProvider>
+        <ConceptualStageLayout />
+    </SvelteFlowProvider>
+{:else}
+    <SvelteFlowProvider>
+        <div class="main-screen">
+            <Editor />
+            <TopBar />
+            <Sidebar />
+            <Breadcrumb />
+        </div>
+    </SvelteFlowProvider>
+{/if}
 <style>
     .main-screen {
         position: fixed;

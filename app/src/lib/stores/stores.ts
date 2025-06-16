@@ -61,7 +61,8 @@ export const saveCurrentSystem = () => {
         nodes: get(currentNodes),
         edges: get(currentEdges),
         requirements: get(currentReqs),
-        isSubsystem: currentSystem?.isSubsystem || false
+        isSubsystem: currentSystem?.isSubsystem || false,
+        stage: currentSystem?.stage || 'design',
     });
 }
 

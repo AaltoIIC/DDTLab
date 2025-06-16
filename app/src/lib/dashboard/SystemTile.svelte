@@ -28,7 +28,10 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="tile shadow"
-    on:click={() => {goto(`/editor/${system.id}`)}}>
+      on:click={() => {
+      const stageParam = system.stage === 'concept' ? '?stage=concept' : '';
+      goto(`/editor/${system.id}${stageParam}`);
+  }}>
     <div class="illustration-cont">
         <SystemIllustration {system} />
     </div>

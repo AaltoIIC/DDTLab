@@ -28,6 +28,10 @@
 
     // initialize the editor
     export let data;
+    
+    // Check if we're in conceptual stage
+    const isConceptualStage = data.stage === 'concept';
+    
     if (data.id) {
         if ($currentSystemMeta.id === data.id) {
             // if system is already loaded, do nothing
@@ -56,30 +60,49 @@
             date: newSys.date,
             id: newSys.id
         });
-        currentNodes.set([{
-            id: 'root',
-            type: 'RootSystem',
-            data: { label: 'Node' },
-            position: { x: 0, y: 150 }
-        }]);
-        currentEdges.set([]);
-        currentReqs.set([]);
-
-        saveSystem({
-            ...newSys,
-            nodes: [{
+        
+        if (isConceptualStage) {
+            // For conceptual stage, start with blank canvas
+            currentNodes.set([]);
+            currentEdges.set([]);
+            currentReqs.set([]);
+            
+            saveSystem({
+                ...newSys,
+                nodes: [],
+                edges: [],
+                requirements: [],
+                isSubsystem: false,
+                stage: 'concept'
+            });
+        } else {
+            // For design stage, use the existing default setup
+            currentNodes.set([{
                 id: 'root',
                 type: 'RootSystem',
                 data: { label: 'Node' },
                 position: { x: 0, y: 150 }
-            }],
-            edges: [],
-            requirements: [],
-            isSubsystem: false
-        });
+            }]);
+            currentEdges.set([]);
+            currentReqs.set([]);
+
+            saveSystem({
+                ...newSys,
+                nodes: [{
+                    id: 'root',
+                    type: 'RootSystem',
+                    data: { label: 'Node' },
+                    position: { x: 0, y: 150 }
+                }],
+                edges: [],
+                requirements: [],
+                isSubsystem: false
+            });
+        }
 
         onMount(() => {
-            goto(`/editor/${newSys.id}`, {replaceState: true});
+            const stageParam = isConceptualStage ? '?stage=concept' : '';
+            goto(`/editor/${newSys.id}${stageParam}`, {replaceState: true});
         });
     }
 

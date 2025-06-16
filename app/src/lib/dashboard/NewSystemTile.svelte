@@ -3,11 +3,34 @@
 
     import Button from "$lib/Button.svelte";
     let hover = false;
+    let showDropdown = false;
+
+    function handleNewClick(e: MouseEvent) {
+        e.stopPropagation();
+        showDropdown = !showDropdown;
+    }
+
+    function handleStageSelect(stage: 'concept' | 'design') {
+        showDropdown = false;
+        if (stage === 'design') {
+            goto("/editor");
+        } else {
+            goto("/editor?stage=concept");
+        }
+    }
+
+    function handleClickOutside(e: MouseEvent) {
+        if (showDropdown && !(e.target as HTMLElement).closest('.dropdown-container')) {
+            showDropdown = false;
+        }
+    }
 </script>
+
+<svelte:window on:click={handleClickOutside} />
+
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div class="main-tile {hover ? 'hover' : ''} shadow"
-    on:click={() => goto("/editor")}
     on:mouseenter={() => hover = true}
     on:mouseleave={() => hover = false}>
     <span class="bg-icon">
@@ -20,14 +43,27 @@
     </span>
     <p>Create New System</p>
     <div class="btn-cont">
-        <Button
-        color="rgb(30, 30, 30)" textColor="rgba(255, 255, 255, 0.9)"
-        icon='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>'>
-            New
-            <svg class="icon-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-            </svg>          
-        </Button>
+        <div class="dropdown-container">
+            <Button
+            onClick={() => showDropdown = !showDropdown}
+            color="rgb(30, 30, 30)" textColor="rgba(255, 255, 255, 0.9)"
+            icon='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>'>
+                New
+                <svg class="icon-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                </svg>          
+            </Button>
+            {#if showDropdown}
+                <div class="dropdown">
+                    <button class="dropdown-item" on:click={() => handleStageSelect('concept')}>
+                        Conceptual Stage
+                    </button>
+                    <button class="dropdown-item" on:click={() => handleStageSelect('design')}>
+                        Design Stage
+                    </button>
+                </div>
+            {/if}
+        </div>
     </div>
 </div>
 <style>
@@ -80,6 +116,39 @@
         position: absolute;
         bottom: 14px;
         right: 14px;
+    }
+    .dropdown-container {
+        position: relative;
+    }
+    .dropdown {
+        position: absolute;
+        bottom: 100%;
+        right: 0;
+        margin-bottom: 4px;
+        background: white;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        min-width: 140px;
+        z-index: 10;
+    }
+    .dropdown-item {
+        display: block;
+        width: 100%;
+        padding: 8px 12px;
+        text-align: left;
+        background: none;
+        border: none;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+    .dropdown-item:hover {
+        background-color: #f5f5f5;
+    }
+    .dropdown-item:not(:last-child) {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     }
     @media (max-width: 492px) {
         .main-tile {

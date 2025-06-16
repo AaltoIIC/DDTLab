@@ -41,6 +41,7 @@ export interface SystemType extends SystemMetaType {
     edges: Edge[];
     requirements: RequirementType[];
     isSubsystem?: boolean;
+    stage?: 'concept' | 'design';
 }
 
 export interface ConnectorType {

@@ -6,23 +6,32 @@
         if (index === -1) {
             navigateToRoot();
         } else {
-            // Pop stack to the desired level
-            packageViewStack.update(stack => stack.slice(0, index + 1));
+            // Pop stack back to the desired level
+            const stack = $packageViewStack;
+            const targetLength = index + 1;
+            
+            // Navigate back repeatedly until we reach the target depth
+            let currentLength = stack.length;
+            while (currentLength > targetLength) {
+                navigateBack();
+                currentLength--;
+            }
         }
     }
 </script>
 
-{#if $packageViewStack.length > 0}
-    <div class="breadcrumb-container">
-        <button 
-            class="breadcrumb-item"
-            on:click={() => navigateToIndex(-1)}
-        >
-            <Home size={14} />
-            <span>Root</span>
-        </button>
-        
-        {#each $packageViewStack as view, index}
+<div class="breadcrumb-container">
+    <button 
+        class="breadcrumb-item"
+        class:active={$packageViewStack.length === 0}
+        on:click={() => navigateToIndex(-1)}
+    >
+        <Home size={14} />
+        <span>Root</span>
+    </button>
+    
+    {#each $packageViewStack as view, index}
+        {#if view.packageId !== 'root'}
             <ChevronRight size={14} class="breadcrumb-separator" />
             <button 
                 class="breadcrumb-item"
@@ -31,9 +40,9 @@
             >
                 <span>{view.packageName}</span>
             </button>
-        {/each}
-    </div>
-{/if}
+        {/if}
+    {/each}
+</div>
 
 <style>
     .breadcrumb-container {

@@ -9,6 +9,8 @@
             declaredName: string;
             comment: string;
             id: string;
+            nodes?: import('@xyflow/svelte').Node[];
+            edges?: import('@xyflow/svelte').Edge[];
         };
 
 

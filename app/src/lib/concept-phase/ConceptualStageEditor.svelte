@@ -33,7 +33,9 @@
               data: {
                   declaredName: 'New Package',
                   comment: '',
-                  id: `PKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
+                  id: `PKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                  nodes: [],  // Initialize with empty nodes array
+                  edges: []   // Initialize with empty edges array
               }
           };
 

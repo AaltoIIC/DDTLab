@@ -3,9 +3,15 @@
     import ConceptualStageSidebar from './ConceptualStageSidebar.svelte';
     import PackageBreadcrumb from './PackageBreadcrumb.svelte';
     import { currentSystemMeta } from '$lib/stores/stores';
-    import { currentPackageView } from './packageStore';
+    import { currentPackageView, packageViewStack } from './packageStore';
+    import { onMount } from 'svelte';
     
     let conceptEditor: ConceptualStageEditor;
+    
+    // Clear the package view stack when component mounts (start at root)
+    onMount(() => {
+        packageViewStack.set([]);
+    });
 </script>
 
 <div class="conceptual-layout">

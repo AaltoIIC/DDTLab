@@ -38,8 +38,8 @@
                   id: `PKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
                   nodes: [],  // Initialize with empty nodes array
                   edges: [],   // Initialize with empty edges array
-                  inputs: ['input1'],  // Initialize with one input
-                  outputs: ['output1'] // Initialize with one output
+                  inputs: [],  // Initialize with one input
+                  outputs: [] // Initialize with one output
               }
           };
 
@@ -83,8 +83,8 @@
                 declaredName: 'New Item',
                 comment: '',
                 id: `ITM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-                inputs: ['input'],  // Initialize with one default input
-                outputs: ['output'] // Initialize with one default output
+                inputs: [],  // Initialize with one default input
+                outputs: [] // Initialize with one default output
             }
         };
 

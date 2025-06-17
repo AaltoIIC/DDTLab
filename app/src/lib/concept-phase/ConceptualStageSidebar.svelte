@@ -6,15 +6,26 @@
     import { currentPackageView, navigateToRoot } from './packageStore';
     import { currentNodes } from '$lib/stores/stores';
     import { get } from 'svelte/store';
+    import ConceptLibrarySlider from './ConceptLibrarySlider.svelte';
 
     export let onAddPackage: () => void;
     export let onAddPart: () => void = () => {};
     export let onAddItem: () => void = () => {};
     
+    let isLibraryOpen = false;
+    
     function handleHomeClick() {
         // Reset to root level before navigating away
         navigateToRoot();
         goto('/');
+    }
+    
+    function toggleLibrary() {
+        isLibraryOpen = !isLibraryOpen;
+    }
+    
+    function closeLibrary() {
+        isLibraryOpen = false;
     }
 </script>
 
@@ -53,12 +64,14 @@
         <div class="separator"></div>
 
         <Tooltip text="Concept Library" position="right">
-            <button class="menu-option" on:click={() => {}}>
+            <button class="menu-option" class:active={isLibraryOpen} on:click={toggleLibrary}>
                 <Library class="option-icon" />
             </button>
         </Tooltip>
     </div>
 </div>
+
+<ConceptLibrarySlider isOpen={isLibraryOpen} onClose={closeLibrary} />
 
   <style>
       .sidebar {
@@ -102,6 +115,14 @@
       
       .menu-option:hover {
           background-color: #f3f4f6;
+      }
+      
+      .menu-option.active {
+          background-color: #dbeafe;
+      }
+      
+      .menu-option.active .option-icon {
+          color: #2563eb;
       }
 
       .menu-option-logo {

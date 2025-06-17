@@ -88,12 +88,17 @@
         addToHistory();
     }
 
-  const handleDoubleClick = () => {
-      if (isSubsystemNode(data)) {
-          const subsystemData = data.element as SubsystemDataType;
-          if (subsystemData.subsystemId) {
-              navigateToSubsystem(subsystemData.subsystemId, id);
-          }
+  const handleDoubleClick = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        const interactiveTags = ['INPUT', 'BUTTON', 'SELECT', 'TEXTAREA'];
+        if (interactiveTags.includes(target.tagName) ||
+            target.closest('button, input, select, textarea, svg, .delete-btn') 
+        ) { return; }
+        if (isSubsystemNode(data)) {
+            const subsystemData = data.element as SubsystemDataType;
+            if (subsystemData.subsystemId) {
+                navigateToSubsystem(subsystemData.subsystemId, id);
+            }
       }
   };
 
@@ -102,8 +107,9 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div class="main-element-node {data.element.type === 'system' ? 'subsystem' : ''}" 
-    on:mouseenter={() => {hover = true;}}
-    on:mouseleave={() => hover = false} on:dblclick={handleDoubleClick}
+    onmouseenter={() => {hover = true;}}
+    onmouseleave={() => hover = false} 
+    ondblclick={handleDoubleClick}
     style:cursor={isSubsystemNode(data) ? 'pointer' : 'move'}>
     
     <div class="element-node-inner">
@@ -111,8 +117,8 @@
             <input class="main-name-field {isNameError ? 'error' : ''}"
                 type="text"
                 bind:value={currentName}
-                on:input={validateName}
-                on:blur={saveName} />
+                oninput={validateName}
+                onblur={saveName} />
             <div class="element-type-cont {data.element.type === 'system' ? 'subsystem-type' : ''}">
                 {#if data.element.type === 'system'}
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -144,7 +150,7 @@
     </div>
     <div class="delete-btn-wrapper">
         <button class="delete-btn {hover ? 'hover' : ''}" aria-label="Delete"
-        on:click={deleteComponent}
+        onclick={deleteComponent}
         style="transform: scale({1/zoomLevel});">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />

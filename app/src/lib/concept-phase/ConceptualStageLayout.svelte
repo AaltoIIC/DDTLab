@@ -33,6 +33,7 @@
     <ConceptualStageSidebar 
         onAddPackage={() => conceptEditor?.addPackageNode()} 
         onAddPart={() => conceptEditor?.addPartNode()}
+        onAddItem={() => conceptEditor?.addItemNode()}
     />
     
     <div class="main-content">

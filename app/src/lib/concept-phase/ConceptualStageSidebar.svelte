@@ -2,11 +2,14 @@
     import { goto } from '$app/navigation';
     import Tooltip from '$lib/Tooltip.svelte';
     import Package from "lucide-svelte/icons/package";
-    import { Component } from "lucide-svelte";
+    import { Component, Box } from "lucide-svelte";
     import { currentPackageView, navigateToRoot } from './packageStore';
+    import { currentNodes } from '$lib/stores/stores';
+    import { get } from 'svelte/store';
 
     export let onAddPackage: () => void;
     export let onAddPart: () => void = () => {};
+    export let onAddItem: () => void = () => {};
     
     function handleHomeClick() {
         // Reset to root level before navigating away
@@ -32,11 +35,19 @@
                 </button>
             </Tooltip>
         {:else}
-            <Tooltip text="Add Part" position="right">
-                <button class="menu-option" on:click={onAddPart}>
-                    <Component class="option-icon" />
-                </button>
-            </Tooltip>
+            {#if $currentPackageView.packageId.startsWith('part-')}
+                <Tooltip text="Add Item" position="right">
+                    <button class="menu-option" on:click={onAddItem}>
+                        <Box class="option-icon" />
+                    </button>
+                </Tooltip>
+            {:else}
+                <Tooltip text="Add Part" position="right">
+                    <button class="menu-option" on:click={onAddPart}>
+                        <Component class="option-icon" />
+                    </button>
+                </Tooltip>
+            {/if}
         {/if}
     </div>
 </div>

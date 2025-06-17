@@ -4,6 +4,7 @@
     import '@xyflow/svelte/dist/style.css';
     import PackageNode from './nodes/PackageNode.svelte';
     import PartNode from './nodes/PartNode.svelte';
+    import ItemNode from './nodes/ItemNode.svelte';
     import RemovableEdge from './edges/RemovableEdge.svelte';
     import { get } from 'svelte/store';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
@@ -17,6 +18,7 @@
     const nodeTypes = {
         package: PackageNode,
         part: PartNode,
+        item: ItemNode,
     } as {} as NodeTypes;
     
     const edgeTypes = {
@@ -55,11 +57,32 @@
             data: {
                 declaredName: 'New Part',
                 comment: '',
-                id: `PRT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
+                id: `PRT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                nodes: [],  // Initialize with empty nodes array
+                edges: []   // Initialize with empty edges array
             }
         };
 
         console.log('Creating new part:', newNode);
+        currentNodes.update(n => [...n, newNode]);
+        addToHistory(); // Track changes for undo/redo
+    }
+    
+    export function addItemNode() {
+        console.log('addItemNode called');
+        const existingNodes = get(currentNodes);
+        const newNode: Node = {
+            id: `item-${Date.now()}`,
+            type: 'item',
+            position: { x: 250, y: 100 + existingNodes.length * 150 },
+            data: {
+                declaredName: 'New Item',
+                comment: '',
+                id: `ITM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
+            }
+        };
+
+        console.log('Creating new item:', newNode);
         currentNodes.update(n => [...n, newNode]);
         addToHistory(); // Track changes for undo/redo
     } 

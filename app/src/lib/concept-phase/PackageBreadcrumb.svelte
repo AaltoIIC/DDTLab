@@ -1,21 +1,13 @@
 <script lang="ts">
     import { ChevronRight, Home } from 'lucide-svelte';
-    import { packageViewStack, navigateToRoot, navigateBack } from './packageStore';
+    import { packageViewStack, navigateToRoot, navigateToLevel } from './packageStore';
 
     function navigateToIndex(index: number) {
         if (index === -1) {
             navigateToRoot();
         } else {
-            // Pop stack back to the desired level
-            const stack = $packageViewStack;
-            const targetLength = index + 1;
-            
-            // Navigate back repeatedly until we reach the target depth
-            let currentLength = stack.length;
-            while (currentLength > targetLength) {
-                navigateBack();
-                currentLength--;
-            }
+            // Use the new navigateToLevel function for proper multi-level navigation
+            navigateToLevel(index);
         }
     }
 </script>

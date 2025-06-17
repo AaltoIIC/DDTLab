@@ -103,6 +103,62 @@ export function navigateBack() {
     }
 }
 
+// Navigate to a specific level in the stack
+export function navigateToLevel(targetIndex: number) {
+    const stack = get(packageViewStack);
+    const currentLevel = stack.length - 1;
+    
+    // If we're already at the target level, do nothing
+    if (targetIndex === currentLevel) {
+        return;
+    }
+    
+    // Save current content to the stack
+    if (currentLevel >= 0) {
+        let updatedStack = [...stack];
+        updatedStack[currentLevel] = {
+            ...updatedStack[currentLevel],
+            nodes: get(currentNodes),
+            edges: get(currentEdges)
+        };
+        
+        // Now propagate changes up the stack
+        // Start from current level and work backwards to update all parent references
+        for (let i = currentLevel; i > targetIndex; i--) {
+            const childView = updatedStack[i];
+            const parentView = updatedStack[i - 1];
+            
+            // Update the child node in the parent's nodes array
+            parentView.nodes = parentView.nodes.map(node => {
+                if (node.id === childView.packageId) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            nodes: childView.nodes,
+                            edges: childView.edges
+                        }
+                    };
+                }
+                return node;
+            });
+        }
+        
+        // Update the stack with all the propagated changes
+        packageViewStack.set(updatedStack);
+        
+        // Now navigate to the target level
+        const targetView = updatedStack[targetIndex];
+        currentNodes.set(targetView.nodes);
+        currentEdges.set(targetView.edges);
+        
+        // Trim the stack to the target level
+        packageViewStack.update(s => s.slice(0, targetIndex + 1));
+    }
+    
+    addToHistory();
+}
+
 // Clear navigation (go to root)
 export function navigateToRoot() {
     const stack = get(packageViewStack);
@@ -112,34 +168,14 @@ export function navigateToRoot() {
         return;
     }
     
-    // Save current content if we're in a package
-    if (stack.length > 1) {
-        const currentView = stack[stack.length - 1];
-        const currentPackageId = currentView.packageId;
-        
-        // Update the package node in its parent level with current content
-        const parentIndex = stack.length - 2;
-        const parentView = stack[parentIndex];
-        
-        parentView.nodes = parentView.nodes.map(node => {
-            if (node.id === currentPackageId) {
-                return {
-                    ...node,
-                    data: {
-                        ...node.data,
-                        nodes: get(currentNodes),
-                        edges: get(currentEdges)
-                    }
-                };
-            }
-            return node;
-        });
-    }
+    // Use navigateToLevel to properly save all intermediate content
+    navigateToLevel(0);
     
-    // Restore root level content
-    if (stack.length > 0 && stack[0].packageId === 'root') {
-        currentNodes.set(stack[0].nodes);
-        currentEdges.set(stack[0].edges);
+    // Restore root level content and clear stack
+    if (stack[0].packageId === 'root') {
+        const rootView = get(packageViewStack)[0];
+        currentNodes.set(rootView.nodes);
+        currentEdges.set(rootView.edges);
     }
     
     packageViewStack.set([]);

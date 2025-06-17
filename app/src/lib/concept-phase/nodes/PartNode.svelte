@@ -1,9 +1,10 @@
 <script lang="ts">
-    import { Handle, Position } from '@xyflow/svelte';
     import { Component, X } from 'lucide-svelte';
     import type { NodeProps } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
     import { navigateToPackage } from '../packageStore';
+    import { createPortHandlers, type PortData } from './portUtils';
+    import PortHandles from './PortHandles.svelte';
 
     type PartData = {
         declaredName: string;
@@ -11,12 +12,19 @@
         id: string;
         nodes?: import('@xyflow/svelte').Node[];
         edges?: import('@xyflow/svelte').Edge[];
-    };
+    } & PortData;
 
     export let data: PartData;
     export let selected: boolean = false;
     export let id: string;
     export let dragging: boolean = false;
+
+    // Initialize inputs/outputs if not present
+    $: if (!data.inputs) data.inputs = [];
+    $: if (!data.outputs) data.outputs = [];
+
+    // Create port handlers
+    const { addInput, removeInput, addOutput, removeOutput } = createPortHandlers<PartData>(id);
 
     let editingName = false;
     let editingComment = false;
@@ -73,10 +81,18 @@
         console.log('Opening part:', id, data);
         navigateToPackage(id, data.declaredName || 'Unnamed Part');
     }
+
 </script>
 
 <div class="part-node" class:selected on:dblclick|stopPropagation={handleDoubleClick}>
-    <Handle type="target" position={Position.Left} />
+    <!-- Input Handles -->
+    <PortHandles 
+        nodeId={id}
+        ports={data.inputs || []}
+        type="input"
+        onAdd={addInput}
+        onRemove={removeInput}
+    />
 
     <div class="part-header">
         <div class="part-header-left">
@@ -161,7 +177,14 @@
         </div>
     </div>
 
-    <Handle type="source" position={Position.Right} />
+    <!-- Output Handles -->
+    <PortHandles 
+        nodeId={id}
+        ports={data.outputs || []}
+        type="output"
+        onAdd={addOutput}
+        onRemove={removeOutput}
+    />
 </div>
 
 <style>

@@ -1,9 +1,10 @@
   <script lang="ts">
-      import { Handle, Position } from '@xyflow/svelte';
       import { Package, X } from 'lucide-svelte';
       import type { NodeProps } from '@xyflow/svelte';
       import { navigateToPackage } from '../packageStore';
       import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
+      import { createPortHandlers, type PortData } from './portUtils';
+      import PortHandles from './PortHandles.svelte';
 
         type PackageData = {
             declaredName: string;
@@ -11,7 +12,7 @@
             id: string;
             nodes?: import('@xyflow/svelte').Node[];
             edges?: import('@xyflow/svelte').Edge[];
-        };
+        } & PortData;
 
 
     export let data: PackageData;
@@ -19,6 +20,13 @@
 
     export let id: NodeProps['id'];
     export let dragging: NodeProps['dragging'];
+
+    // Initialize inputs/outputs if not present
+    $: if (!data.inputs) data.inputs = [];
+    $: if (!data.outputs) data.outputs = [];
+
+    // Create port handlers
+    const { addInput, removeInput, addOutput, removeOutput } = createPortHandlers<PackageData>(id);
 
     let editingName = false;
     let editingComment = false;
@@ -78,7 +86,14 @@
   </script>
 
     <div class="package-node" on:dblclick|stopPropagation={handleDoubleClick}>
-      <Handle type="target" position={Position.Left} />
+      <!-- Input Handles -->
+      <PortHandles 
+          nodeId={id}
+          ports={data.inputs || []}
+          type="input"
+          onAdd={addInput}
+          onRemove={removeInput}
+      />
 
       <div class="package-header">
           <div class="package-header-left">
@@ -165,7 +180,14 @@
           </div>
       </div>
 
-      <Handle type="source" position={Position.Right} />
+      <!-- Output Handles -->
+      <PortHandles 
+          nodeId={id}
+          ports={data.outputs || []}
+          type="output"
+          onAdd={addOutput}
+          onRemove={removeOutput}
+      />
   </div>
 
     <style>

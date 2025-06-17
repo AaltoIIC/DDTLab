@@ -37,7 +37,9 @@
                   comment: '',
                   id: `PKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
                   nodes: [],  // Initialize with empty nodes array
-                  edges: []   // Initialize with empty edges array
+                  edges: [],   // Initialize with empty edges array
+                  inputs: ['input1'],  // Initialize with one input
+                  outputs: ['output1'] // Initialize with one output
               }
           };
 
@@ -59,7 +61,9 @@
                 comment: '',
                 id: `PRT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
                 nodes: [],  // Initialize with empty nodes array
-                edges: []   // Initialize with empty edges array
+                edges: [],   // Initialize with empty edges array
+                inputs: [],  // Initialize with no inputs
+                outputs: [] // Initialize with no outputs
             }
         };
 
@@ -78,7 +82,9 @@
             data: {
                 declaredName: 'New Item',
                 comment: '',
-                id: `ITM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
+                id: `ITM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                inputs: ['input'],  // Initialize with one default input
+                outputs: ['output'] // Initialize with one default output
             }
         };
 

@@ -1,19 +1,27 @@
 <script lang="ts">
-    import { Handle, Position } from '@xyflow/svelte';
     import { Box, X } from 'lucide-svelte';
     import type { NodeProps } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
+    import { createPortHandlers, type PortData } from './portUtils';
+    import PortHandles from './PortHandles.svelte';
 
     type ItemData = {
         declaredName: string;
         comment: string;
         id: string;
-    };
+    } & PortData;
 
     export let data: ItemData;
     export let selected: boolean = false;
     export let id: string;
     export let dragging: boolean = false;
+
+    // Initialize inputs/outputs if not present
+    $: if (!data.inputs) data.inputs = [];
+    $: if (!data.outputs) data.outputs = [];
+
+    // Create port handlers
+    const { addInput, removeInput, addOutput, removeOutput } = createPortHandlers<ItemData>(id);
 
     let editingName = false;
     let editingComment = false;
@@ -58,10 +66,18 @@
         currentEdges.update(edges => edges.filter(e => e.source !== id && e.target !== id));
         addToHistory();
     }
+
 </script>
 
 <div class="item-node" class:selected>
-    <Handle type="target" position={Position.Left} />
+    <!-- Input Handles -->
+    <PortHandles 
+        nodeId={id}
+        ports={data.inputs || []}
+        type="input"
+        onAdd={addInput}
+        onRemove={removeInput}
+    />
 
     <div class="item-header">
         <div class="item-header-left">
@@ -146,7 +162,14 @@
         </div>
     </div>
 
-    <Handle type="source" position={Position.Right} />
+    <!-- Output Handles -->
+    <PortHandles 
+        nodeId={id}
+        ports={data.outputs || []}
+        type="output"
+        onAdd={addOutput}
+        onRemove={removeOutput}
+    />
 </div>
 
 <style>

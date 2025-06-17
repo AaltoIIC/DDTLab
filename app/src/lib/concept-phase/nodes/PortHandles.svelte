@@ -82,6 +82,8 @@
             {/if}
             
             {#if showInterfaceSelector === i}
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
                 <div class="interface-selector" on:click|stopPropagation>
                     <div class="interface-categories">
                         <button 

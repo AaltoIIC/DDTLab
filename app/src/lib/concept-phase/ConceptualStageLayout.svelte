@@ -1,7 +1,9 @@
 <script lang="ts">
     import ConceptualStageEditor from './ConceptualStageEditor.svelte';
     import ConceptualStageSidebar from './ConceptualStageSidebar.svelte';
+    import PackageBreadcrumb from './PackageBreadcrumb.svelte';
     import { currentSystemMeta } from '$lib/stores/stores';
+    import { currentPackageView } from './packageStore';
     
     let conceptEditor: ConceptualStageEditor;
 </script>
@@ -16,8 +18,13 @@
             </div>
             <div class="stage-indicator">
                 Conceptual Stage
+                {#if $currentPackageView}
+                    - {$currentPackageView.packageName}
+                {/if}
             </div>
         </div>
+        
+        <PackageBreadcrumb />
         
         <ConceptualStageEditor bind:this={conceptEditor} />
     </div>

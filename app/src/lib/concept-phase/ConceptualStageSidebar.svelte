@@ -2,8 +2,11 @@
     import { goto } from '$app/navigation';
     import Tooltip from '$lib/Tooltip.svelte';
     import Package from "lucide-svelte/icons/package";
+    import { Component } from "lucide-svelte";
+    import { currentPackageView } from './packageStore';
 
     export let onAddPackage: () => void;
+    export let onAddPart: () => void = () => {};
 </script>
 
 <div class="sidebar">
@@ -16,21 +19,29 @@
             </button>
         </Tooltip>
 
-        <Tooltip text="Add Package" position="right">
-            <button class="menu-option" on:click={onAddPackage}>
-                <Package class="option-icon" />
-            </button>
-        </Tooltip>
+        {#if !$currentPackageView}
+            <Tooltip text="Add Package" position="right">
+                <button class="menu-option" on:click={onAddPackage}>
+                    <Package class="option-icon" />
+                </button>
+            </Tooltip>
+        {:else}
+            <Tooltip text="Add Part" position="right">
+                <button class="menu-option" on:click={onAddPart}>
+                    <Component class="option-icon" />
+                </button>
+            </Tooltip>
+        {/if}
     </div>
 </div>
 
   <style>
       .sidebar {
           position: fixed;
-          top: 15px;
+          top: 110px;
           left: 15px;
           width: 68px;
-          height: calc(100vh - 30px);
+          height: 520px;
           background-color: white;
           border: 1px solid #e5e7eb;
           border-radius: 8px;

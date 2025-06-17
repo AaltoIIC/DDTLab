@@ -3,13 +3,20 @@
     import type { Node, Edge, NodeTypes, EdgeTypes } from '@xyflow/svelte';
     import '@xyflow/svelte/dist/style.css';
     import PackageNode from './nodes/PackageNode.svelte';
+    import PartNode from './nodes/PartNode.svelte';
     import RemovableEdge from './edges/RemovableEdge.svelte';
     import { get } from 'svelte/store';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
+    import { 
+        currentPackageView, 
+        navigateToPackage,
+        updateCurrentPackageContent 
+    } from './packageStore';
     
 
     const nodeTypes = {
         package: PackageNode,
+        part: PartNode,
     } as {} as NodeTypes;
     
     const edgeTypes = {

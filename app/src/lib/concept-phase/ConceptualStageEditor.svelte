@@ -1,6 +1,6 @@
 <script lang="ts">
     import { SvelteFlow, Background, Controls, MiniMap } from '@xyflow/svelte';
-    import type { Node, Edge, NodeTypes, EdgeTypes } from '@xyflow/svelte';
+    import type { Node, Edge, NodeTypes, EdgeTypes, Connection } from '@xyflow/svelte';
     import '@xyflow/svelte/dist/style.css';
     import PackageNode from './nodes/PackageNode.svelte';
     import PartNode from './nodes/PartNode.svelte';
@@ -13,6 +13,8 @@
         navigateToPackage,
         updateCurrentPackageContent 
     } from './packageStore';
+    import { checkCompatibility } from './interfaces';
+    import type { Port } from './interfaces';
     
 
     const nodeTypes = {
@@ -91,6 +93,76 @@
         console.log('Creating new item:', newNode);
         currentNodes.update(n => [...n, newNode]);
         addToHistory(); // Track changes for undo/redo
+    }
+    
+    function findPort(node: Node | undefined, handleId: string | null | undefined): Port | undefined {
+        if (!node || !handleId) return undefined;
+        
+        // Handle ID format: nodeId-type-portName
+        const parts = handleId.split('-');
+        const type = parts[parts.length - 2]; // input or output
+        const portName = parts[parts.length - 1];
+        
+        const ports = type === 'input' ? node.data.inputs : node.data.outputs;
+        return ports?.find((p: Port) => p.name === portName);
+    }
+    
+    function onConnect(params: Connection) {
+        console.log('Connection params:', params);
+        
+        const nodes = get(currentNodes);
+        const sourceNode = nodes.find(n => n.id === params.source);
+        const targetNode = nodes.find(n => n.id === params.target);
+        
+        const sourcePort = findPort(sourceNode, params.sourceHandle);
+        const targetPort = findPort(targetNode, params.targetHandle);
+        
+        console.log('Source port:', sourcePort, 'Target port:', targetPort);
+        
+        if (sourcePort && targetPort) {
+            const compatibility = checkCompatibility(sourcePort, targetPort);
+            console.log('Compatibility check:', compatibility);
+            
+            if (compatibility.status === 'incompatible') {
+                // Show error message - in a real app, you'd show a toast or modal
+                alert(`Cannot connect: ${compatibility.message}`);
+                return;
+            }
+            
+            // Create edge with compatibility metadata
+            const newEdge: Edge = {
+                id: `${params.source}-${params.target}-${Date.now()}`,
+                source: params.source!,
+                target: params.target!,
+                sourceHandle: params.sourceHandle,
+                targetHandle: params.targetHandle,
+                type: 'default',
+                data: {
+                    compatibility: compatibility.status,
+                    adapterRequired: compatibility.adapterType,
+                    message: compatibility.message
+                }
+            };
+            
+            currentEdges.update(edges => [...edges, newEdge]);
+        } else {
+            // No interface types specified, allow connection
+            const newEdge: Edge = {
+                id: `${params.source}-${params.target}-${Date.now()}`,
+                source: params.source!,
+                target: params.target!,
+                sourceHandle: params.sourceHandle,
+                targetHandle: params.targetHandle,
+                type: 'default',
+                data: {
+                    compatibility: 'direct'
+                }
+            };
+            
+            currentEdges.update(edges => [...edges, newEdge]);
+        }
+        
+        addToHistory();
     } 
 </script>
 
@@ -106,7 +178,7 @@
               defaultEdgeOptions={{
                   type: 'default',
               }}
-              onconnect={() => addToHistory()}
+              {onConnect}
           >
               <Background />
               <Controls />

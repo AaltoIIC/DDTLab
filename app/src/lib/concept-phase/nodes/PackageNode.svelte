@@ -27,7 +27,15 @@
     $: if (!data.outputs) data.outputs = [];
 
     // Create port handlers
-    const { addInput, removeInput, addOutput, removeOutput } = createPortHandlers<PackageData>(id);
+    const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<PackageData>(id);
+    
+    function handleUpdateInputInterface(index: number, interfaceType: string | undefined) {
+        updatePortInterface('input', index, interfaceType);
+    }
+    
+    function handleUpdateOutputInterface(index: number, interfaceType: string | undefined) {
+        updatePortInterface('output', index, interfaceType);
+    }
     
     // Update React Flow internals when data changes
     const updateNodeInternals = useUpdateNodeInternals();
@@ -100,6 +108,7 @@
           type="input"
           onAdd={addInput}
           onRemove={removeInput}
+          onUpdateInterface={handleUpdateInputInterface}
       />
 
       <div class="package-header">
@@ -194,6 +203,7 @@
           type="output"
           onAdd={addOutput}
           onRemove={removeOutput}
+          onUpdateInterface={handleUpdateOutputInterface}
       />
   </div>
 

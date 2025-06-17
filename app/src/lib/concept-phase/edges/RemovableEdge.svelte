@@ -1,6 +1,7 @@
 <script lang="ts">
     import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/svelte';
     import { currentEdges, addToHistory } from '$lib/stores/stores';
+    import type { CompatibilityStatus } from '../interfaces';
     
     export let id: EdgeProps['id'];
     export let sourceX: EdgeProps['sourceX'];
@@ -10,6 +11,7 @@
     export let sourcePosition: EdgeProps['sourcePosition'];
     export let targetPosition: EdgeProps['targetPosition'];
     export let markerEnd: EdgeProps['markerEnd'];
+    export let data: { compatibility?: CompatibilityStatus; adapterRequired?: string; message?: string } = {};
     
     $: edgePath = getSmoothStepPath({
         sourceX,
@@ -23,19 +25,37 @@
     $: centerX = (sourceX + targetX) / 2;
     $: centerY = (sourceY + targetY) / 2;
     
+    // Determine edge color based on compatibility
+    $: strokeColor = {
+        'direct': '#10b981',     // green
+        'adapter': '#f59e0b',    // yellow
+        'incompatible': '#ef4444' // red
+    }[data?.compatibility || 'direct'];
+    
+    $: strokeWidth = data?.compatibility === 'adapter' ? 3 : 2;
+    
     function handleDelete() {
         currentEdges.update(edges => edges.filter(edge => edge.id !== id));
         addToHistory();
     }
 </script>
 
-<BaseEdge path={edgePath[0]} {markerEnd} />
+<BaseEdge 
+    path={edgePath[0]} 
+    {markerEnd} 
+    style="stroke: {strokeColor}; stroke-width: {strokeWidth}px;"
+/>
 
 <EdgeLabelRenderer>
     <div
         style="position: absolute; transform: translate(-50%, -50%); transform: translate({centerX}px, {centerY}px)"
         class="nodrag nopan edge-button-container"
     >
+        {#if data?.adapterRequired}
+            <div class="adapter-label">
+                {data.adapterRequired}
+            </div>
+        {/if}
         <button class="edge-button" on:click={handleDelete}>
             ×
         </button>
@@ -69,5 +89,20 @@
         border-color: #ef4444;
         color: white;
         transform: scale(1.1);
+    }
+    
+    .adapter-label {
+        position: absolute;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 10px;
+        color: #92400e;
+        white-space: nowrap;
+        pointer-events: none;
     }
 </style>

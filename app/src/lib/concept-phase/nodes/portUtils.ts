@@ -1,9 +1,10 @@
 import { get } from 'svelte/store';
 import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
+import type { Port } from '../interfaces';
 
 export interface PortData {
-    inputs?: string[];
-    outputs?: string[];
+    inputs?: Port[];
+    outputs?: Port[];
 }
 
 // Generate stable port IDs
@@ -12,15 +13,15 @@ export function generatePortId(): string {
 }
 
 // Generate user-friendly port names
-export function generatePortName(type: 'input' | 'output', existingPorts: string[]): string {
+export function generatePortName(type: 'input' | 'output', existingPorts: Port[]): string {
     let index = 1;
     let portName = `${type}${index}`;
     
     // Find a unique name
-    while (existingPorts.some(port => port.includes(portName))) {
+    while (existingPorts.some(port => port.name.includes(portName))) {
         index++;
         portName = `${type}${index}`;
-        }
+    }
     
     return portName;
 }
@@ -33,7 +34,12 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
                     const nodeData = node.data as T;
                     const inputs = [...(nodeData.inputs || [])];
                     const portName = generatePortName('input', inputs);
-                    inputs.push(portName);
+                    const newPort: Port = {
+                        id: generatePortId(),
+                        name: portName,
+                        interfaceType: undefined
+                    };
+                    inputs.push(newPort);
                     // Force node re-creation by changing the node itself
                     return {
                         ...node,
@@ -76,9 +82,9 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
             });
             // Remove any edges connected to this input
             const nodeData = node.data as T;
-            const portId = nodeData.inputs?.[index];
-            if (portId) {
-                const handleId = `${nodeId}-input-${portId}`;
+            const port = nodeData.inputs?.[index];
+            if (port) {
+                const handleId = `${nodeId}-input-${port.name}`;
                 currentEdges.update(edges => edges.filter(e => e.targetHandle !== handleId));
             }
             addToHistory();
@@ -92,7 +98,12 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
                     const nodeData = node.data as T;
                     const outputs = [...(nodeData.outputs || [])];
                     const portName = generatePortName('output', outputs);
-                    outputs.push(portName);
+                    const newPort: Port = {
+                        id: generatePortId(),
+                        name: portName,
+                        interfaceType: undefined
+                    };
+                    outputs.push(newPort);
                     return {
                         ...node,
                         data: {
@@ -130,19 +141,46 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
             });
             // Remove any edges connected to this output
             const nodeData = node.data as T;
-            const portId = nodeData.outputs?.[index];
-            if (portId) {
-                const handleId = `${nodeId}-output-${portId}`;
+            const port = nodeData.outputs?.[index];
+            if (port) {
+                const handleId = `${nodeId}-output-${port.name}`;
                 currentEdges.update(edges => edges.filter(e => e.sourceHandle !== handleId));
             }
             addToHistory();
         }
     }
 
+    function updatePortInterface(type: 'input' | 'output', index: number, interfaceType: string | undefined) {
+        currentNodes.update(nodes => {
+            return nodes.map(node => {
+                if (node.id === nodeId) {
+                    const nodeData = node.data as T;
+                    const ports = type === 'input' ? [...(nodeData.inputs || [])] : [...(nodeData.outputs || [])];
+                    if (ports[index]) {
+                        ports[index] = {
+                            ...ports[index],
+                            interfaceType
+                        };
+                        return {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                [type === 'input' ? 'inputs' : 'outputs']: ports
+                            }
+                        };
+                    }
+                }
+                return node;
+            });
+        });
+        addToHistory();
+    }
+
     return {
         addInput,
         removeInput,
         addOutput,
-        removeOutput
+        removeOutput,
+        updatePortInterface
     };
 }

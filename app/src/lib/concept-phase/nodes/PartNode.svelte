@@ -1,14 +1,13 @@
 <script lang="ts">
     import { Handle, Position } from '@xyflow/svelte';
-    import { Component } from 'lucide-svelte';
+    import { Component, X } from 'lucide-svelte';
     import type { NodeProps } from '@xyflow/svelte';
-    import { currentNodes, addToHistory } from '$lib/stores/stores';
+    import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
 
     type PartData = {
         declaredName: string;
         comment: string;
         id: string;
-        type?: string;
     };
 
     export let data: PartData;
@@ -17,9 +16,9 @@
     export let dragging: boolean = false;
 
     let editingName = false;
-    let editingType = false;
+    let editingComment = false;
     let tempName = data.declaredName;
-    let tempType = data.type || '';
+    let tempComment = data.comment || '';
 
     function updateNodeData(field: string, value: string) {
         currentNodes.update(nodes => {
@@ -48,18 +47,34 @@
         editingName = false;
     }
 
-    function handleTypeEdit() {
-        updateNodeData('type', tempType.trim());
-        editingType = false;
+    function handleCommentEdit() {
+        updateNodeData('comment', tempComment.trim());
+        editingComment = false;
+    }
+
+    function handleDelete() {
+        // Remove this node and any connected edges
+        currentNodes.update(nodes => nodes.filter(n => n.id !== id));
+        currentEdges.update(edges => edges.filter(e => e.source !== id && e.target !== id));
+        addToHistory();
     }
 </script>
 
 <div class="part-node" class:selected>
-    <Handle type="target" position={Position.Top} />
+    <Handle type="target" position={Position.Left} />
 
     <div class="part-header">
-        <Component size={14} />
-        <span class="part-title">Part</span>
+        <div class="part-header-left">
+            <Component size={14} />
+            <span class="part-title">Part</span>
+        </div>
+        <button 
+            class="delete-button" 
+            on:click|stopPropagation={handleDelete}
+            title="Delete part"
+        >
+            <X size={12} />
+        </button>
     </div>
 
     <div class="part-content">
@@ -95,18 +110,18 @@
         </div>
 
         <div class="part-field">
-            <span class="field-label">Type:</span>
-            {#if editingType}
+            <span class="field-label">Comment:</span>
+            {#if editingComment}
                 <input
                     class="field-input"
                     type="text"
-                    bind:value={tempType}
-                    on:blur={handleTypeEdit}
+                    bind:value={tempComment}
+                    on:blur={handleCommentEdit}
                     on:keydown={(e) => {
-                        if (e.key === 'Enter') handleTypeEdit();
+                        if (e.key === 'Enter') handleCommentEdit();
                         if (e.key === 'Escape') {
-                            tempType = data.type || '';
-                            editingType = false;
+                            tempComment = data.comment || '';
+                            editingComment = false;
                         }
                     }}
                     on:click|stopPropagation
@@ -116,11 +131,11 @@
                 <span 
                     class="field-value editable" 
                     on:click|stopPropagation={() => {
-                        editingType = true;
-                        tempType = data.type || '';
+                        editingComment = true;
+                        tempComment = data.comment || '';
                     }}
                 >
-                    {data.type || 'Click to set type'}
+                    {data.comment || 'Click to add comment'}
                 </span>
             {/if}
         </div>
@@ -131,7 +146,7 @@
         </div>
     </div>
 
-    <Handle type="source" position={Position.Bottom} />
+    <Handle type="source" position={Position.Right} />
 </div>
 
 <style>
@@ -159,10 +174,16 @@
     .part-header {
         display: flex;
         align-items: center;
-        gap: 6px;
+        justify-content: space-between;
         margin-bottom: 10px;
         padding-bottom: 6px;
         border-bottom: 1px solid #e5e7eb;
+    }
+
+    .part-header-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
 
     .part-title {
@@ -222,5 +243,23 @@
 
     .field-input:focus {
         box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+    }
+
+    .delete-button {
+        background: none;
+        border: none;
+        padding: 3px;
+        cursor: pointer;
+        color: #9ca3af;
+        border-radius: 3px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .delete-button:hover {
+        background-color: #fee2e2;
+        color: #dc2626;
     }
 </style>

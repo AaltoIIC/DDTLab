@@ -2,20 +2,38 @@
     import ConceptualStageEditor from './ConceptualStageEditor.svelte';
     import ConceptualStageSidebar from './ConceptualStageSidebar.svelte';
     import PackageBreadcrumb from './PackageBreadcrumb.svelte';
-    import { currentSystemMeta } from '$lib/stores/stores';
-    import { currentPackageView, packageViewStack } from './packageStore';
-    import { onMount } from 'svelte';
+    import { currentSystemMeta, currentNodes, currentEdges } from '$lib/stores/stores';
+    import { currentPackageView, packageViewStack, navigateToRoot } from './packageStore';
+    import { onMount, onDestroy } from 'svelte';
+    import { get } from 'svelte/store';
     
     let conceptEditor: ConceptualStageEditor;
     
     // Clear the package view stack when component mounts (start at root)
     onMount(() => {
+        // If we have a stack, save current state and go to root
+        if (get(packageViewStack).length > 0) {
+            navigateToRoot();
+        }
         packageViewStack.set([]);
+    });
+    
+    // Clean up when leaving the editor
+    onDestroy(() => {
+        // Save current state if needed
+        const stack = get(packageViewStack);
+        if (stack.length > 0) {
+            // Save any pending changes
+            navigateToRoot();
+        }
     });
 </script>
 
 <div class="conceptual-layout">
-    <ConceptualStageSidebar onAddPackage={() => conceptEditor?.addPackageNode()} />
+    <ConceptualStageSidebar 
+        onAddPackage={() => conceptEditor?.addPackageNode()} 
+        onAddPart={() => conceptEditor?.addPartNode()}
+    />
     
     <div class="main-content">
         <div class="top-bar">

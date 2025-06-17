@@ -43,6 +43,25 @@
           currentNodes.update(n => [...n, newNode]);
           addToHistory(); // Track changes for undo/redo
           currentNodes.subscribe(n => console.log('Total nodes:', n.length))();
+    }
+    
+    export function addPartNode() {
+        console.log('addPartNode called');
+        const existingNodes = get(currentNodes);
+        const newNode: Node = {
+            id: `part-${Date.now()}`,
+            type: 'part',
+            position: { x: 250, y: 100 + existingNodes.length * 150 },
+            data: {
+                declaredName: 'New Part',
+                comment: '',
+                id: `PRT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
+            }
+        };
+
+        console.log('Creating new part:', newNode);
+        currentNodes.update(n => [...n, newNode]);
+        addToHistory(); // Track changes for undo/redo
     } 
 </script>
 

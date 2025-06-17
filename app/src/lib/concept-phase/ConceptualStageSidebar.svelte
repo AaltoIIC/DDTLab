@@ -3,16 +3,22 @@
     import Tooltip from '$lib/Tooltip.svelte';
     import Package from "lucide-svelte/icons/package";
     import { Component } from "lucide-svelte";
-    import { currentPackageView } from './packageStore';
+    import { currentPackageView, navigateToRoot } from './packageStore';
 
     export let onAddPackage: () => void;
     export let onAddPart: () => void = () => {};
+    
+    function handleHomeClick() {
+        // Reset to root level before navigating away
+        navigateToRoot();
+        goto('/');
+    }
 </script>
 
 <div class="sidebar">
     <div class="top-buttons">
         <Tooltip text="Home" position="right">
-            <button class="menu-option-logo" on:click={() => {goto('/')}}>
+            <button class="menu-option-logo" on:click={handleHomeClick}>
                 <div class="logo-cont">
                     <img class="logo-icon" src="/icon.svg" alt="Home" />
                 </div>

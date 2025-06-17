@@ -6,6 +6,25 @@ export interface PortData {
     outputs?: string[];
 }
 
+// Generate stable port IDs
+export function generatePortId(): string {
+    return `port-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+// Generate user-friendly port names
+export function generatePortName(type: 'input' | 'output', existingPorts: string[]): string {
+    let index = 1;
+    let portName = `${type}${index}`;
+    
+    // Find a unique name
+    while (existingPorts.some(port => port.includes(portName))) {
+        index++;
+        portName = `${type}${index}`;
+        }
+    
+    return portName;
+}
+
 export function createPortHandlers<T extends PortData>(nodeId: string) {
     function addInput() {
         currentNodes.update(nodes => {
@@ -13,12 +32,18 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
                 if (node.id === nodeId) {
                     const nodeData = node.data as T;
                     const inputs = [...(nodeData.inputs || [])];
-                    inputs.push(`input${inputs.length + 1}`);
+                    const portName = generatePortName('input', inputs);
+                    inputs.push(portName);
+                    // Force node re-creation by changing the node itself
                     return {
                         ...node,
+                        id: node.id, // Keep same ID
+                        type: node.type,
+                        position: { ...node.position }, // Clone position
                         data: {
                             ...node.data,
-                            inputs
+                            inputs,
+                            _forceUpdate: Date.now() // Add timestamp to force re-render
                         }
                     };
                 }
@@ -51,9 +76,9 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
             });
             // Remove any edges connected to this input
             const nodeData = node.data as T;
-            const portName = nodeData.inputs?.[index];
-            if (portName) {
-                const handleId = `${nodeId}-input-${portName}`;
+            const portId = nodeData.inputs?.[index];
+            if (portId) {
+                const handleId = `${nodeId}-input-${portId}`;
                 currentEdges.update(edges => edges.filter(e => e.targetHandle !== handleId));
             }
             addToHistory();
@@ -66,7 +91,8 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
                 if (node.id === nodeId) {
                     const nodeData = node.data as T;
                     const outputs = [...(nodeData.outputs || [])];
-                    outputs.push(`output${outputs.length + 1}`);
+                    const portName = generatePortName('output', outputs);
+                    outputs.push(portName);
                     return {
                         ...node,
                         data: {
@@ -104,9 +130,9 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
             });
             // Remove any edges connected to this output
             const nodeData = node.data as T;
-            const portName = nodeData.outputs?.[index];
-            if (portName) {
-                const handleId = `${nodeId}-output-${portName}`;
+            const portId = nodeData.outputs?.[index];
+            if (portId) {
+                const handleId = `${nodeId}-output-${portId}`;
                 currentEdges.update(edges => edges.filter(e => e.sourceHandle !== handleId));
             }
             addToHistory();

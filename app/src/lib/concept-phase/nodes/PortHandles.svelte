@@ -27,7 +27,7 @@
             <Handle 
                 type={type === 'input' ? 'target' : 'source'}
                 position={position}
-                id={`${nodeId}-${type}-${i}`}
+                id={`${nodeId}-${type}-${port}`}
                 style="top: {i * 25}px;"
                 isConnectable={true}
             />

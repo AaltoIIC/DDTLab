@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Box, X } from 'lucide-svelte';
     import type { NodeProps } from '@xyflow/svelte';
+    import { useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
@@ -22,6 +23,12 @@
 
     // Create port handlers
     const { addInput, removeInput, addOutput, removeOutput } = createPortHandlers<ItemData>(id);
+    
+    // Update React Flow internals when data changes
+    const updateNodeInternals = useUpdateNodeInternals();
+    $: if (data) {
+        updateNodeInternals(id);
+    }
 
     let editingName = false;
     let editingComment = false;

@@ -50,8 +50,12 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
                 });
             });
             // Remove any edges connected to this input
-            const handleId = `${nodeId}-input-${index}`;
-            currentEdges.update(edges => edges.filter(e => e.targetHandle !== handleId));
+            const nodeData = node.data as T;
+            const portName = nodeData.inputs?.[index];
+            if (portName) {
+                const handleId = `${nodeId}-input-${portName}`;
+                currentEdges.update(edges => edges.filter(e => e.targetHandle !== handleId));
+            }
             addToHistory();
         }
     }
@@ -99,8 +103,12 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
                 });
             });
             // Remove any edges connected to this output
-            const handleId = `${nodeId}-output-${index}`;
-            currentEdges.update(edges => edges.filter(e => e.sourceHandle !== handleId));
+            const nodeData = node.data as T;
+            const portName = nodeData.outputs?.[index];
+            if (portName) {
+                const handleId = `${nodeId}-output-${portName}`;
+                currentEdges.update(edges => edges.filter(e => e.sourceHandle !== handleId));
+            }
             addToHistory();
         }
     }

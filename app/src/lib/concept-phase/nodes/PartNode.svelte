@@ -6,11 +6,18 @@
     import { navigateToPackage } from '../packageStore';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
+    import MetadataEditor from '../MetadataEditor.svelte';
+
+    type MetadataItem = {
+        key: string;
+        value: string;
+    };
 
     type PartData = {
         declaredName: string;
         comment: string;
         id: string;
+        metadata?: MetadataItem[];
         nodes?: import('@xyflow/svelte').Node[];
         edges?: import('@xyflow/svelte').Edge[];
     } & PortData;
@@ -23,6 +30,7 @@
     // Initialize inputs/outputs if not present
     $: if (!data.inputs) data.inputs = [];
     $: if (!data.outputs) data.outputs = [];
+    $: if (!data.metadata) data.metadata = [];
 
     // Create port handlers
     const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<PartData>(id);
@@ -46,7 +54,7 @@
     let tempName = data.declaredName;
     let tempComment = data.comment || '';
 
-    function updateNodeData(field: string, value: string) {
+    function updateNodeData(field: string, value: any) {
         currentNodes.update(nodes => {
             return nodes.map(node => {
                 if (node.id === id) {
@@ -191,6 +199,11 @@
             <span class="field-label">ID:</span>
             <span class="field-value">{data.id}</span>
         </div>
+        
+        <MetadataEditor 
+            metadata={data.metadata || []}
+            onUpdate={(metadata) => updateNodeData('metadata', metadata)}
+        />
     </div>
 
     <!-- Output Handles -->

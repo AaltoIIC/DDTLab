@@ -1,4 +1,4 @@
-import type { InterfaceDefinition } from './types';
+import type { InterfaceDefinition, InterfaceCategory } from './types';
 
 export const standardInterfaces: Record<string, InterfaceDefinition> = {
   // Electrical interfaces

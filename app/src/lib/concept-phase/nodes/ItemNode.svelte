@@ -5,11 +5,18 @@
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
+    import MetadataEditor from '../MetadataEditor.svelte';
+
+    type MetadataItem = {
+        key: string;
+        value: string;
+    };
 
     type ItemData = {
         declaredName: string;
         comment: string;
         id: string;
+        metadata?: MetadataItem[];
     } & PortData;
 
     export let data: ItemData;
@@ -20,6 +27,7 @@
     // Initialize inputs/outputs if not present
     $: if (!data.inputs) data.inputs = [];
     $: if (!data.outputs) data.outputs = [];
+    $: if (!data.metadata) data.metadata = [];
 
     // Create port handlers
     const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<ItemData>(id);
@@ -43,7 +51,7 @@
     let tempName = data.declaredName;
     let tempComment = data.comment || '';
 
-    function updateNodeData(field: string, value: string) {
+    function updateNodeData(field: string, value: any) {
         currentNodes.update(nodes => {
             return nodes.map(node => {
                 if (node.id === id) {
@@ -176,6 +184,11 @@
             <span class="field-label">ID:</span>
             <span class="field-value">{data.id}</span>
         </div>
+        
+        <MetadataEditor 
+            metadata={data.metadata || []}
+            onUpdate={(metadata) => updateNodeData('metadata', metadata)}
+        />
     </div>
 
     <!-- Output Handles -->

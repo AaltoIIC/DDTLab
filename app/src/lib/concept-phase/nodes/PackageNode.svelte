@@ -6,11 +6,18 @@
       import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
       import { createPortHandlers, type PortData } from './portUtils';
       import PortHandles from './PortHandles.svelte';
+    import MetadataEditor from '../MetadataEditor.svelte';
+
+        type MetadataItem = {
+            key: string;
+            value: string;
+        };
 
         type PackageData = {
             declaredName: string;
             comment: string;
             id: string;
+            metadata?: MetadataItem[];
             nodes?: import('@xyflow/svelte').Node[];
             edges?: import('@xyflow/svelte').Edge[];
         } & PortData;
@@ -25,6 +32,7 @@
     // Initialize inputs/outputs if not present
     $: if (!data.inputs) data.inputs = [];
     $: if (!data.outputs) data.outputs = [];
+    $: if (!data.metadata) data.metadata = [];
 
     // Create port handlers
     const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<PackageData>(id);
@@ -48,7 +56,7 @@
     let tempName = data.declaredName;
     let tempComment = data.comment;
 
-    function updateNodeData(field: 'declaredName' | 'comment', value: string) {
+    function updateNodeData(field: 'declaredName' | 'comment' | 'metadata', value: any) {
         currentNodes.update(nodes => {
             return nodes.map(node => {
                 if (node.id === id) {
@@ -64,6 +72,10 @@
             });
         });
         addToHistory();
+    }
+    
+    function handleMetadataUpdate(metadata: Array<{ key: string; value: string }>) {
+        updateNodeData('metadata', metadata);
     }
 
     function handleNameEdit() {
@@ -194,6 +206,11 @@
               <span class="field-label">ID:</span>
               <span class="field-value">{data.id}</span>
           </div>
+          
+          <MetadataEditor 
+              metadata={data.metadata || []}
+              onUpdate={handleMetadataUpdate}
+          />
       </div>
 
       <!-- Output Handles -->

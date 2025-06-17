@@ -9,9 +9,6 @@
 </script>
 
 <div class="conceptual-editor">
-    <div class="conceptual-header">
-        <h2>Conceptual Stage</h2>
-    </div>
     
     <div class="flow-container">
         <SvelteFlow

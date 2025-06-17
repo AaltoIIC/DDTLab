@@ -2,7 +2,7 @@
     import { goto } from '$app/navigation';
     import Tooltip from '$lib/Tooltip.svelte';
     import Package from "lucide-svelte/icons/package";
-    import { Component, Box } from "lucide-svelte";
+    import { Component, Box, Library } from "lucide-svelte";
     import { currentPackageView, navigateToRoot } from './packageStore';
     import { currentNodes } from '$lib/stores/stores';
     import { get } from 'svelte/store';
@@ -49,6 +49,14 @@
                 </Tooltip>
             {/if}
         {/if}
+
+        <div class="separator"></div>
+
+        <Tooltip text="Concept Library" position="right">
+            <button class="menu-option" on:click={() => {}}>
+                <Library class="option-icon" />
+            </button>
+        </Tooltip>
     </div>
 </div>
 
@@ -139,5 +147,12 @@
       
       .menu-option:hover .option-icon {
           color: #1f2937;
+      }
+
+      .separator {
+          width: 32px;
+          height: 1px;
+          background-color: #e5e7eb;
+          margin: 8px 0;
       }
   </style>

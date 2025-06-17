@@ -89,6 +89,7 @@ export const setCurrentSystem = (id: string) => {
         });
         currentNodes.set(system.nodes);
         currentEdges.set(system.edges);
+        currentReqs.set(system.requirements || []);
     }
 }
 

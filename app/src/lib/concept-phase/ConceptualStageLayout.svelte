@@ -2,10 +2,12 @@
     import ConceptualStageEditor from './ConceptualStageEditor.svelte';
     import ConceptualStageSidebar from './ConceptualStageSidebar.svelte';
     import { currentSystemMeta } from '$lib/stores/stores';
+    
+    let conceptEditor: ConceptualStageEditor;
 </script>
 
 <div class="conceptual-layout">
-    <ConceptualStageSidebar />
+    <ConceptualStageSidebar onAddPackage={() => conceptEditor?.addPackageNode()} />
     
     <div class="main-content">
         <div class="top-bar">
@@ -17,7 +19,7 @@
             </div>
         </div>
         
-        <ConceptualStageEditor />
+        <ConceptualStageEditor bind:this={conceptEditor} />
     </div>
 </div>
 
@@ -34,7 +36,6 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        margin-left: 110px;
     }
     
     .top-bar {

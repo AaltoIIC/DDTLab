@@ -2,6 +2,8 @@
     import { goto } from '$app/navigation';
     import Tooltip from '$lib/Tooltip.svelte';
     import Package from "lucide-svelte/icons/package";
+
+    export let onAddPackage: () => void;
 </script>
 
 <div class="sidebar">
@@ -15,9 +17,7 @@
         </Tooltip>
 
         <Tooltip text="Add Package" position="right">
-            <button class="menu-option" on:click={() => {
-                console.log('Add package clicked');
-                }}>
+            <button class="menu-option" on:click={onAddPackage}>
                 <Package class="option-icon" />
             </button>
         </Tooltip>
@@ -26,23 +26,46 @@
 
   <style>
       .sidebar {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 110px;
-          height: 100%;
-          background: white;
-          border-right: 1px solid #e5e7eb;
-          z-index: 1;
+          position: fixed;
+          top: 15px;
+          left: 15px;
+          width: 68px;
+          height: calc(100vh - 30px);
+          background-color: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          z-index: 100;
           display: flex;
           flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+          padding: 12px 0;
+          box-sizing: border-box;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
 
       .top-buttons {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding-top: 10px;
+          gap: 8px;
+      }
+
+      .menu-option {
+          border: none;
+          background: none;
+          cursor: pointer;
+          width: 42px;
+          height: 42px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          transition: all 0.2s;
+      }
+      
+      .menu-option:hover {
+          background-color: #f3f4f6;
       }
 
       .menu-option-logo {
@@ -58,34 +81,6 @@
           justify-content: center;
       }
 
-      .menu-option {
-          border: none;
-          background: none;
-          cursor: pointer;
-          width: 42px;
-          height: 42px;
-          margin-bottom: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: var(--main-border-radius);
-          transition: background-color 0.2s;
-      }
-
-      .menu-option:hover {
-          background-color: rgba(0, 0, 0, 0.05);
-      }
-
-      .logo-cont {
-          background-color: var(--main-dark-color);
-          border-radius: var(--main-border-radius);
-          width: 42px;
-          height: 42px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-      }
-
       .logo-icon {
           width: 22px;
           height: 22px;
@@ -93,10 +88,28 @@
           opacity: 0.9;
       }
 
+      .logo-cont {
+          background-color: #1f2937;
+          border-radius: 8px;
+          width: 42px;
+          height: 42px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+      }
+      
+      .logo-cont:hover {
+          background-color: #374151;
+      }
+
       .option-icon {
           width: 20px;
           height: 20px;
-          stroke: rgba(0, 0, 0, 0.9);
-          stroke-width: 1.2;
+          color: #6b7280;
+      }
+      
+      .menu-option:hover .option-icon {
+          color: #1f2937;
       }
   </style>

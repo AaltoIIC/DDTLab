@@ -104,7 +104,8 @@
         const portName = parts[parts.length - 1];
         
         const ports = type === 'input' ? node.data.inputs : node.data.outputs;
-        return ports?.find((p: Port) => p.name === portName);
+        if (!Array.isArray(ports)) return undefined;
+        return ports.find((p: Port) => p.name === portName);
     }
     
     function onConnect(params: Connection) {
@@ -123,13 +124,7 @@
             const compatibility = checkCompatibility(sourcePort, targetPort);
             console.log('Compatibility check:', compatibility);
             
-            if (compatibility.status === 'incompatible') {
-                // Show error message - in a real app, you'd show a toast or modal
-                alert(`Cannot connect: ${compatibility.message}`);
-                return;
-            }
-            
-            // Create edge with compatibility metadata
+            // Create edge with compatibility metadata (including incompatible ones)
             const newEdge: Edge = {
                 id: `${params.source}-${params.target}-${Date.now()}`,
                 source: params.source!,
@@ -178,7 +173,7 @@
               defaultEdgeOptions={{
                   type: 'default',
               }}
-              {onConnect}
+              onconnect={onConnect}
           >
               <Background />
               <Controls />

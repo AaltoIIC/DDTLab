@@ -51,9 +51,14 @@
         style="position: absolute; transform: translate(-50%, -50%); transform: translate({centerX}px, {centerY}px)"
         class="nodrag nopan edge-button-container"
     >
-        {#if data?.adapterRequired}
+        {#if data?.compatibility === 'adapter' && data?.adapterRequired}
             <div class="adapter-label">
                 {data.adapterRequired}
+            </div>
+        {/if}
+        {#if data?.compatibility === 'incompatible' && data?.message}
+            <div class="incompatible-label">
+                {data.message}
             </div>
         {/if}
         <button class="edge-button" on:click={handleDelete}>
@@ -104,5 +109,21 @@
         color: #92400e;
         white-space: nowrap;
         pointer-events: none;
+    }
+    
+    .incompatible-label {
+        position: absolute;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #fee2e2;
+        border: 1px solid #ef4444;
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 10px;
+        color: #991b1b;
+        white-space: nowrap;
+        pointer-events: none;
+        font-weight: 500;
     }
 </style>

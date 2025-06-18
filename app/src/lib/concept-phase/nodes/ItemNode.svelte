@@ -6,6 +6,8 @@
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
     import MetadataEditor from '../MetadataEditor.svelte';
+    import ContextMenu from '../ContextMenu.svelte';
+    import { get } from 'svelte/store';
 
     type MetadataItem = {
         key: string;
@@ -91,9 +93,55 @@
         addToHistory();
     }
 
+    // Context menu handling
+    let showContextMenu = false;
+    let contextMenuX = 0;
+    let contextMenuY = 0;
+    let nodeElement: HTMLDivElement;
+
+    function handleContextMenu(event: MouseEvent) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Position relative to the node
+        const rect = nodeElement.getBoundingClientRect();
+        contextMenuX = event.clientX - rect.left + nodeElement.scrollLeft;
+        contextMenuY = event.clientY - rect.top + nodeElement.scrollTop;
+        
+        showContextMenu = true;
+    }
+
+    function handleDuplicate() {
+        const nodes = get(currentNodes);
+        const currentNode = nodes.find(n => n.id === id);
+        
+        if (currentNode) {
+            const newNode = {
+                ...currentNode,
+                id: `item-${Date.now()}`,
+                position: {
+                    x: currentNode.position.x + 20,
+                    y: currentNode.position.y + 20
+                },
+                data: {
+                    ...currentNode.data,
+                    id: `ITM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                    inputs: Array.isArray(currentNode.data.inputs) ? currentNode.data.inputs.map(input => ({...input})) : [],
+                    outputs: Array.isArray(currentNode.data.outputs) ? currentNode.data.outputs.map(output => ({...output})) : [],
+                    metadata: Array.isArray(currentNode.data.metadata) ? currentNode.data.metadata.map(meta => ({...meta})) : []
+                },
+                selected: false
+            };
+            
+            currentNodes.update(n => [...n, newNode]);
+            addToHistory();
+        }
+        showContextMenu = false;
+    }
+
 </script>
 
-<div class="item-node" class:selected>
+<div class="item-node" class:selected on:contextmenu={handleContextMenu} bind:this={nodeElement}>
     <!-- Input Handles -->
     <PortHandles 
         nodeId={id}
@@ -218,10 +266,18 @@
         onRemove={removeOutput}
         onUpdateInterface={handleUpdateOutputInterface}
     />
+    
+    <ContextMenu 
+        bind:visible={showContextMenu}
+        x={contextMenuX}
+        y={contextMenuY}
+        on:duplicate={handleDuplicate}
+    />
 </div>
 
 <style>
     .item-node {
+        position: relative;
         background: white;
         border: 2px solid #e5e7eb;
         border-radius: 4px;

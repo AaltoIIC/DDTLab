@@ -3,7 +3,7 @@
     import Connectors from "./Connectors.svelte";
     import { type ElementDataType, type SubsystemDataType } from "$lib/types/types";
     import {
-        isNameValid
+        isNameValid, generateId
      } from "$lib/helpers";
     import {
         currentEdges,
@@ -14,10 +14,26 @@
         navigateToSubsystem,
         isSubsystemNode,
         componentLinks,
-        fmiComponents
+        fmiComponents,
+        createSubsystem
     } from "$lib/stores/stores";
     import VSSoSelect from "./VSSoSelect.svelte";
-   
+    import { onMount } from 'svelte';
+    import { get } from 'svelte/store';
+    import _ from 'lodash';
+
+    const portal = (node: HTMLElement) => {
+        // move the node into document.body
+        document.body.appendChild(node);
+        return {
+            destroy() {
+            // clean up when the node is removed
+            node.parentNode?.removeChild(node);
+            }
+        };
+    }
+
+
     let hover = false;
 
     export let id: string;
@@ -88,7 +104,23 @@
         addToHistory();
     }
 
-  const handleDoubleClick = (e: MouseEvent) => {
+    const duplicateComponent = () => {
+        const nodes = get(currentNodes);
+        const original = nodes.find(n => n.id === id);
+        if (!original) return;
+        
+        const duplicatedNode = _.cloneDeep(original);
+        duplicatedNode.id = `${original.id} (Copy)`;
+        duplicatedNode.position = {
+            x: original.position.x + 40,
+            y: original.position.y + 40,
+        },
+
+    currentNodes.update(nodes => [...nodes, duplicatedNode]);
+    addToHistory();
+    }
+
+    const handleDoubleClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
         const interactiveTags = ['INPUT', 'BUTTON', 'SELECT', 'TEXTAREA'];
         if (interactiveTags.includes(target.tagName) ||
@@ -100,16 +132,54 @@
                 navigateToSubsystem(subsystemData.subsystemId, id);
             }
       }
-  };
+    }
 
+    let showDropdown = false;
+    let menuX = 0;
+    let menuY = 0;
+    const options = ['Duplicate', 'Delete'];
+    const openContextMenu = (e: MouseEvent) => {
+        e.preventDefault();
+        menuX = e.clientX;
+        menuY = e.clientY;
+        showDropdown = true;
+    }
+
+    const handleOptionClick = (option: string) => {
+        switch (option) {
+            case 'Duplicate':
+                duplicateComponent();
+                break;
+            case 'Delete':
+                deleteComponent();
+                break;
+            default:
+                // Impossible to reach
+        }
+        showDropdown = false;
+    }
+
+    const handleOutsideClick = (e: MouseEvent) => {
+        if (!(e.target as HTMLElement).closest(".custom-menu")) {
+            showDropdown = false;
+        }
+    }
+
+    onMount(() => {
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    });
     $$restProps
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="main-element-node {data.element.type === 'system' ? 'subsystem' : ''}" 
     onmouseenter={() => {hover = true;}}
     onmouseleave={() => hover = false} 
     ondblclick={handleDoubleClick}
+    oncontextmenu={openContextMenu} 
+    onclick={() => showDropdown = false}
     style:cursor={isSubsystemNode(data) ? 'pointer' : 'move'}>
     
     <div class="element-node-inner">
@@ -159,8 +229,39 @@
     </div>
     <Connectors type="output" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
     <Connectors type="input" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
+
 </div>
+
+{#if showDropdown}
+        <div 
+            class="menu-overlay"
+            use:portal
+            >
+            <ul
+                class="custom-menu"
+                style="top: {menuY}px; left: {menuX}px;"
+            >
+                {#each options as option}
+                <li
+                    class="custom-menu-item"
+                    onclick={() =>handleOptionClick(option)}
+                >
+                    {option}
+                </li>
+                {/each}
+            </ul>
+        </div>
+{/if}
+
 <style>
+    .menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 999;
+    }
     .delete-btn svg {
         width: 20px;
         height: 20px;
@@ -292,5 +393,21 @@
         width: 14px;
         height: 14px;
         color: white;
+    }
+    .custom-menu {
+        position: absolute;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        min-width: 150px;
+    }
+    .custom-menu-item {
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+    .custom-menu-item:hover {
+        background-color: #f0f0f0;
     }
 </style>

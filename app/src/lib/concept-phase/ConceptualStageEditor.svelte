@@ -41,6 +41,7 @@
                   declaredName: 'New Package',
                   comment: '',
                   id: `PKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                  orderStatus: 'Not Ordered',
                   metadata: [],  // Initialize with empty metadata array
                   nodes: [],  // Initialize with empty nodes array
                   edges: [],   // Initialize with empty edges array
@@ -66,6 +67,7 @@
                 declaredName: 'New Part',
                 comment: '',
                 id: `PRT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                orderStatus: 'Not Ordered',
                 metadata: [],  // Initialize with empty metadata array
                 nodes: [],  // Initialize with empty nodes array
                 edges: [],   // Initialize with empty edges array
@@ -90,6 +92,7 @@
                 declaredName: 'New Item',
                 comment: '',
                 id: `ITM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                orderStatus: 'Not Ordered',
                 metadata: [],  // Initialize with empty metadata array
                 inputs: [],  // Initialize with one default input
                 outputs: [] // Initialize with one default output

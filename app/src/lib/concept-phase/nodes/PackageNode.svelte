@@ -17,6 +17,7 @@
             declaredName: string;
             comment: string;
             id: string;
+            orderStatus?: 'Delivered' | 'Pending' | 'Order Placed' | 'Confirmed' | 'In Production / In-House' | 'Not Ordered';
             metadata?: MetadataItem[];
             nodes?: import('@xyflow/svelte').Node[];
             edges?: import('@xyflow/svelte').Edge[];
@@ -206,6 +207,23 @@
               <span class="field-label">ID:</span>
               <span class="field-value">{data.id}</span>
           </div>
+
+          <div class="package-field">
+              <span class="field-label">Order status:</span>
+              <select 
+                  class="field-select"
+                  value={data.orderStatus || 'Not Ordered'}
+                  on:change={(e) => updateNodeData('orderStatus', e.target.value)}
+                  on:click|stopPropagation
+              >
+                  <option value="Delivered">Delivered</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Order Placed">Order Placed</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="In Production / In-House">In Production / In-House</option>
+                  <option value="Not Ordered">Not Ordered</option>
+              </select>
+          </div>
           
           <MetadataEditor 
               metadata={data.metadata || []}
@@ -309,6 +327,28 @@
 
       .field-input:focus {
           box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+      }
+
+      .field-select {
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
+          padding: 2px 8px;
+          font-size: 12px;
+          font-family: inherit;
+          color: #111827;
+          background: white;
+          outline: none;
+          cursor: pointer;
+          flex: 1;
+      }
+
+      .field-select:focus {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+      }
+
+      .field-select:hover {
+          background-color: #f3f4f6;
       }
 
       .delete-button {

@@ -16,6 +16,7 @@
     import { checkCompatibility } from './interfaces';
     import type { Port } from './interfaces';
     import { instantiateSimpleComponent } from './utils/simpleInstantiation';
+    import { instantiateTemplate } from './utils/templateInstantiation';
     import { onMount } from 'svelte';
     
 
@@ -138,12 +139,12 @@
         event.preventDefault();
         event.stopPropagation();
         
-        const componentData = event.dataTransfer?.getData('application/json');
-        if (!componentData) return;
+        const jsonData = event.dataTransfer?.getData('application/json');
+        if (!jsonData) return;
         
         try {
-            const component = JSON.parse(componentData);
-            console.log('Dropping component:', component);
+            const data = JSON.parse(jsonData);
+            console.log('Dropping data:', data);
             
             // Get drop position relative to the flow container
             const rect = flowContainer.getBoundingClientRect();
@@ -154,8 +155,21 @@
             
             console.log('Drop position:', position);
             
-            // Instantiate the component
-            const { nodes: newNodes, edges: newEdges } = instantiateSimpleComponent(component, position);
+            let newNodes: Node[] = [];
+            let newEdges: Edge[] = [];
+            
+            // Check if it's a template or a simple component
+            if (data.type === 'template' && data.template) {
+                // Instantiate template
+                const result = instantiateTemplate(data.template, position);
+                newNodes = result.nodes;
+                newEdges = result.edges;
+            } else {
+                // Instantiate simple component
+                const result = instantiateSimpleComponent(data, position);
+                newNodes = result.nodes;
+                newEdges = result.edges;
+            }
             
             console.log('New nodes:', newNodes);
             
@@ -167,7 +181,7 @@
             
             addToHistory();
         } catch (error) {
-            console.error('Failed to instantiate component:', error);
+            console.error('Failed to instantiate:', error);
         }
     }
     

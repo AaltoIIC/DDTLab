@@ -2,17 +2,19 @@
     import { goto } from '$app/navigation';
     import Tooltip from '$lib/Tooltip.svelte';
     import Package from "lucide-svelte/icons/package";
-    import { Component, Box, Library } from "lucide-svelte";
+    import { Component, Box, Library, FileText } from "lucide-svelte";
     import { currentPackageView, navigateToRoot } from './packageStore';
     import { currentNodes } from '$lib/stores/stores';
     import { get } from 'svelte/store';
     import ConceptLibrarySlider from './ConceptLibrarySlider.svelte';
+    import ConceptTemplateSlider from './ConceptTemplateSlider.svelte';
 
     export let onAddPackage: () => void;
     export let onAddPart: () => void = () => {};
     export let onAddItem: () => void = () => {};
     
     let isLibraryOpen = false;
+    let isTemplateSliderOpen = false;
     
     function handleHomeClick() {
         // Reset to root level before navigating away
@@ -22,10 +24,24 @@
     
     function toggleLibrary() {
         isLibraryOpen = !isLibraryOpen;
+        if (isLibraryOpen) {
+            isTemplateSliderOpen = false;
+        }
     }
     
     function closeLibrary() {
         isLibraryOpen = false;
+    }
+    
+    function toggleTemplateSlider() {
+        isTemplateSliderOpen = !isTemplateSliderOpen;
+        if (isTemplateSliderOpen) {
+            isLibraryOpen = false;
+        }
+    }
+    
+    function closeTemplateSlider() {
+        isTemplateSliderOpen = false;
     }
 </script>
 
@@ -68,10 +84,17 @@
                 <Library class="option-icon" />
             </button>
         </Tooltip>
+
+        <Tooltip text="Saved Templates" position="right">
+            <button class="menu-option" class:active={isTemplateSliderOpen} on:click={toggleTemplateSlider}>
+                <FileText class="option-icon" />
+            </button>
+        </Tooltip>
     </div>
 </div>
 
 <ConceptLibrarySlider isOpen={isLibraryOpen} onClose={closeLibrary} />
+<ConceptTemplateSlider isOpen={isTemplateSliderOpen} onClose={closeTemplateSlider} />
 
   <style>
       .sidebar {

@@ -197,28 +197,41 @@
         
         console.log('Source port:', sourcePort, 'Target port:', targetPort);
         
+        let edgeData: any = { compatibility: 'direct' };
+        
         if (sourcePort && targetPort) {
             const compatibility = checkCompatibility(sourcePort, targetPort);
             console.log('Compatibility check:', compatibility);
             
-            // Create edge with compatibility metadata (including incompatible ones)
-            const newEdge: Edge = {
-                id: `${params.source}-${params.target}-${Date.now()}`,
-                source: params.source!,
-                target: params.target!,
-                sourceHandle: params.sourceHandle,
-                targetHandle: params.targetHandle,
-                type: 'default',
-                data: {
-                    compatibility: compatibility.status,
-                    adapterRequired: compatibility.adapterType,
-                    message: compatibility.message
-                }
+            edgeData = {
+                compatibility: compatibility.status,
+                adapterRequired: compatibility.adapterType,
+                message: compatibility.message
             };
-            
-            currentEdges.update(edges => [...edges, newEdge]);
+        }
+        
+        // Check if an edge already exists between these nodes with these handles
+        const existingEdges = get(currentEdges);
+        const duplicateEdgeIndex = existingEdges.findIndex(edge => 
+            edge.source === params.source &&
+            edge.target === params.target &&
+            edge.sourceHandle === params.sourceHandle &&
+            edge.targetHandle === params.targetHandle
+        );
+        
+        if (duplicateEdgeIndex !== -1) {
+            console.log('Updating existing edge with compatibility data');
+            // Update the existing edge with compatibility data
+            currentEdges.update(edges => {
+                const updatedEdges = [...edges];
+                updatedEdges[duplicateEdgeIndex] = {
+                    ...updatedEdges[duplicateEdgeIndex],
+                    data: edgeData
+                };
+                return updatedEdges;
+            });
         } else {
-            // No interface types specified, allow connection
+            // Create new edge with compatibility metadata
             const newEdge: Edge = {
                 id: `${params.source}-${params.target}-${Date.now()}`,
                 source: params.source!,
@@ -226,9 +239,7 @@
                 sourceHandle: params.sourceHandle,
                 targetHandle: params.targetHandle,
                 type: 'default',
-                data: {
-                    compatibility: 'direct'
-                }
+                data: edgeData
             };
             
             currentEdges.update(edges => [...edges, newEdge]);
@@ -240,7 +251,7 @@
 
 
 
-  <div class="conceptual-editor" on:dragover={handleDragOver} on:drop={handleDrop}>
+  <div class="conceptual-editor" on:dragover={handleDragOver} on:drop={handleDrop} role="application" aria-label="Conceptual stage editor">
       <div class="flow-container" bind:this={flowContainer}>
           <SvelteFlow
               nodes={currentNodes}

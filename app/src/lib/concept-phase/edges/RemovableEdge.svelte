@@ -26,6 +26,10 @@
     $: centerY = (sourceY + targetY) / 2;
     
     // Determine edge color based on compatibility
+    $: {
+        console.log('Edge data:', id, data);
+    }
+    
     $: strokeColor = {
         'direct': '#10b981',     // green
         'adapter': '#f59e0b',    // yellow
@@ -43,7 +47,7 @@
 <BaseEdge 
     path={edgePath[0]} 
     {markerEnd} 
-    style="stroke: {strokeColor}; stroke-width: {strokeWidth}px;"
+    style={`stroke: ${strokeColor}; stroke-width: ${strokeWidth}px;`}
 />
 
 <EdgeLabelRenderer>

@@ -500,9 +500,825 @@ export const pumpComponent: SimpleComponent = {
   }
 };
 
+// Component 4: Electric Motor for propulsion
+export const electricMotorComponent: SimpleComponent = {
+  id: 'electric-motor-component',
+  name: 'Electric Motor',
+  type: 'package',
+  data: {
+    declaredName: 'Electric Motor',
+    comment: 'Electric propulsion motor',
+    id: 'PKG-EMOTOR',
+    metadata: [
+      { key: 'power', value: '2MW' },
+      { key: 'voltage', value: '690V' }
+    ],
+    nodes: [
+      {
+        id: 'part-motor-unit',
+        type: 'part',
+        position: { x: 100, y: 100 },
+        data: {
+          declaredName: 'Motor Unit',
+          comment: 'Main motor assembly',
+          id: 'PRT-MOTOR',
+          metadata: [],
+          nodes: [
+            {
+              id: 'item-power-input',
+              type: 'item',
+              position: { x: 50, y: 100 },
+              data: {
+                declaredName: 'Power Input',
+                comment: '',
+                id: 'ITM-PWR-IN',
+                metadata: [],
+                inputs: [{
+                  id: 'port-elec-in',
+                  name: 'electrical',
+                  interfaceType: 'electrical'
+                }],
+                outputs: [{
+                  id: 'port-elec-out',
+                  name: 'electrical',
+                  interfaceType: 'electrical'
+                }]
+              }
+            },
+            {
+              id: 'item-motor-core',
+              type: 'item',
+              position: { x: 200, y: 100 },
+              data: {
+                declaredName: 'Motor Core',
+                comment: '',
+                id: 'ITM-MOTOR-CORE',
+                metadata: [],
+                inputs: [{
+                  id: 'port-elec-motor',
+                  name: 'electrical',
+                  interfaceType: 'electrical'
+                }],
+                outputs: [{
+                  id: 'port-mech-out',
+                  name: 'mechanical',
+                  interfaceType: 'mechanical'
+                }]
+              }
+            },
+            {
+              id: 'item-shaft-output',
+              type: 'item',
+              position: { x: 350, y: 100 },
+              data: {
+                declaredName: 'Shaft Output',
+                comment: '',
+                id: 'ITM-SHAFT',
+                metadata: [],
+                inputs: [{
+                  id: 'port-mech-in',
+                  name: 'mechanical',
+                  interfaceType: 'mechanical'
+                }],
+                outputs: [{
+                  id: 'port-shaft-out',
+                  name: 'shaft',
+                  interfaceType: 'mechanical'
+                }]
+              }
+            }
+          ],
+          edges: [
+            {
+              id: 'edge-power-to-motor',
+              source: 'item-power-input',
+              target: 'item-motor-core',
+              sourceHandle: 'item-power-input-output-electrical',
+              targetHandle: 'item-motor-core-input-electrical',
+              type: 'default',
+              data: { compatibility: 'direct' }
+            },
+            {
+              id: 'edge-motor-to-shaft',
+              source: 'item-motor-core',
+              target: 'item-shaft-output',
+              sourceHandle: 'item-motor-core-output-mechanical',
+              targetHandle: 'item-shaft-output-input-mechanical',
+              type: 'default',
+              data: { compatibility: 'direct' }
+            }
+          ],
+          inputs: [],
+          outputs: [{
+            id: 'part-shaft-out',
+            name: 'shaft',
+            interfaceType: 'mechanical'
+          }]
+        }
+      }
+    ],
+    edges: [],
+    inputs: [],
+    outputs: []
+  }
+};
+
+// Component 5: Propeller
+export const propellerComponent: SimpleComponent = {
+  id: 'propeller-component',
+  name: 'Propeller',
+  type: 'package',
+  data: {
+    declaredName: 'Propeller',
+    comment: 'Fixed pitch propeller',
+    id: 'PKG-PROP',
+    metadata: [
+      { key: 'diameter', value: '4.5m' },
+      { key: 'blades', value: '4' }
+    ],
+    nodes: [
+      {
+        id: 'part-propeller',
+        type: 'part',
+        position: { x: 100, y: 100 },
+        data: {
+          declaredName: 'Propeller Assembly',
+          comment: '',
+          id: 'PRT-PROP',
+          metadata: [],
+          nodes: [
+            {
+              id: 'item-shaft-input',
+              type: 'item',
+              position: { x: 50, y: 100 },
+              data: {
+                declaredName: 'Shaft Input',
+                comment: '',
+                id: 'ITM-SHAFT-IN',
+                metadata: [],
+                inputs: [{
+                  id: 'port-shaft-in',
+                  name: 'shaft',
+                  interfaceType: 'mechanical'
+                }],
+                outputs: [{
+                  id: 'port-rotation',
+                  name: 'rotation',
+                  interfaceType: 'mechanical'
+                }]
+              }
+            },
+            {
+              id: 'item-blade-assembly',
+              type: 'item',
+              position: { x: 200, y: 100 },
+              data: {
+                declaredName: 'Blade Assembly',
+                comment: '',
+                id: 'ITM-BLADES',
+                metadata: [],
+                inputs: [{
+                  id: 'port-rotation-in',
+                  name: 'rotation',
+                  interfaceType: 'mechanical'
+                }],
+                outputs: [{
+                  id: 'port-thrust',
+                  name: 'thrust',
+                  interfaceType: 'mechanical'
+                }]
+              }
+            }
+          ],
+          edges: [
+            {
+              id: 'edge-shaft-to-blades',
+              source: 'item-shaft-input',
+              target: 'item-blade-assembly',
+              sourceHandle: 'item-shaft-input-output-rotation',
+              targetHandle: 'item-blade-assembly-input-rotation',
+              type: 'default',
+              data: { compatibility: 'direct' }
+            }
+          ],
+          inputs: [{
+            id: 'part-shaft-in',
+            name: 'shaft',
+            interfaceType: 'mechanical'
+          }],
+          outputs: []
+        }
+      }
+    ],
+    edges: [],
+    inputs: [],
+    outputs: []
+  }
+};
+
+// Component 6: Power Management System (PMS)
+export const pmsComponent: SimpleComponent = {
+  id: 'pms-component',
+  name: 'Power Management System',
+  type: 'package',
+  data: {
+    declaredName: 'Power Management System',
+    comment: 'Automated power management and control',
+    id: 'PKG-PMS',
+    metadata: [
+      { key: 'type', value: 'Integrated PMS' },
+      { key: 'vendor', value: 'Generic' }
+    ],
+    nodes: [
+      {
+        id: 'part-pms-controller',
+        type: 'part',
+        position: { x: 100, y: 100 },
+        data: {
+          declaredName: 'PMS Controller',
+          comment: 'Main control unit',
+          id: 'PRT-PMS-CTRL',
+          metadata: [],
+          nodes: [
+            {
+              id: 'item-data-acquisition',
+              type: 'item',
+              position: { x: 50, y: 100 },
+              data: {
+                declaredName: 'Data Acquisition',
+                comment: '',
+                id: 'ITM-DAQ',
+                metadata: [],
+                inputs: [{
+                  id: 'port-sensor-data',
+                  name: 'sensors',
+                  interfaceType: 'data'
+                }],
+                outputs: [{
+                  id: 'port-processed-data',
+                  name: 'data',
+                  interfaceType: 'data'
+                }]
+              }
+            },
+            {
+              id: 'item-logic-processor',
+              type: 'item',
+              position: { x: 200, y: 100 },
+              data: {
+                declaredName: 'Logic Processor',
+                comment: '',
+                id: 'ITM-LOGIC',
+                metadata: [],
+                inputs: [{
+                  id: 'port-data-in',
+                  name: 'data',
+                  interfaceType: 'data'
+                }],
+                outputs: [{
+                  id: 'port-commands',
+                  name: 'commands',
+                  interfaceType: 'data'
+                }]
+              }
+            },
+            {
+              id: 'item-control-output',
+              type: 'item',
+              position: { x: 350, y: 100 },
+              data: {
+                declaredName: 'Control Output',
+                comment: '',
+                id: 'ITM-CTRL-OUT',
+                metadata: [],
+                inputs: [{
+                  id: 'port-commands-in',
+                  name: 'commands',
+                  interfaceType: 'data'
+                }],
+                outputs: [{
+                  id: 'port-control-signals',
+                  name: 'control',
+                  interfaceType: 'data'
+                }]
+              }
+            }
+          ],
+          edges: [
+            {
+              id: 'edge-daq-to-logic',
+              source: 'item-data-acquisition',
+              target: 'item-logic-processor',
+              sourceHandle: 'item-data-acquisition-output-data',
+              targetHandle: 'item-logic-processor-input-data',
+              type: 'default',
+              data: { compatibility: 'direct' }
+            },
+            {
+              id: 'edge-logic-to-output',
+              source: 'item-logic-processor',
+              target: 'item-control-output',
+              sourceHandle: 'item-logic-processor-output-commands',
+              targetHandle: 'item-control-output-input-commands',
+              type: 'default',
+              data: { compatibility: 'direct' }
+            }
+          ],
+          inputs: [{
+            id: 'part-sensor-in',
+            name: 'sensors',
+            interfaceType: 'data'
+          }],
+          outputs: [{
+            id: 'part-control-out',
+            name: 'control',
+            interfaceType: 'data'
+          }]
+        }
+      }
+    ],
+    edges: [],
+    inputs: [],
+    outputs: []
+  }
+};
+
+// Component 7: Automation Controller
+export const automationControllerComponent: SimpleComponent = {
+  id: 'automation-controller-component',
+  name: 'Automation Controller',
+  type: 'package',
+  data: {
+    declaredName: 'Automation Controller',
+    comment: 'Process automation and control',
+    id: 'PKG-AUTO-CTRL',
+    metadata: [
+      { key: 'type', value: 'PLC-based' },
+      { key: 'io-points', value: '256' }
+    ],
+    nodes: [
+      {
+        id: 'part-plc-unit',
+        type: 'part',
+        position: { x: 100, y: 100 },
+        data: {
+          declaredName: 'PLC Unit',
+          comment: 'Programmable logic controller',
+          id: 'PRT-PLC',
+          metadata: [],
+          nodes: [
+            {
+              id: 'item-input-module',
+              type: 'item',
+              position: { x: 50, y: 100 },
+              data: {
+                declaredName: 'Input Module',
+                comment: '',
+                id: 'ITM-INPUT-MOD',
+                metadata: [],
+                inputs: [{
+                  id: 'port-field-signals',
+                  name: 'field',
+                  interfaceType: 'data'
+                }],
+                outputs: [{
+                  id: 'port-digital-data',
+                  name: 'digital',
+                  interfaceType: 'data'
+                }]
+              }
+            },
+            {
+              id: 'item-cpu',
+              type: 'item',
+              position: { x: 200, y: 100 },
+              data: {
+                declaredName: 'CPU Module',
+                comment: '',
+                id: 'ITM-CPU',
+                metadata: [],
+                inputs: [{
+                  id: 'port-input-data',
+                  name: 'inputs',
+                  interfaceType: 'data'
+                }],
+                outputs: [{
+                  id: 'port-output-data',
+                  name: 'outputs',
+                  interfaceType: 'data'
+                }]
+              }
+            },
+            {
+              id: 'item-output-module',
+              type: 'item',
+              position: { x: 350, y: 100 },
+              data: {
+                declaredName: 'Output Module',
+                comment: '',
+                id: 'ITM-OUTPUT-MOD',
+                metadata: [],
+                inputs: [{
+                  id: 'port-digital-commands',
+                  name: 'commands',
+                  interfaceType: 'data'
+                }],
+                outputs: [{
+                  id: 'port-field-control',
+                  name: 'control',
+                  interfaceType: 'data'
+                }]
+              }
+            }
+          ],
+          edges: [
+            {
+              id: 'edge-input-to-cpu',
+              source: 'item-input-module',
+              target: 'item-cpu',
+              sourceHandle: 'item-input-module-output-digital',
+              targetHandle: 'item-cpu-input-inputs',
+              type: 'default',
+              data: { compatibility: 'direct' }
+            },
+            {
+              id: 'edge-cpu-to-output',
+              source: 'item-cpu',
+              target: 'item-output-module',
+              sourceHandle: 'item-cpu-output-outputs',
+              targetHandle: 'item-output-module-input-commands',
+              type: 'default',
+              data: { compatibility: 'direct' }
+            }
+          ],
+          inputs: [],
+          outputs: [{
+            id: 'part-plc-control',
+            name: 'control',
+            interfaceType: 'data'
+          }]
+        }
+      }
+    ],
+    edges: [],
+    inputs: [],
+    outputs: []
+  }
+};
+
+// Component 8: Switchboard
+export const switchboardComponent: SimpleComponent = {
+  id: 'switchboard-component',
+  name: 'Main Switchboard',
+  type: 'package',
+  data: {
+    declaredName: 'Main Switchboard',
+    comment: 'Main electrical distribution switchboard',
+    id: 'PKG-SWBD',
+    metadata: [
+      { key: 'voltage', value: '440V' },
+      { key: 'busbar', value: '3-phase' }
+    ],
+    nodes: [
+      {
+        id: 'part-switchboard',
+        type: 'part',
+        position: { x: 100, y: 100 },
+        data: {
+          declaredName: 'Switchboard Assembly',
+          comment: 'Main busbar and breakers',
+          id: 'PRT-SWBD',
+          metadata: [],
+          nodes: [
+            {
+              id: 'item-main-breaker',
+              type: 'item',
+              position: { x: 50, y: 100 },
+              data: {
+                declaredName: 'Main Breaker',
+                comment: '',
+                id: 'ITM-MAIN-BKR',
+                metadata: [],
+                inputs: [{
+                  id: 'port-power-in',
+                  name: 'power',
+                  interfaceType: 'electrical'
+                }],
+                outputs: [{
+                  id: 'port-power-protected',
+                  name: 'protected',
+                  interfaceType: 'electrical'
+                }]
+              }
+            },
+            {
+              id: 'item-busbar',
+              type: 'item',
+              position: { x: 200, y: 100 },
+              data: {
+                declaredName: 'Busbar',
+                comment: '',
+                id: 'ITM-BUSBAR',
+                metadata: [],
+                inputs: [{
+                  id: 'port-bus-in',
+                  name: 'input',
+                  interfaceType: 'electrical'
+                }],
+                outputs: [
+                  {
+                    id: 'port-bus-out1',
+                    name: 'feeder1',
+                    interfaceType: 'electrical'
+                  },
+                  {
+                    id: 'port-bus-out2',
+                    name: 'feeder2',
+                    interfaceType: 'electrical'
+                  }
+                ]
+              }
+            },
+            {
+              id: 'item-feeder-breaker',
+              type: 'item',
+              position: { x: 350, y: 100 },
+              data: {
+                declaredName: 'Feeder Breaker',
+                comment: '',
+                id: 'ITM-FEEDER-BKR',
+                metadata: [],
+                inputs: [{
+                  id: 'port-feeder-in',
+                  name: 'input',
+                  interfaceType: 'electrical'
+                }],
+                outputs: [{
+                  id: 'port-feeder-out',
+                  name: 'output',
+                  interfaceType: 'electrical'
+                }]
+              }
+            }
+          ],
+          edges: [
+            {
+              id: 'edge-main-to-bus',
+              source: 'item-main-breaker',
+              target: 'item-busbar',
+              sourceHandle: 'item-main-breaker-output-protected',
+              targetHandle: 'item-busbar-input-input',
+              type: 'default',
+              data: { compatibility: 'direct' }
+            },
+            {
+              id: 'edge-bus-to-feeder',
+              source: 'item-busbar',
+              target: 'item-feeder-breaker',
+              sourceHandle: 'item-busbar-output-feeder1',
+              targetHandle: 'item-feeder-breaker-input-input',
+              type: 'default',
+              data: { compatibility: 'direct' }
+            }
+          ],
+          inputs: [{
+            id: 'part-power-in',
+            name: 'power',
+            interfaceType: 'electrical'
+          }],
+          outputs: [
+            {
+              id: 'part-feeder-out',
+              name: 'distribution',
+              interfaceType: 'electrical'
+            }
+          ]
+        }
+      }
+    ],
+    edges: [],
+    inputs: [],
+    outputs: []
+  }
+};
+
+// Component 9: Transformer
+export const transformerComponent: SimpleComponent = {
+  id: 'transformer-component',
+  name: 'Transformer',
+  type: 'package',
+  data: {
+    declaredName: 'Transformer',
+    comment: 'Step-down transformer',
+    id: 'PKG-XFMR',
+    metadata: [
+      { key: 'primary', value: '440V' },
+      { key: 'secondary', value: '220V' },
+      { key: 'power', value: '500kVA' }
+    ],
+    nodes: [
+      {
+        id: 'part-transformer',
+        type: 'part',
+        position: { x: 100, y: 100 },
+        data: {
+          declaredName: 'Transformer Unit',
+          comment: '',
+          id: 'PRT-XFMR',
+          metadata: [],
+          nodes: [
+            {
+              id: 'item-primary-winding',
+              type: 'item',
+              position: { x: 50, y: 100 },
+              data: {
+                declaredName: 'Primary Winding',
+                comment: '',
+                id: 'ITM-PRIMARY',
+                metadata: [],
+                inputs: [{
+                  id: 'port-hv-in',
+                  name: 'hv',
+                  interfaceType: 'electrical'
+                }],
+                outputs: [{
+                  id: 'port-magnetic',
+                  name: 'flux',
+                  interfaceType: 'magnetic'
+                }]
+              }
+            },
+            {
+              id: 'item-core',
+              type: 'item',
+              position: { x: 200, y: 100 },
+              data: {
+                declaredName: 'Magnetic Core',
+                comment: '',
+                id: 'ITM-CORE',
+                metadata: [],
+                inputs: [{
+                  id: 'port-flux-in',
+                  name: 'flux',
+                  interfaceType: 'magnetic'
+                }],
+                outputs: [{
+                  id: 'port-flux-out',
+                  name: 'flux',
+                  interfaceType: 'magnetic'
+                }]
+              }
+            },
+            {
+              id: 'item-secondary-winding',
+              type: 'item',
+              position: { x: 350, y: 100 },
+              data: {
+                declaredName: 'Secondary Winding',
+                comment: '',
+                id: 'ITM-SECONDARY',
+                metadata: [],
+                inputs: [{
+                  id: 'port-flux-sec',
+                  name: 'flux',
+                  interfaceType: 'magnetic'
+                }],
+                outputs: [{
+                  id: 'port-lv-out',
+                  name: 'lv',
+                  interfaceType: 'electrical'
+                }]
+              }
+            }
+          ],
+          edges: [
+            {
+              id: 'edge-primary-to-core',
+              source: 'item-primary-winding',
+              target: 'item-core',
+              sourceHandle: 'item-primary-winding-output-flux',
+              targetHandle: 'item-core-input-flux',
+              type: 'default',
+              data: { compatibility: 'direct' }
+            },
+            {
+              id: 'edge-core-to-secondary',
+              source: 'item-core',
+              target: 'item-secondary-winding',
+              sourceHandle: 'item-core-output-flux',
+              targetHandle: 'item-secondary-winding-input-flux',
+              type: 'default',
+              data: { compatibility: 'direct' }
+            }
+          ],
+          inputs: [],
+          outputs: []
+        }
+      }
+    ],
+    edges: [],
+    inputs: [],
+    outputs: []
+  }
+};
+
+// Component 10: Circuit Breaker
+export const circuitBreakerComponent: SimpleComponent = {
+  id: 'circuit-breaker-component',
+  name: 'Circuit Breaker',
+  type: 'package',
+  data: {
+    declaredName: 'Circuit Breaker',
+    comment: 'Automatic circuit protection',
+    id: 'PKG-CB',
+    metadata: [
+      { key: 'rating', value: '1000A' },
+      { key: 'type', value: 'ACB' }
+    ],
+    nodes: [
+      {
+        id: 'part-breaker',
+        type: 'part',
+        position: { x: 100, y: 100 },
+        data: {
+          declaredName: 'Breaker Assembly',
+          comment: '',
+          id: 'PRT-BKR',
+          metadata: [],
+          nodes: [
+            {
+              id: 'item-contacts',
+              type: 'item',
+              position: { x: 50, y: 100 },
+              data: {
+                declaredName: 'Main Contacts',
+                comment: '',
+                id: 'ITM-CONTACTS',
+                metadata: [],
+                inputs: [{
+                  id: 'port-line-in',
+                  name: 'line',
+                  interfaceType: 'electrical'
+                }],
+                outputs: [{
+                  id: 'port-load-out',
+                  name: 'load',
+                  interfaceType: 'electrical'
+                }]
+              }
+            },
+            {
+              id: 'item-trip-unit',
+              type: 'item',
+              position: { x: 200, y: 50 },
+              data: {
+                declaredName: 'Trip Unit',
+                comment: '',
+                id: 'ITM-TRIP',
+                metadata: [],
+                inputs: [{
+                  id: 'port-current-sense',
+                  name: 'current',
+                  interfaceType: 'data'
+                }],
+                outputs: [{
+                  id: 'port-trip-signal',
+                  name: 'trip',
+                  interfaceType: 'data'
+                }]
+              }
+            }
+          ],
+          edges: [],
+          inputs: [{
+            id: 'part-line-in',
+            name: 'line',
+            interfaceType: 'electrical'
+          }],
+          outputs: [{
+            id: 'part-load-out',
+            name: 'load',
+            interfaceType: 'electrical'
+          }]
+        }
+      }
+    ],
+    edges: [],
+    inputs: [],
+    outputs: []
+  }
+};
+
 // Export all components
 export const simpleComponents = [
   engineComponent,
   generatorComponent,
-  pumpComponent
+  pumpComponent,
+  electricMotorComponent,
+  propellerComponent,
+  pmsComponent,
+  automationControllerComponent,
+  switchboardComponent,
+  transformerComponent,
+  circuitBreakerComponent
 ];

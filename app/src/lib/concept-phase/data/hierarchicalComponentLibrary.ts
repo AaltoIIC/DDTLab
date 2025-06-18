@@ -6,7 +6,18 @@ import {
 } from 'lucide-svelte';
 
 // Import existing components to maintain compatibility
-import { engineComponent, generatorComponent, pumpComponent } from './simpleComponentLibrary';
+import { 
+    engineComponent, 
+    generatorComponent, 
+    pumpComponent,
+    electricMotorComponent,
+    propellerComponent,
+    pmsComponent,
+    automationControllerComponent,
+    switchboardComponent,
+    transformerComponent,
+    circuitBreakerComponent
+} from './simpleComponentLibrary';
 
 export const componentCategories: ComponentCategory[] = [
     {
@@ -58,17 +69,44 @@ export const componentCategories: ComponentCategory[] = [
             {
                 id: 'switchboards',
                 name: 'Switchboards',
-                components: []
+                components: [
+                    {
+                        id: 'main-switchboard',
+                        name: 'Main Switchboard',
+                        description: '440V main distribution switchboard',
+                        categoryId: 'power-distribution',
+                        subcategoryId: 'switchboards',
+                        template: switchboardComponent
+                    }
+                ]
             },
             {
                 id: 'transformers',
                 name: 'Transformers',
-                components: []
+                components: [
+                    {
+                        id: 'step-down-transformer',
+                        name: 'Step-down Transformer',
+                        description: '440V to 220V transformer',
+                        categoryId: 'power-distribution',
+                        subcategoryId: 'transformers',
+                        template: transformerComponent
+                    }
+                ]
             },
             {
                 id: 'circuit-breakers',
                 name: 'Circuit Breakers',
-                components: []
+                components: [
+                    {
+                        id: 'acb-1000a',
+                        name: 'ACB 1000A',
+                        description: 'Air circuit breaker 1000A',
+                        categoryId: 'power-distribution',
+                        subcategoryId: 'circuit-breakers',
+                        template: circuitBreakerComponent
+                    }
+                ]
             }
         ]
     },
@@ -81,7 +119,16 @@ export const componentCategories: ComponentCategory[] = [
             {
                 id: 'electric-motors',
                 name: 'Electric Motors',
-                components: []
+                components: [
+                    {
+                        id: 'propulsion-motor-2mw',
+                        name: 'Propulsion Motor 2MW',
+                        description: 'Electric propulsion motor',
+                        categoryId: 'propulsion',
+                        subcategoryId: 'electric-motors',
+                        template: electricMotorComponent
+                    }
+                ]
             },
             {
                 id: 'diesel-engines',
@@ -100,7 +147,16 @@ export const componentCategories: ComponentCategory[] = [
             {
                 id: 'propellers',
                 name: 'Propellers',
-                components: []
+                components: [
+                    {
+                        id: 'fixed-pitch-propeller',
+                        name: 'Fixed Pitch Propeller',
+                        description: '4-blade fixed pitch propeller',
+                        categoryId: 'propulsion',
+                        subcategoryId: 'propellers',
+                        template: propellerComponent
+                    }
+                ]
             }
         ]
     },
@@ -113,12 +169,30 @@ export const componentCategories: ComponentCategory[] = [
             {
                 id: 'power-management',
                 name: 'Power Management Systems',
-                components: []
+                components: [
+                    {
+                        id: 'integrated-pms',
+                        name: 'Integrated PMS',
+                        description: 'Power management and control system',
+                        categoryId: 'control-systems',
+                        subcategoryId: 'power-management',
+                        template: pmsComponent
+                    }
+                ]
             },
             {
                 id: 'automation',
                 name: 'Automation Systems',
-                components: []
+                components: [
+                    {
+                        id: 'plc-controller',
+                        name: 'PLC Controller',
+                        description: 'Programmable logic controller for automation',
+                        categoryId: 'control-systems',
+                        subcategoryId: 'automation',
+                        template: automationControllerComponent
+                    }
+                ]
             }
         ]
     },

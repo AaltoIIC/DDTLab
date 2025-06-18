@@ -1,12 +1,14 @@
 <script lang="ts">
-    import { ChevronRight, X } from 'lucide-svelte';
+    import { ChevronRight, X, Zap, Cog, Droplet } from 'lucide-svelte';
     import { slide } from 'svelte/transition';
+    import { simpleComponents } from './data/simpleComponentLibrary';
     
     export let isOpen = false;
     export let onClose: () => void;
     
     let componentLibraryExpanded = false;
     let designLibraryExpanded = false;
+    let isDragging = false;
     
     function toggleComponentLibrary() {
         componentLibraryExpanded = !componentLibraryExpanded;
@@ -15,10 +17,31 @@
     function toggleDesignLibrary() {
         designLibraryExpanded = !designLibraryExpanded;
     }
+    
+    function handleDragStart(event: DragEvent, component: any) {
+        isDragging = true;
+        event.dataTransfer!.effectAllowed = 'copy';
+        event.dataTransfer!.setData('application/json', JSON.stringify(component));
+    }
+    
+    function handleDragEnd() {
+        isDragging = false;
+    }
+    
+    // Icon mapping
+    const iconMap: Record<string, any> = {
+        'engine-component': Zap,
+        'generator-component': Cog,
+        'pump-component': Droplet
+    };
 </script>
 
 {#if isOpen}
-    <div class="slider-overlay" on:click={onClose} transition:slide={{ duration: 300, axis: 'x' }}></div>
+    <div 
+        class="slider-overlay {isDragging ? 'dragging' : ''}" 
+        on:click={onClose} 
+        transition:slide={{ duration: 300, axis: 'x' }}
+    ></div>
     <div class="slider-panel" transition:slide={{ duration: 300, axis: 'x' }}>
         <div class="slider-header">
             <h2 class="slider-title">Concept Library</h2>
@@ -38,7 +61,17 @@
                 </button>
                 {#if componentLibraryExpanded}
                     <div class="library-content" transition:slide={{ duration: 200 }}>
-                        <p class="placeholder-text">Component items will appear here</p>
+                        {#each simpleComponents as component}
+                            <div 
+                                class="component-item"
+                                draggable="true"
+                                on:dragstart={(e) => handleDragStart(e, component)}
+                                on:dragend={handleDragEnd}
+                            >
+                                <svelte:component this={iconMap[component.id] || Zap} size={16} />
+                                <span>{component.name}</span>
+                            </div>
+                        {/each}
                     </div>
                 {/if}
             </div>
@@ -70,6 +103,10 @@
         bottom: 0;
         background-color: rgba(0, 0, 0, 0.1);
         z-index: 200;
+    }
+    
+    .slider-overlay.dragging {
+        pointer-events: none;
     }
     
     .slider-panel {
@@ -174,5 +211,27 @@
         text-align: center;
         padding: 20px;
         margin: 0;
+    }
+    
+    .component-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        margin: 4px 0;
+        background-color: #f3f4f6;
+        border-radius: 6px;
+        cursor: move;
+        transition: all 0.2s;
+        user-select: none;
+    }
+    
+    .component-item:hover {
+        background-color: #e5e7eb;
+        transform: translateX(2px);
+    }
+    
+    .component-item:active {
+        opacity: 0.5;
     }
 </style>

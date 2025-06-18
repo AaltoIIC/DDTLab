@@ -15,6 +15,8 @@
     } from './packageStore';
     import { checkCompatibility } from './interfaces';
     import type { Port } from './interfaces';
+    import { instantiateSimpleComponent } from './utils/simpleInstantiation';
+    import { onMount } from 'svelte';
     
 
     const nodeTypes = {
@@ -111,6 +113,64 @@
         return ports.find((p: Port) => p.name === portName);
     }
     
+    let flowContainer: HTMLDivElement;
+    
+    // Global drag over prevention
+    onMount(() => {
+        function preventDefaultDragOver(e: DragEvent) {
+            e.preventDefault();
+            e.dataTransfer!.dropEffect = 'copy';
+        }
+        
+        document.addEventListener('dragover', preventDefaultDragOver);
+        
+        return () => {
+            document.removeEventListener('dragover', preventDefaultDragOver);
+        };
+    });
+    
+    function handleDragOver(event: DragEvent) {
+        event.preventDefault();
+        event.dataTransfer!.dropEffect = 'copy';
+    }
+    
+    function handleDrop(event: DragEvent) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const componentData = event.dataTransfer?.getData('application/json');
+        if (!componentData) return;
+        
+        try {
+            const component = JSON.parse(componentData);
+            console.log('Dropping component:', component);
+            
+            // Get drop position relative to the flow container
+            const rect = flowContainer.getBoundingClientRect();
+            const position = {
+                x: event.clientX - rect.left - 100,
+                y: event.clientY - rect.top - 50
+            };
+            
+            console.log('Drop position:', position);
+            
+            // Instantiate the component
+            const { nodes: newNodes, edges: newEdges } = instantiateSimpleComponent(component, position);
+            
+            console.log('New nodes:', newNodes);
+            
+            // Add to current view
+            currentNodes.update(nodes => [...nodes, ...newNodes]);
+            if (newEdges.length > 0) {
+                currentEdges.update(edges => [...edges, ...newEdges]);
+            }
+            
+            addToHistory();
+        } catch (error) {
+            console.error('Failed to instantiate component:', error);
+        }
+    }
+    
     function onConnect(params: Connection) {
         console.log('Connection params:', params);
         
@@ -166,8 +226,8 @@
 
 
 
-  <div class="conceptual-editor">
-      <div class="flow-container">
+  <div class="conceptual-editor" on:dragover={handleDragOver} on:drop={handleDrop}>
+      <div class="flow-container" bind:this={flowContainer}>
           <SvelteFlow
               nodes={currentNodes}
               edges={currentEdges}

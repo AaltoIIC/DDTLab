@@ -3,7 +3,8 @@
     import ConceptualStageSidebar from './ConceptualStageSidebar.svelte';
     import PackageBreadcrumb from './PackageBreadcrumb.svelte';
     import { currentSystemMeta, currentNodes, currentEdges } from '$lib/stores/stores';
-    import { currentPackageView, packageViewStack, navigateToRoot } from './packageStore';
+    import { currentPackageView, packageViewStack, navigateToRoot, navigateToPackage } from './packageStore';
+    import type { PackageView } from './packageStore';
     import { onMount, onDestroy } from 'svelte';
     import { get } from 'svelte/store';
     import { Save } from 'lucide-svelte';
@@ -13,6 +14,21 @@
     let showSaveDialog = false;
     let templateName = '';
     let templateDescription = '';
+    let previousViewStack: PackageView[] = [];
+    
+    // Notification system
+    let notification = {
+        show: false,
+        message: '',
+        type: 'info' // 'info', 'success', 'error'
+    };
+    
+    function showNotification(message: string, type = 'info') {
+        notification = { show: true, message, type };
+        setTimeout(() => {
+            notification.show = false;
+        }, 3000);
+    }
     
     // Clear the package view stack when component mounts (start at root)
     onMount(() => {
@@ -34,11 +50,27 @@
     });
     
     function handleSaveAsTemplate() {
+        // Store current view stack before navigating to root
+        const stack = get(packageViewStack);
+        const isInNestedView = stack.length > 0;
+        
+        if (isInNestedView) {
+            // Save the current stack to restore later
+            previousViewStack = [...stack];
+            // Navigate to root to capture full hierarchy
+            navigateToRoot();
+        }
+        
+        // Now get the root-level nodes and edges (full hierarchy)
         const nodes = get(currentNodes);
         const edges = get(currentEdges);
         
         if (nodes.length === 0) {
-            alert('No content to save as template');
+            showNotification('No content to save as template', 'error');
+            // Restore view if we navigated away
+            if (isInNestedView && previousViewStack.length > 0) {
+                restorePreviousView();
+            }
             return;
         }
         
@@ -49,7 +81,7 @@
     
     function confirmSaveTemplate() {
         if (!templateName.trim()) {
-            alert('Please enter a template name');
+            showNotification('Please enter a template name', 'error');
             return;
         }
         
@@ -66,13 +98,50 @@
         });
         
         showSaveDialog = false;
-        alert('Template saved successfully!');
+        showNotification('Template saved successfully!', 'success');
+        
+        // Restore previous view if we navigated away
+        if (previousViewStack.length > 0) {
+            restorePreviousView();
+        }
     }
     
     function cancelSaveTemplate() {
         showSaveDialog = false;
         templateName = '';
         templateDescription = '';
+        
+        // Restore previous view if we navigated away
+        if (previousViewStack.length > 0) {
+            restorePreviousView();
+        }
+    }
+    
+    function restorePreviousView() {
+        if (previousViewStack.length === 0) return;
+        
+        // Rebuild the navigation stack
+        const stackToRestore = [...previousViewStack];
+        packageViewStack.set([]);
+        
+        // Navigate through each level to restore the view
+        for (let i = 0; i < stackToRestore.length; i++) {
+            const view = stackToRestore[i];
+            if (i === 0 && view.packageId === 'root') {
+                // Skip root restoration, just set the stack
+                packageViewStack.update(s => [view]);
+            } else {
+                // For nested views, we need to navigate into them
+                const parentNodes = i === 0 ? view.nodes : stackToRestore[i-1].nodes;
+                const packageNode = parentNodes.find(n => n.id === view.packageId);
+                if (packageNode) {
+                    navigateToPackage(view.packageId, view.packageName, view.parentId);
+                }
+            }
+        }
+        
+        // Clear the stored stack
+        previousViewStack = [];
     }
 </script>
 
@@ -137,6 +206,12 @@
     </div>
 {/if}
 
+{#if notification.show}
+    <div class="notification {notification.type}">
+        {notification.message}
+    </div>
+{/if}
+
 <style>
     .conceptual-layout {
         width: 100vw;
@@ -189,18 +264,20 @@
         align-items: center;
         gap: 6px;
         padding: 8px 16px;
-        background: #3b82f6;
+        background: #111827;
         color: white;
         border: none;
         border-radius: 6px;
         font-size: 14px;
         font-weight: 500;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: all 0.2s;
     }
     
     .save-template-btn:hover {
-        background: #2563eb;
+        background: #374151;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .dialog-overlay {
@@ -257,7 +334,7 @@
     .form-group input:focus,
     .form-group textarea:focus {
         outline: none;
-        border-color: #3b82f6;
+        border-color: #374151;
     }
     
     .dialog-buttons {
@@ -288,11 +365,57 @@
     }
     
     .save-btn {
-        background: #3b82f6;
+        background: #111827;
         color: white;
     }
     
     .save-btn:hover {
-        background: #2563eb;
+        background: #374151;
+    }
+    
+    /* Notification styles */
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        animation: slideIn 0.3s ease-out;
+        z-index: 1001;
+    }
+    
+    .notification.info {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .notification.success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+    }
+    
+    .notification.error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
     }
 </style>

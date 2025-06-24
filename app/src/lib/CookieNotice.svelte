@@ -2,8 +2,12 @@
     import Portal from "svelte-portal";
     import Button from "./Button.svelte";
 
-    let opacity = 1;
-    export let onClick: () => void;
+    let opacity = $state(1);
+    interface Props {
+        onClick: () => void;
+    }
+
+    let { onClick }: Props = $props();
 
     const handleClick = () => {
         opacity = 0;
@@ -15,7 +19,7 @@
 </script>
 <Portal target="body">
     <div class="cookie-notice" style:opacity={opacity}>
-        <button class="btn-close" on:click={handleClick}>
+        <button class="btn-close" onclick={handleClick}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>  

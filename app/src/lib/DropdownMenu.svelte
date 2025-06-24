@@ -1,13 +1,22 @@
 <script lang="ts">
     import { onMount } from 'svelte';
 
-    export let options: string[] = [];
-    export let optionIcons: string[] = [];
-    export let onClick: (option: string) => void = () => {};
-    export let visible = true;
+    interface Props {
+        options?: string[];
+        optionIcons?: string[];
+        onClick?: (option: string) => void;
+        visible?: boolean;
+    }
 
-    let isDropdownOpen = false;
-    let onHover = false;
+    let {
+        options = [],
+        optionIcons = [],
+        onClick = () => {},
+        visible = true
+    }: Props = $props();
+
+    let isDropdownOpen = $state(false);
+    let onHover = $state(false);
 
     onMount(() => {
         document.addEventListener('pointerdown', (event) => {
@@ -18,21 +27,21 @@
     });
 </script>
 
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="main-button-cont {isDropdownOpen ? "open" : ""} {visible ? 'visible' : ''}"
-    on:mouseenter={() => {onHover = true}}
-    on:mouseleave={() => {onHover = false}}>
+    onmouseenter={() => {onHover = true}}
+    onmouseleave={() => {onHover = false}}>
 <button
     class="btn"
     aria-label="Open dropdown"
-    on:click={(e) => {e.stopPropagation(); isDropdownOpen = !isDropdownOpen}}>
+    onclick={(e) => {e.stopPropagation(); isDropdownOpen = !isDropdownOpen}}>
         <svg class="icon-menu" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
         </svg>
 </button>
 <div class="main-dropdown shadow-md">
     {#each options as option, index}
-        <button on:click={(e) => {e.stopPropagation(); onClick(option); isDropdownOpen = false;}}>
+        <button onclick={(e) => {e.stopPropagation(); onClick(option); isDropdownOpen = false;}}>
             {#if optionIcons.length > index}
                 <span class="option-icon">
                     {@html optionIcons[index]}

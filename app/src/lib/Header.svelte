@@ -1,9 +1,13 @@
-<script>
+<script lang="ts">
     import { version } from '$app/environment'
     import { goto } from '$app/navigation';
     import DropdownMenu from './DropdownMenu.svelte';
 
-    export let noTap = false;
+    interface Props {
+        noTap?: boolean;
+    }
+
+    let { noTap = false }: Props = $props();
 
     const menuItems = [
         {

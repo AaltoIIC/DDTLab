@@ -4,9 +4,13 @@
     import type { SvelteComponent } from "svelte";
     import { currentReqs, addToHistory } from "$lib/stores/stores";
 
-    export let requirement: RequirementType;
+    interface Props {
+        requirement: RequirementType;
+    }
 
-    let dialogBox: SvelteComponent;
+    let { requirement }: Props = $props();
+
+    let dialogBox: SvelteComponent = $state();
 
     const handleDelete = () => {
         dialogBox.openDialog("Are you sure you want to delete requirement?", "Yes", "No")
@@ -22,7 +26,7 @@
 </script>
 <div class="main-tile">
     <button class="btn-remove" aria-label="Remove Requirement"
-        on:click={handleDelete}>
+        onclick={handleDelete}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
         </svg>                   

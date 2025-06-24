@@ -1,5 +1,9 @@
   <script lang="ts">
-      export let isOpen = false;
+  interface Props {
+    isOpen?: boolean;
+  }
+
+  let { isOpen = false }: Props = $props();
 
       let activeTab: 'library' | 'uploaded' = 'library';
       let searchQuery = '';

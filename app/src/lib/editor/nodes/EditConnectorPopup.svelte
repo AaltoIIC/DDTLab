@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import {
         type Node
     } from '@xyflow/svelte';
@@ -14,11 +16,21 @@
         selectNode
     } from '$lib/helpers';
 
-    export let elementName: string;
-    export let isOpen: boolean = false;
-    export let connectorName: string | null = null;
-    export let type: 'input' | 'output' | null = null;
-    export let trigger: HTMLElement | null = null;
+    interface Props {
+        elementName: string;
+        isOpen?: boolean;
+        connectorName?: string | null;
+        type?: 'input' | 'output' | null;
+        trigger?: HTMLElement | null;
+    }
+
+    let {
+        elementName,
+        isOpen = $bindable(false),
+        connectorName = null,
+        type = null,
+        trigger = null
+    }: Props = $props();
 
     let isExistingConnector = connectorName !== null;
 
@@ -34,10 +46,10 @@
     }
 
     // Handle new connector parameters
-    let newConnectorName: string;
-    let newConnectorClass: string | null;
-    let newConnectorDataType: { value: string, label: string };
-    let newConnectorUnit: { value: string, label: string };
+    let newConnectorName: string = $state();
+    let newConnectorClass: string | null = $state();
+    let newConnectorDataType: { value: string, label: string } = $state();
+    let newConnectorUnit: { value: string, label: string } = $state();
     if (isExistingConnector) {
         const connector = ($currentNodes.find((node) => node.id === elementName)?.data as any)
             .element.connectors.find((connector: any) => connector.name === connectorName)
@@ -52,14 +64,16 @@
         newConnectorUnit = { value: "-", label: "-" };
     }
     
-    $: if (isOpen && !isExistingConnector) {
-        newConnectorName = nameNewConnector();
-        newConnectorClass = null;
-        newConnectorDataType = { value: "no-dt", label: "No Data Type" };
-        newConnectorUnit = { value: "-", label: "-" };
-    }
+    run(() => {
+        if (isOpen && !isExistingConnector) {
+            newConnectorName = nameNewConnector();
+            newConnectorClass = null;
+            newConnectorDataType = { value: "no-dt", label: "No Data Type" };
+            newConnectorUnit = { value: "-", label: "-" };
+        }
+    });
 
-    let isNameError = false;
+    let isNameError = $state(false);
     const validateName = () => {
         const nodeData = $currentNodes.find((node) => node.id === elementName)?.data;
         const isNameTaken = (nodeData?.element as any).connectors.filter((c: any) => c.name !== newConnectorName)
@@ -110,7 +124,7 @@
         isOpen = false;
     }
 
-    let onHover: boolean = false;
+    let onHover: boolean = $state(false);
     onMount(() => {
         trigger?.addEventListener('pointerdown', () => {
             isOpen = true;
@@ -138,8 +152,8 @@
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="main-add-layover {isOpen ? 'open' : ''} shadow-md"
-    on:mouseenter={() => {selectNode(elementName); onHover = true;}}
-    on:mouseleave={() => {onHover = false;}}>
+    onmouseenter={() => {selectNode(elementName); onHover = true;}}
+    onmouseleave={() => {onHover = false;}}>
     <div class="connector-param">
         <span>Name:</span>
         <Input class="w-[142px] h-8 {isNameError ? 'error-outline' : ''}"
@@ -194,7 +208,7 @@
         </Select.Root>
     </div>
     <button class="done-btn {(isNameError || !newConnectorClass) ? 'inactive' : ''}"
-        on:click={(isExistingConnector ? editConnector : addConnector)}>
+        onclick={isExistingConnector ? editConnector : addConnector}>
         {
             (
                 isExistingConnector ? 'Edit Connector' : `Add ${type === 'input' ? 'Input' : 'Output'}`

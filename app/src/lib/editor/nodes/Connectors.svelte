@@ -3,10 +3,19 @@
     import AddConnectorButton from './AddConnectorButton.svelte';
     import TooltipHandle from './TooltipHandle.svelte';
 
-    export let type: 'input' | 'output' = 'output';
-    export let elementName: string;
-    export let elementData: ElementDataType;
-    export let nodeOnHover: boolean = false;
+    interface Props {
+        type?: 'input' | 'output';
+        elementName: string;
+        elementData: ElementDataType;
+        nodeOnHover?: boolean;
+    }
+
+    let {
+        type = 'output',
+        elementName,
+        elementData,
+        nodeOnHover = $bindable(false)
+    }: Props = $props();
 </script>
 <div class="main-connectors {type}">
     <AddConnectorButton bind:nodeOnHover {elementName} {type} />

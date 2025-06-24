@@ -1,12 +1,24 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import { onMount } from "svelte";
     import Portal from "svelte-portal";
 
-    export let maxWidth: Number = 600;
-    export let maxHeight: Number = 400;
-    export let padding: string = "22px 42px 16px 32px";
+    interface Props {
+        maxWidth?: Number;
+        maxHeight?: Number;
+        padding?: string;
+        children?: import('svelte').Snippet;
+    }
 
-    let isOpen = false;
+    let {
+        maxWidth = 600,
+        maxHeight = 400,
+        padding = "22px 42px 16px 32px",
+        children
+    }: Props = $props();
+
+    let isOpen = $state(false);
     export const open = () => {
         isOpen = true;
     }
@@ -22,32 +34,34 @@
         });
     });
 
-    let mainPopupCont: HTMLDivElement;
-    let cover: HTMLDivElement;
-    let opacityTimeout: any;
-    $: if (isOpen) {   
-        clearTimeout(opacityTimeout);
-        opacityTimeout = setTimeout(() => {
+    let mainPopupCont: HTMLDivElement = $state();
+    let cover: HTMLDivElement = $state();
+    let opacityTimeout: any = $state();
+    run(() => {
+        if (isOpen) {   
+            clearTimeout(opacityTimeout);
+            opacityTimeout = setTimeout(() => {
+                if (mainPopupCont && cover) {
+                    mainPopupCont.style.opacity = "1";
+                    cover.style.opacity = "1";
+                }
+            }, 10);
+        } else {
+            clearTimeout(opacityTimeout);
             if (mainPopupCont && cover) {
-                mainPopupCont.style.opacity = "1";
-                cover.style.opacity = "1";
+                mainPopupCont.style.opacity = "0";
+                cover.style.opacity = "0";
             }
-        }, 10);
-    } else {
-        clearTimeout(opacityTimeout);
-        if (mainPopupCont && cover) {
-            mainPopupCont.style.opacity = "0";
-            cover.style.opacity = "0";
         }
-    }
+    });
 </script>
 <Portal target="body">
     {#if isOpen}
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <!-- svelte-ignore a11y-no-static-element-interactions -->
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="viewport-cover"
             bind:this={cover}
-            on:click={close}>
+            onclick={close}>
         </div>
         <div class="main-popup-cont"
             style={`
@@ -57,12 +71,12 @@
             `}
             bind:this={mainPopupCont}>
             <button class="btn-close"
-                on:click={() => {isOpen = false;}}>
+                onclick={() => {isOpen = false;}}>
                 <svg class="icon-close" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
             </button>
-            <slot></slot>
+            {@render children?.()}
         </div>
     {/if}
 </Portal>

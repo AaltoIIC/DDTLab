@@ -11,8 +11,8 @@
     import { isNameValid } from "$lib/helpers";
     import { goto } from "$app/navigation";
 
-    let currentName = $currentSystemMeta.name;
-    let isNameError = false;
+    let currentName = $state($currentSystemMeta.name);
+    let isNameError = $state(false);
 
     const checkAndUpdateName = () => {
         const isNameTaken = $systems.filter(s => s.id !== $currentSystemMeta.id)
@@ -41,13 +41,13 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <span class="undo-redo-cont">
         <button class="top-btn undo {($history.currentIndex === 0 || $history.data.length === 1) ? "inactive" : "active"}" aria-label="Undo"
-            on:click={handleUndo}>
+            onclick={handleUndo}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
             </svg>
         </button>
         <button class="top-btn redo {($history.currentIndex === -1 || $history.data.length === 1) ? "inactive" : "active"}"
-            aria-label="Redo" on:click={handleRedo}>
+            aria-label="Redo" onclick={handleRedo}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3" />
             </svg>              
@@ -56,8 +56,8 @@
     <div class="main-name-cont {isNameError ? 'error' : ''}">
         System: <input type="text"
             bind:value={currentName}
-            on:input={checkAndUpdateName}
-            on:blur={handleBlur}
+            oninput={checkAndUpdateName}
+            onblur={handleBlur}
             />
     </div>
     <Button onClick={() => {goto('/');}}>Save</Button>

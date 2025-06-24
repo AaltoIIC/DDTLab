@@ -4,10 +4,10 @@
       import { get } from 'svelte/store';
       import type { SystemMetaType } from '$lib/types/types';
 
-      $: breadcrumbs = [
+      let breadcrumbs = $derived([
           ...$navigationContext.path,
           $currentSystemMeta
-      ];
+      ]);
 
       function navigateToSystem(targetSystem: SystemMetaType, index: number) {
           // If clicking on current system, do nothing
@@ -43,7 +43,7 @@
 
   {#if $navigationContext.path.length > 0}
       <div class="breadcrumb-container">
-          <button class="back-button" on:click={navigateToParent} title="Go back (ESC)" aria-label="Go back">
+          <button class="back-button" onclick={navigateToParent} title="Go back (ESC)" aria-label="Go back">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
   stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
@@ -55,7 +55,7 @@
                       class="breadcrumb-item"
                       class:current={i === breadcrumbs.length - 1}
                       class:clickable={i < breadcrumbs.length - 1}
-                      on:click={() => navigateToSystem(crumb, i)}
+                      onclick={() => navigateToSystem(crumb, i)}
                       disabled={i === breadcrumbs.length - 1}
                       type="button"
                   >

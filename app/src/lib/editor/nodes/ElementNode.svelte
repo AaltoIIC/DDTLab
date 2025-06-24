@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import { useUpdateNodeInternals, useSvelteFlow } from '@xyflow/svelte';
     import Connectors from "./Connectors.svelte";
     import { type ElementDataType, type SubsystemDataType } from "$lib/types/types";
@@ -34,20 +36,27 @@
     }
 
 
-    let hover = false;
+    let hover = $state(false);
 
-    export let id: string;
-    export let data: {
+    interface Props {
+        id: string;
+        data: {
         element: ElementDataType | SubsystemDataType;
     };
-
-    const updateNodeInternals = useUpdateNodeInternals();
-    $: if (data) {
-        updateNodeInternals(id);
+        [key: string]: any
     }
 
-    let currentName = id;
-    let isNameError = false;
+    let { id, data, ...rest }: Props = $props();
+
+    const updateNodeInternals = useUpdateNodeInternals();
+    run(() => {
+        if (data) {
+            updateNodeInternals(id);
+        }
+    });
+
+    let currentName = $state(id);
+    let isNameError = $state(false);
     const validateName = () => {
         const isNameTaken = (currentName !== id) && $currentNodes.some((node) => (
             node.id.replace(/\s+/g, '').toLowerCase() == currentName.replace(/\s+/g, '').toLowerCase()
@@ -74,7 +83,7 @@
     }
 
     // handle VSSo class selection
-    let currentVSSoClass = data.element.VSSoClass;
+    let currentVSSoClass = $state(data.element.VSSoClass);
     const updateVSSOClass = (value: string) => {
         currentNodes.update((nodes) => {
             return nodes.map((node) => {
@@ -89,7 +98,7 @@
 
     // Make delete button compensate for zoom level
     const { viewport } = useSvelteFlow();
-    let zoomLevel = 1;
+    let zoomLevel = $state(1);
     viewport.subscribe((value) => {
         zoomLevel = value.zoom;
     });
@@ -134,9 +143,9 @@
       }
     }
 
-    let showDropdown = false;
-    let menuX = 0;
-    let menuY = 0;
+    let showDropdown = $state(false);
+    let menuX = $state(0);
+    let menuY = $state(0);
     const options = ['Duplicate', 'Delete'];
     const openContextMenu = (e: MouseEvent) => {
         e.preventDefault();
@@ -169,7 +178,7 @@
         document.addEventListener('mousedown', handleOutsideClick);
         return () => document.removeEventListener('mousedown', handleOutsideClick);
     });
-    $$restProps
+    rest
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->

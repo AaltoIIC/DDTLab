@@ -6,30 +6,34 @@
     import { shipDesigns, shipDesignCategories } from './data/shipDesignLibrary';
     import type { ShipDesign, ShipPowertrainType, ShipType } from './types/shipDesign';
     
-    export let isOpen = false;
-    export let onClose: () => void;
+    interface Props {
+        isOpen?: boolean;
+        onClose: () => void;
+    }
+
+    let { isOpen = false, onClose }: Props = $props();
     
-    let componentLibraryExpanded = false;
-    let designLibraryExpanded = false;
-    let isDragging = false;
-    let searchTerm = '';
-    let designSearchTerm = '';
+    let componentLibraryExpanded = $state(false);
+    let designLibraryExpanded = $state(false);
+    let isDragging = $state(false);
+    let searchTerm = $state('');
+    let designSearchTerm = $state('');
     
     // Track expanded state for categories
-    let expandedCategories: Set<string> = new Set();
-    let expandedSubcategories: Set<string> = new Set();
-    let expandedDesignCategories: Set<string> = new Set(['commercial', 'passenger', 'specialized']);
+    let expandedCategories: Set<string> = $state(new Set());
+    let expandedSubcategories: Set<string> = $state(new Set());
+    let expandedDesignCategories: Set<string> = $state(new Set(['commercial', 'passenger', 'specialized']));
     
     // Design library filters
-    let selectedPowertrainTypes: Set<ShipPowertrainType> = new Set();
-    let selectedShipTypes: Set<ShipType> = new Set();
+    let selectedPowertrainTypes: Set<ShipPowertrainType> = $state(new Set());
+    let selectedShipTypes: Set<ShipType> = $state(new Set());
     
     // Search results
-    $: searchResults = searchTerm ? searchComponents(searchTerm) : [];
-    $: isSearching = searchTerm.length > 0;
+    let searchResults = $derived(searchTerm ? searchComponents(searchTerm) : []);
+    let isSearching = $derived(searchTerm.length > 0);
     
     // Filter ship designs
-    $: filteredDesigns = shipDesigns.filter(design => {
+    let filteredDesigns = $derived(shipDesigns.filter(design => {
         const matchesSearch = designSearchTerm === '' || 
             design.name.toLowerCase().includes(designSearchTerm.toLowerCase()) ||
             design.description.toLowerCase().includes(designSearchTerm.toLowerCase()) ||
@@ -42,13 +46,13 @@
             selectedShipTypes.has(design.shipType);
             
         return matchesSearch && matchesPowertrain && matchesShipType;
-    });
+    }));
     
     // Get filtered design categories
-    $: filteredDesignCategories = shipDesignCategories.map(category => ({
+    let filteredDesignCategories = $derived(shipDesignCategories.map(category => ({
         ...category,
         designs: category.designs.filter(design => filteredDesigns.includes(design))
-    })).filter(category => category.designs.length > 0);
+    })).filter(category => category.designs.length > 0));
     
     // Icons for different powertrain types
     const powertrainIcons = {
@@ -188,13 +192,13 @@
 {#if isOpen}
     <div 
         class="slider-overlay {isDragging ? 'dragging' : ''}" 
-        on:click={onClose} 
+        onclick={onClose} 
         transition:slide={{ duration: 300, axis: 'x' }}
     ></div>
     <div class="slider-panel" transition:slide={{ duration: 300, axis: 'x' }}>
         <div class="slider-header">
             <h2 class="slider-title">Concept Library</h2>
-            <button class="close-button" on:click={onClose}>
+            <button class="close-button" onclick={onClose}>
                 <X size={20} />
             </button>
         </div>
@@ -202,7 +206,7 @@
         <div class="slider-content">
             <!-- Component Library Section -->
             <div class="library-section">
-                <button class="library-header" on:click={toggleComponentLibrary}>
+                <button class="library-header" onclick={toggleComponentLibrary}>
                     <ChevronRight 
                         size={16} 
                         class="chevron {componentLibraryExpanded ? 'expanded' : ''}"
@@ -225,10 +229,10 @@
                         <!-- Expand/Collapse All Buttons -->
                         {#if !isSearching}
                             <div class="action-buttons">
-                                <button class="action-button" on:click={expandAll}>
+                                <button class="action-button" onclick={expandAll}>
                                     Expand All
                                 </button>
-                                <button class="action-button" on:click={collapseAll}>
+                                <button class="action-button" onclick={collapseAll}>
                                     Collapse All
                                 </button>
                             </div>
@@ -243,8 +247,8 @@
                                         <div 
                                             class="component-item search-result"
                                             draggable="true"
-                                            on:dragstart={(e) => handleDragStart(e, component)}
-                                            on:dragend={handleDragEnd}
+                                            ondragstart={(e) => handleDragStart(e, component)}
+                                            ondragend={handleDragEnd}
                                         >
                                             <Package size={14} />
                                             <span>{component.name}</span>
@@ -261,14 +265,14 @@
                                     <div class="category">
                                         <button 
                                             class="category-header"
-                                            on:click={() => toggleCategory(category.id)}
+                                            onclick={() => toggleCategory(category.id)}
                                         >
                                             <ChevronRight 
                                                 size={14} 
                                                 class="chevron {expandedCategories.has(category.id) ? 'expanded' : ''}"
                                             />
                                             {#if category.icon}
-                                                <svelte:component this={category.icon} size={16} />
+                                                <category.icon size={16} />
                                             {:else}
                                                 <Folder size={16} />
                                             {/if}
@@ -281,7 +285,7 @@
                                                     <div class="subcategory">
                                                         <button 
                                                             class="subcategory-header"
-                                                            on:click={() => toggleSubcategory(subcategory.id)}
+                                                            onclick={() => toggleSubcategory(subcategory.id)}
                                                         >
                                                             <ChevronRight 
                                                                 size={12} 
@@ -304,8 +308,8 @@
                                                                     <div 
                                                                         class="component-item"
                                                                         draggable="true"
-                                                                        on:dragstart={(e) => handleDragStart(e, component)}
-                                                                        on:dragend={handleDragEnd}
+                                                                        ondragstart={(e) => handleDragStart(e, component)}
+                                                                        ondragend={handleDragEnd}
                                                                         title={component.description || component.name}
                                                                     >
                                                                         <Package size={12} />
@@ -328,7 +332,7 @@
             
             <!-- Design Library Section -->
             <div class="library-section">
-                <button class="library-header" on:click={toggleDesignLibrary}>
+                <button class="library-header" onclick={toggleDesignLibrary}>
                     <ChevronRight 
                         size={16} 
                         class="chevron {designLibraryExpanded ? 'expanded' : ''}"
@@ -347,7 +351,7 @@
                                 bind:value={designSearchTerm}
                             />
                             {#if designSearchTerm || selectedPowertrainTypes.size > 0 || selectedShipTypes.size > 0}
-                                <button class="clear-search-btn" on:click={clearDesignFilters}>
+                                <button class="clear-search-btn" onclick={clearDesignFilters}>
                                     <X size={14} />
                                 </button>
                             {/if}
@@ -362,7 +366,7 @@
                                         <button
                                             class="filter-pill"
                                             class:active={selectedPowertrainTypes.has(type)}
-                                            on:click={() => togglePowertrainFilter(type)}
+                                            onclick={() => togglePowertrainFilter(type)}
                                         >
                                             {formatPowertrainType(type)}
                                         </button>
@@ -377,7 +381,7 @@
                                         <button
                                             class="filter-pill"
                                             class:active={selectedShipTypes.has(type)}
-                                            on:click={() => toggleShipTypeFilter(type)}
+                                            onclick={() => toggleShipTypeFilter(type)}
                                         >
                                             {formatShipType(type)}
                                         </button>
@@ -392,7 +396,7 @@
                                 <div class="design-category">
                                     <button
                                         class="design-category-header"
-                                        on:click={() => toggleDesignCategory(category.id)}
+                                        onclick={() => toggleDesignCategory(category.id)}
                                     >
                                         <ChevronRight 
                                             size={14} 
@@ -406,16 +410,16 @@
                                     {#if expandedDesignCategories.has(category.id)}
                                         <div class="designs" transition:slide={{ duration: 150 }}>
                                             {#each category.designs as design}
+                                                {@const SvelteComponent = powertrainIcons[design.powertrainType] || Anchor}
                                                 <div
                                                     class="design-card"
                                                     draggable="true"
-                                                    on:dragstart={(e) => handleDesignDragStart(e, design)}
-                                                    on:dragend={handleDragEnd}
+                                                    ondragstart={(e) => handleDesignDragStart(e, design)}
+                                                    ondragend={handleDragEnd}
                                                     title={design.description}
                                                 >
                                                     <div class="design-header">
-                                                        <svelte:component 
-                                                            this={powertrainIcons[design.powertrainType] || Anchor} 
+                                                        <SvelteComponent 
                                                             size={20} 
                                                             class="design-icon"
                                                         />
@@ -455,7 +459,7 @@
                         {#if filteredDesigns.length === 0}
                             <div class="no-results">
                                 <p>No designs match your filters</p>
-                                <button class="action-button" on:click={clearDesignFilters}>
+                                <button class="action-button" onclick={clearDesignFilters}>
                                     Clear Filters
                                 </button>
                             </div>

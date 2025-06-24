@@ -1,4 +1,7 @@
 <script lang="ts">
+    import { createBubbler, stopPropagation } from 'svelte/legacy';
+
+    const bubble = createBubbler();
     import ConceptualStageEditor from './ConceptualStageEditor.svelte';
     import ConceptualStageSidebar from './ConceptualStageSidebar.svelte';
     import PackageBreadcrumb from './PackageBreadcrumb.svelte';
@@ -10,18 +13,18 @@
     import { Save } from 'lucide-svelte';
     import { saveTemplate } from './utils/templateStorage';
     
-    let conceptEditor: ConceptualStageEditor;
-    let showSaveDialog = false;
-    let templateName = '';
-    let templateDescription = '';
+    let conceptEditor: ConceptualStageEditor = $state();
+    let showSaveDialog = $state(false);
+    let templateName = $state('');
+    let templateDescription = $state('');
     let previousViewStack: PackageView[] = [];
     
     // Notification system
-    let notification = {
+    let notification = $state({
         show: false,
         message: '',
         type: 'info' // 'info', 'success', 'error'
-    };
+    });
     
     function showNotification(message: string, type = 'info') {
         notification = { show: true, message, type };
@@ -156,7 +159,7 @@
         <div class="top-bar">
             <div class="left-section">
                 <span class="system-name">{$currentSystemMeta.name}</span>
-                <button class="save-template-btn" on:click={handleSaveAsTemplate}>
+                <button class="save-template-btn" onclick={handleSaveAsTemplate}>
                     <Save size={16} />
                     Save as Template
                 </button>
@@ -176,8 +179,8 @@
 </div>
 
 {#if showSaveDialog}
-    <div class="dialog-overlay" on:click={cancelSaveTemplate}>
-        <div class="dialog" on:click|stopPropagation>
+    <div class="dialog-overlay" onclick={cancelSaveTemplate}>
+        <div class="dialog" onclick={stopPropagation(bubble('click'))}>
             <h3>Save as Template</h3>
             <div class="form-group">
                 <label for="template-name">Template Name</label>
@@ -186,7 +189,7 @@
                     type="text" 
                     bind:value={templateName} 
                     placeholder="Enter template name"
-                    on:keydown={(e) => e.key === 'Enter' && confirmSaveTemplate()}
+                    onkeydown={(e) => e.key === 'Enter' && confirmSaveTemplate()}
                 />
             </div>
             <div class="form-group">
@@ -196,11 +199,11 @@
                     bind:value={templateDescription} 
                     placeholder="Enter template description"
                     rows="3"
-                />
+></textarea>
             </div>
             <div class="dialog-buttons">
-                <button class="cancel-btn" on:click={cancelSaveTemplate}>Cancel</button>
-                <button class="save-btn" on:click={confirmSaveTemplate}>Save Template</button>
+                <button class="cancel-btn" onclick={cancelSaveTemplate}>Cancel</button>
+                <button class="save-btn" onclick={confirmSaveTemplate}>Save Template</button>
             </div>
         </div>
     </div>

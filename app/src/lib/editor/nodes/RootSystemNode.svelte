@@ -2,9 +2,14 @@
     import { type NodeProps } from '@xyflow/svelte';
     import { onMount } from 'svelte';
     import { currentNodes } from '$lib/stores/stores';
+   interface Props {
+      [key: string]: any
+   }
+
+   let { ...rest }: Props = $props();
    
     type $$Props = NodeProps;
-    $$restProps
+    rest
 
     onMount(() => {
         const rootElement: HTMLDivElement | null = document.querySelector('[data-id="root"]');

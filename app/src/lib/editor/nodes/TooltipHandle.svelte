@@ -9,12 +9,16 @@
     import { selectNode } from '$lib/helpers';
     import EditConnectorPopup from './EditConnectorPopup.svelte';
 
-    export let elementName: string;
-    export let connectorName: string;
-    export let type: 'input' | 'output';
+    interface Props {
+        elementName: string;
+        connectorName: string;
+        type: 'input' | 'output';
+    }
 
-    let onHover: boolean = false;
-    let isEditing: boolean = false;
+    let { elementName, connectorName, type }: Props = $props();
+
+    let onHover: boolean = $state(false);
+    let isEditing: boolean = $state(false);
     
 
     const removeConnector = (name: string) => {
@@ -45,7 +49,7 @@
 
     // Make tooltips compensate for zoom level
     const { viewport } = useSvelteFlow();
-    let zoomLevel = 1;
+    let zoomLevel = $state(1);
     viewport.subscribe((value) => {
         zoomLevel = value.zoom;
     });
@@ -53,9 +57,9 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div class="handle-wrapper {onHover || isEditing ? 'hovered' : ''} {type}"
-    on:mouseenter={() => {onHover = true; selectNode(elementName);}}
-    on:mouseleave={() => {onHover = false;}}
-    on:click={(e) => {e.stopPropagation(); dispatchCustomEvent();}}>
+    onmouseenter={() => {onHover = true; selectNode(elementName);}}
+    onmouseleave={() => {onHover = false;}}
+    onclick={(e) => {e.stopPropagation(); dispatchCustomEvent();}}>
     <div class="handle-back">
     </div>
     <Handle
@@ -68,14 +72,14 @@
         <div class="handle-tooltip">
             <span>{connectorName}</span>
             <button class="btn-remove-edit"
-                on:click={() => isEditing = true}
+                onclick={() => isEditing = true}
                 aria-label="Edit Connector">
                 <svg class="icon-edit" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
                 </svg>                                               
             </button>
             <button class="btn-remove-edit"
-                on:click={() => removeConnector(connectorName)}
+                onclick={() => removeConnector(connectorName)}
                 aria-label="Remove Connector">                             
                 <svg class="icon-remove" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />

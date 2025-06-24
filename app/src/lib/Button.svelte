@@ -1,15 +1,29 @@
 <script lang="ts">
-    export let icon: string = '';
-    export let isActive: boolean = true;
-    export let lightMode: boolean = false;
-    export let color: string = 'var(--main-color)';
-    export let textColor: string = 'rgba(255, 255, 255, 0.9)';
-    export let border: boolean = false;
-    export let onClick: () => void = () => {};
+    interface Props {
+        icon?: string;
+        isActive?: boolean;
+        lightMode?: boolean;
+        color?: string;
+        textColor?: string;
+        border?: boolean;
+        onClick?: () => void;
+        children?: import('svelte').Snippet;
+    }
+
+    let {
+        icon = '',
+        isActive = true,
+        lightMode = false,
+        color = 'var(--main-color)',
+        textColor = 'rgba(255, 255, 255, 0.9)',
+        border = false,
+        onClick = () => {},
+        children
+    }: Props = $props();
 </script>
 
 <button
-    on:click={onClick}
+    onclick={onClick}
     class={`btn ${lightMode ? "lightmode" : ""} ${isActive ? '' : 'disabled'} ${border ? 'border' : ''}`}
     style={`background-color: ${color}; color: ${textColor};`}>  
     <span class="main-text" style="{icon ? '' : 'padding-left: 14px !important;'}">
@@ -18,7 +32,7 @@
                     {@html icon} 
             </span>             
         {/if}
-        <slot></slot>
+        {@render children?.()}
     </span>
 </button>
 <style>

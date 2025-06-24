@@ -1,9 +1,13 @@
-<script>
+<script lang="ts">
     import { truncate } from "./truncate";
 
-    export let text;
-    export let url;
-    export let newPage = true;
+    interface Props {
+        text: any;
+        url: any;
+        newPage?: boolean;
+    }
+
+    let { text, url, newPage = true }: Props = $props();
 </script>
 <div class="link-outer" style="max-width: {text.length * 7.4 + 16}px;">
     <a class="link" href={url} target="{newPage ? '_blank' : '_self'}">

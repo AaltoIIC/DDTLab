@@ -1,22 +1,35 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import { onMount } from 'svelte';
-    export let text: string;
-    export let value: string | undefined;
-    export let isError: boolean = false;
-    export let onInput: (text: string) => void;
-    let spanWidth = 0;
-    let inputElement: HTMLInputElement;
+    interface Props {
+        text: string;
+        value: string | undefined;
+        isError?: boolean;
+        onInput: (text: string) => void;
+    }
+
+    let {
+        text,
+        value = $bindable(),
+        isError = false,
+        onInput
+    }: Props = $props();
+    let spanWidth = $state(0);
+    let inputElement: HTMLInputElement = $state();
 
     const measureWidth = () => {
         if (!inputElement) return;
         spanWidth = (inputElement.nextElementSibling as HTMLSpanElement).offsetWidth;
     }
 
-    $: if (value) {
-        setTimeout(() => {
-            measureWidth();
-        }, 0);
-    }
+    run(() => {
+        if (value) {
+            setTimeout(() => {
+                measureWidth();
+            }, 0);
+        }
+    });
 
     onMount(() => {
         measureWidth();
@@ -30,7 +43,7 @@
         type="text"
         bind:value={value}
         bind:this={inputElement}
-        on:input={() => {onInput(value || '');}}
+        oninput={() => {onInput(value || '');}}
         style={
             `${isError ? "outline: solid 2px var(--main-error-color-dark);" : ""} width: ${spanWidth}px;`
         } />

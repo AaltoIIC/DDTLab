@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import { Input } from "$lib/components/ui/input";
     import * as Select from "$lib/components/ui/select";
     import { Textarea } from "$lib/components/ui/textarea";
@@ -9,37 +11,43 @@
     import { useSvelteFlow } from "@xyflow/svelte";
     import ReqTile from "./ReqTile.svelte";
 
-    export let isOpen: boolean = false;
+    interface Props {
+        isOpen?: boolean;
+    }
 
-    let isAddingNewReq = false;
+    let { isOpen = $bindable(false) }: Props = $props();
+
+    let isAddingNewReq = $state(false);
 
     // handle change of viewport when opening or closing popover
     const { setViewport, getViewport } = useSvelteFlow();
     const popoverWidth = 340;
-    $: if (isOpen) {
-        const currentViewport = getViewport();
-        setViewport({
-            ...currentViewport,
-            x: currentViewport.x + popoverWidth
-        });
-    } else {
-        const currentViewport = getViewport();
-        setViewport({
-            ...currentViewport,
-            x: currentViewport.x - popoverWidth
-        });
-    }
+    run(() => {
+        if (isOpen) {
+            const currentViewport = getViewport();
+            setViewport({
+                ...currentViewport,
+                x: currentViewport.x + popoverWidth
+            });
+        } else {
+            const currentViewport = getViewport();
+            setViewport({
+                ...currentViewport,
+                x: currentViewport.x - popoverWidth
+            });
+        }
+    });
 
-    let newReqName = generateName('Requirement', $currentReqs.map(r => r.name));
-    let newReqDescription = '';
-    let newReqOperator = {value: 'Globally', label: 'Globally'};
-    let newReqLeftHandSide: LogicalExpressionType | undefined = undefined;
-    let newReqRightHandSide: LogicalExpressionType = {
+    let newReqName = $state(generateName('Requirement', $currentReqs.map(r => r.name)));
+    let newReqDescription = $state('');
+    let newReqOperator = $state({value: 'Globally', label: 'Globally'});
+    let newReqLeftHandSide: LogicalExpressionType | undefined = $state(undefined);
+    let newReqRightHandSide: LogicalExpressionType = $state({
         leftHandSide: '',
         rightHandSide: '',
         operator: '='
-    };
-    let newReqInterval: number[] | undefined = undefined;
+    });
+    let newReqInterval: number[] | undefined = $state(undefined);
 
     export const tempOpArgs: Record<string, string[]> = {
         'Until': ['leftHandSide', 'rightHandSide'],
@@ -49,17 +57,19 @@
         'Since': ['leftHandSide', 'rightHandSide'],
         'Release': ['leftHandSide', 'rightHandSide']
     }
-    $: if (tempOpArgs[newReqOperator.value].includes('leftHandSide')) {
-        newReqLeftHandSide = newReqLeftHandSide || {
-            leftHandSide: '',
-            rightHandSide: '',
-            operator: '='
-        };
-    } else {
-        newReqLeftHandSide = undefined;
-    }
+    run(() => {
+        if (tempOpArgs[newReqOperator.value].includes('leftHandSide')) {
+            newReqLeftHandSide = newReqLeftHandSide || {
+                leftHandSide: '',
+                rightHandSide: '',
+                operator: '='
+            };
+        } else {
+            newReqLeftHandSide = undefined;
+        }
+    });
 
-    let isNameError = false;
+    let isNameError = $state(false);
     const validateName = () => {
         const isNameTaken = $currentReqs.map(r => r.name.replace(/\s+/g, '').toLowerCase())
                                 .includes(newReqName.replace(/\s+/g, '').toLowerCase());
@@ -95,7 +105,7 @@
     }
 </script>
 <div class="main-reqs-cont {isOpen ? 'open' : ''} shadow-sm" style:width={popoverWidth + 'px'}>
-    <button class="btn-close" aria-label="Close" on:click={() => isOpen = false}>
+    <button class="btn-close" aria-label="Close" onclick={() => isOpen = false}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
         </svg>          
@@ -108,7 +118,7 @@
                     <path d="M10 1V3.25M16.364 3.636L14.773 5.227M19 10H16.75M16.364 16.364L14.773 14.773M10 16.75V19M5.227 14.773L3.636 16.364M3.25 10H1M5.227 5.227L3.636 3.636" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <p>No requirements have been set</p>
-                <button class="add-req-btn" on:click={() => isAddingNewReq = true}>
+                <button class="add-req-btn" onclick={() => isAddingNewReq = true}>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
@@ -121,11 +131,11 @@
             {/each}
         {/if}
     </div>
-    <button class="btn-add" on:click={() => isAddingNewReq = true}>
+    <button class="btn-add" onclick={() => isAddingNewReq = true}>
         Add New Requirement
     </button>
     <div class="add-req-popover {isAddingNewReq ? 'open' : ''}">
-        <button class="btn-close" aria-label="Close" on:click={() => isAddingNewReq = false}>
+        <button class="btn-close" aria-label="Close" onclick={() => isAddingNewReq = false}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
             </svg>                      
@@ -180,7 +190,7 @@
 
                 <div class="field time-interval">
                     {#if newReqInterval == undefined}
-                        <button on:click={() => newReqInterval = [0, 0]}>
+                        <button onclick={() => newReqInterval = [0, 0]}>
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                             </svg>                      
@@ -195,7 +205,7 @@
                                 <Input type="number" bind:value={newReqInterval[1]} class="w-[64px] h-8" />
                                 <p>s</p>
                             </div>
-                            <button class="rm-interval" aria-label="Remove Time Interval" on:click={() => newReqInterval = undefined}>
+                            <button class="rm-interval" aria-label="Remove Time Interval" onclick={() => newReqInterval = undefined}>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
                                 </svg>                      
@@ -207,7 +217,7 @@
         </div>
 
         <button class="btn-add {isNameError ? 'inactive' : ''}"
-            on:click={addNewReq}>
+            onclick={addNewReq}>
             Add
         </button>
     </div>

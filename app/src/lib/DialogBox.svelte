@@ -3,10 +3,10 @@
     import Button from "./Button.svelte";
     import Popup from "./Popup.svelte";
 
-    let popup: SvelteComponent;
-    let dialogText = "";
-    let confirmText = "";
-    let denyText = "";  
+    let popup: SvelteComponent = $state();
+    let dialogText = $state("");
+    let confirmText = $state("");
+    let denyText = $state("");  
     let resolvePromise: (value: boolean) => void;
 
     export const openDialog = (dialog: string, confirm: string, deny: string): Promise<boolean> => {

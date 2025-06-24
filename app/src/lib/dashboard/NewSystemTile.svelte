@@ -2,8 +2,8 @@
     import { goto } from "$app/navigation";
 
     import Button from "$lib/Button.svelte";
-    let hover = false;
-    let showDropdown = false;
+    let hover = $state(false);
+    let showDropdown = $state(false);
 
     function handleNewClick(e: MouseEvent) {
         e.stopPropagation();
@@ -26,13 +26,13 @@
     }
 </script>
 
-<svelte:window on:click={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} />
 
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div class="main-tile {hover ? 'hover' : ''} shadow"
-    on:mouseenter={() => hover = true}
-    on:mouseleave={() => hover = false}>
+    onmouseenter={() => hover = true}
+    onmouseleave={() => hover = false}>
     <span class="bg-icon">
         <svg class="outline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -55,10 +55,10 @@
             </Button>
             {#if showDropdown}
                 <div class="dropdown">
-                    <button class="dropdown-item" on:click={() => handleStageSelect('concept')}>
+                    <button class="dropdown-item" onclick={() => handleStageSelect('concept')}>
                         Conceptual Stage
                     </button>
-                    <button class="dropdown-item" on:click={() => handleStageSelect('design')}>
+                    <button class="dropdown-item" onclick={() => handleStageSelect('design')}>
                         Design Stage
                     </button>
                 </div>

@@ -1,16 +1,27 @@
 <script lang="ts">
     import Button from "$lib/Button.svelte";
 
-    export let name: string;
-    export let icon: string;
-    export let texts: string[];
-    export let links: string[];
+    interface Props {
+        name: string;
+        icon: string;
+        texts: string[];
+        links: string[];
+        children?: import('svelte').Snippet;
+    }
+
+    let {
+        name,
+        icon,
+        texts,
+        links,
+        children
+    }: Props = $props();
 
 </script>
 <div class="resource-tile shadow">
     <h4>{name}</h4>
     <p>
-        <slot></slot>
+        {@render children?.()}
     </p>
     <span class="icon">
         {@html icon}

@@ -20,11 +20,11 @@
     import Tooltip from "$lib/Tooltip.svelte";
     import type { SubsystemDataType } from "$lib/types/types";  
 
-    let isReqsOpen = false;
-    let isAddDropdownOpen = false;
-    let isDownloadDropdownOpen = false;
-    let isTestScenariosOpen = false;
-    let isFMIOpen = false;
+    let isReqsOpen = $state(false);
+    let isAddDropdownOpen = $state(false);
+    let isDownloadDropdownOpen = $state(false);
+    let isTestScenariosOpen = $state(false);
+    let isFMIOpen = $state(false);
 
     const downloadFile = (format: string) => {
         let content = '';
@@ -99,7 +99,7 @@
 <div class="main-sidebar shadow-sm">
     <div class="top-buttons">
         <Tooltip text="Home" position="right">
-            <button class="menu-option-logo" on:click={() => {goto('/')}}>
+            <button class="menu-option-logo" onclick={() => {goto('/')}}>
                 <div class="logo-cont">
                     <img class="logo-icon" src="/icon.svg" alt="Home" />
                 </div>
@@ -107,7 +107,7 @@
         </Tooltip>
         <Tooltip text="Back to Dashboard" position="right">
             <button class="menu-option" aria-label="Back"
-                on:click={() => {goto('/')}}>
+                onclick={() => {goto('/')}}>
                 <svg class="option-icon back" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
                 </svg>                   
@@ -129,7 +129,7 @@
         </Tooltip>
         <Tooltip text="Manage Requirements" position="right">
             <button class="menu-option" aria-label="Add requirements"
-                on:click={() => {isReqsOpen = !isReqsOpen}}>
+                onclick={() => {isReqsOpen = !isReqsOpen}}>
                 <svg class="option-icon req {isReqsOpen ? 'active' : ''}" width="23" height="14" viewBox="0 0 23 14" fill="none" xmlns="http://www.w3.org/2000/svg" stroke-width="1.2" stroke="currentColor">
                     <path d="M9.875 1.375H21.875M11.0742 6.625H21.875M9.875 11.875H21.875" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M1 11L3.25 13.25L7 8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -138,7 +138,7 @@
         </Tooltip>
         <Tooltip text="Test Scenarios" position="right">
             <button class="menu-option" aria-label="Test Scenarios"
-                on:click={() => {isTestScenariosOpen = !isTestScenariosOpen}}>
+                onclick={() => {isTestScenariosOpen = !isTestScenariosOpen}}>
             <svg class="option-icon test-scenarios {isTestScenariosOpen ? 'active' : ''}" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke-width="1.5" stroke="currentColor">
                 <path d="M5 3l14 9-14 9V3z" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -146,7 +146,7 @@
         </Tooltip>
         <Tooltip text="FMI Components" position="right">
             <button class="menu-option" aria-label="FMI Components"
-                on:click={() => {isFMIOpen = !isFMIOpen}}>
+                onclick={() => {isFMIOpen = !isFMIOpen}}>
                 <svg class="option-icon fmi {isFMIOpen ? 'active' : ''}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
                 </svg>

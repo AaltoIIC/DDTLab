@@ -16,7 +16,7 @@
     <button 
         class="breadcrumb-item"
         class:active={$packageViewStack.length === 0}
-        on:click={() => navigateToIndex(-1)}
+        onclick={() => navigateToIndex(-1)}
     >
         <Home size={14} />
         <span>Root</span>
@@ -28,7 +28,7 @@
             <button 
                 class="breadcrumb-item"
                 class:active={index === $packageViewStack.length - 1}
-                on:click={() => navigateToIndex(index)}
+                onclick={() => navigateToIndex(index)}
             >
                 <span>{view.packageName}</span>
             </button>

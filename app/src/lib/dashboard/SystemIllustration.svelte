@@ -5,7 +5,11 @@
         Position
     } from '@xyflow/svelte';
 
-    export let system: SystemType;
+    interface Props {
+        system: SystemType;
+    }
+
+    let { system }: Props = $props();
 
     // get node dimensions
     let highestX = 0,
@@ -34,7 +38,7 @@
 
     const [addToX, addToY] = (width > height) ? [0, (width - height) / 2] : [(height - width) / 2, 0];
 
-    const elemPositions: Record<string, {x: number, y: number}> = {}; // node positions in percentages
+    const elemPositions: Record<string, {x: number, y: number}> = $state({}); // node positions in percentages
     system.nodes.filter(n => n.type !== 'RootSystem').forEach(node => {
         elemPositions[node.id] = {
             x: (node.position.x - lowestX + addToX),

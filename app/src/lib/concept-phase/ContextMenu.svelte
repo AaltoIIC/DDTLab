@@ -1,10 +1,17 @@
 <script lang="ts">
+    import { createBubbler, stopPropagation } from 'svelte/legacy';
+
+    const bubble = createBubbler();
     import { createEventDispatcher } from 'svelte';
     import { Copy } from 'lucide-svelte';
     
-    export let x: number = 0;
-    export let y: number = 0;
-    export let visible: boolean = false;
+    interface Props {
+        x?: number;
+        y?: number;
+        visible?: boolean;
+    }
+
+    let { x = 0, y = 0, visible = $bindable(false) }: Props = $props();
     
     const dispatch = createEventDispatcher<{
         duplicate: void;
@@ -27,11 +34,11 @@
     <div 
         class="context-menu"
         style="left: {x}px; top: {y}px;"
-        on:click|stopPropagation
+        onclick={stopPropagation(bubble('click'))}
     >
         <button 
             class="context-menu-item"
-            on:click={handleDuplicate}
+            onclick={handleDuplicate}
         >
             <Copy size={14} />
             <span>Duplicate</span>
@@ -39,7 +46,7 @@
     </div>
 {/if}
 
-<svelte:window on:click={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} />
 
 <style>
     .context-menu {

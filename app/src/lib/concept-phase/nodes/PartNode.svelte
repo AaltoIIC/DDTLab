@@ -1,4 +1,7 @@
 <script lang="ts">
+    import { run, stopPropagation, createBubbler } from 'svelte/legacy';
+
+    const bubble = createBubbler();
     import { Component, X } from 'lucide-svelte';
     import type { NodeProps } from '@xyflow/svelte';
     import { useUpdateNodeInternals } from '@xyflow/svelte';
@@ -25,15 +28,30 @@
         edges?: import('@xyflow/svelte').Edge[];
     } & PortData;
 
-    export let data: PartData;
-    export let selected: boolean = false;
-    export let id: string;
-    export let dragging: boolean = false;
+    interface Props {
+        data: PartData;
+        selected?: boolean;
+        id: string;
+        dragging?: boolean;
+    }
+
+    let {
+        data = $bindable(),
+        selected = false,
+        id,
+        dragging = false
+    }: Props = $props();
 
     // Initialize inputs/outputs if not present
-    $: if (!data.inputs) data.inputs = [];
-    $: if (!data.outputs) data.outputs = [];
-    $: if (!data.metadata) data.metadata = [];
+    run(() => {
+        if (!data.inputs) data.inputs = [];
+    });
+    run(() => {
+        if (!data.outputs) data.outputs = [];
+    });
+    run(() => {
+        if (!data.metadata) data.metadata = [];
+    });
 
     // Create port handlers
     const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<PartData>(id);
@@ -48,14 +66,16 @@
     
     // Update React Flow internals when data changes
     const updateNodeInternals = useUpdateNodeInternals();
-    $: if (data) {
-        updateNodeInternals(id);
-    }
+    run(() => {
+        if (data) {
+            updateNodeInternals(id);
+        }
+    });
 
-    let editingName = false;
-    let editingComment = false;
-    let tempName = data.declaredName;
-    let tempComment = data.comment || '';
+    let editingName = $state(false);
+    let editingComment = $state(false);
+    let tempName = $state(data.declaredName);
+    let tempComment = $state(data.comment || '');
 
     function updateNodeData(field: string, value: any) {
         currentNodes.update(nodes => {
@@ -109,10 +129,10 @@
     }
 
     // Context menu handling
-    let showContextMenu = false;
-    let contextMenuX = 0;
-    let contextMenuY = 0;
-    let nodeElement: HTMLDivElement;
+    let showContextMenu = $state(false);
+    let contextMenuX = $state(0);
+    let contextMenuY = $state(0);
+    let nodeElement: HTMLDivElement = $state();
 
     function handleContextMenu(event: MouseEvent) {
         event.preventDefault();
@@ -158,7 +178,7 @@
 
 </script>
 
-<div class="part-node" class:selected on:dblclick|stopPropagation={handleDoubleClick} on:contextmenu={handleContextMenu} bind:this={nodeElement}>
+<div class="part-node" class:selected ondblclick={stopPropagation(handleDoubleClick)} oncontextmenu={handleContextMenu} bind:this={nodeElement}>
     <!-- Input Handles -->
     <PortHandles 
         nodeId={id}
@@ -176,7 +196,7 @@
         </div>
         <button 
             class="delete-button" 
-            on:click|stopPropagation={handleDelete}
+            onclick={stopPropagation(handleDelete)}
             title="Delete part"
         >
             <X size={12} />
@@ -191,24 +211,24 @@
                     class="field-input"
                     type="text"
                     bind:value={tempName}
-                    on:blur={handleNameEdit}
-                    on:keydown={(e) => {
+                    onblur={handleNameEdit}
+                    onkeydown={(e) => {
                         if (e.key === 'Enter') handleNameEdit();
                         if (e.key === 'Escape') {
                             tempName = data.declaredName;
                             editingName = false;
                         }
                     }}
-                    on:click|stopPropagation
+                    onclick={stopPropagation(bubble('click'))}
                     autofocus
                 />
             {:else}
                 <span 
                     class="field-value editable" 
-                    on:click|stopPropagation={() => {
+                    onclick={stopPropagation(() => {
                         editingName = true;
                         tempName = data.declaredName;
-                    }}
+                    })}
                 >
                     {data.declaredName || 'Unnamed Part'}
                 </span>
@@ -222,24 +242,24 @@
                     class="field-input"
                     type="text"
                     bind:value={tempComment}
-                    on:blur={handleCommentEdit}
-                    on:keydown={(e) => {
+                    onblur={handleCommentEdit}
+                    onkeydown={(e) => {
                         if (e.key === 'Enter') handleCommentEdit();
                         if (e.key === 'Escape') {
                             tempComment = data.comment || '';
                             editingComment = false;
                         }
                     }}
-                    on:click|stopPropagation
+                    onclick={stopPropagation(bubble('click'))}
                     autofocus
                 />
             {:else}
                 <span 
                     class="field-value editable" 
-                    on:click|stopPropagation={() => {
+                    onclick={stopPropagation(() => {
                         editingComment = true;
                         tempComment = data.comment || '';
-                    }}
+                    })}
                 >
                     {data.comment || 'Click to add comment'}
                 </span>
@@ -256,8 +276,8 @@
             <select 
                 class="field-select"
                 value={data.orderStatus || 'Not Ordered'}
-                on:change={(e) => updateNodeData('orderStatus', e.target.value)}
-                on:click|stopPropagation
+                onchange={(e) => updateNodeData('orderStatus', e.target.value)}
+                onclick={stopPropagation(bubble('click'))}
             >
                 <option value="Delivered">Delivered</option>
                 <option value="Pending">Pending</option>

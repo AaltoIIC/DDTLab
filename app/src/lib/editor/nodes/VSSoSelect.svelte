@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import {
         useSvelteFlow
     } from '@xyflow/svelte';
@@ -7,40 +9,51 @@
     import { onMount } from "svelte";
     import { currentNodes } from '$lib/stores/stores';
 
-    export let id: string;
-    export let type: 'element' | 'connector' = 'element';
-    export let currentClass: string | null = null;
-    export let onChange: (value: string) => void;
-
-    let isPopoverOpen = false;
-
-    // Make node only draggable when popover is closed
-    $: if (isPopoverOpen) {
-        currentNodes.update((nodes) => {
-            return nodes.map((node) => {
-                if (node.id === id) {
-                    node.dragHandle = '.none';
-                }
-                return node;
-            });
-        });
-    } else {
-        currentNodes.update((nodes) => {
-            return nodes.map((node) => {
-                if (node.id === id) {
-                    node.dragHandle = '.element-node-inner';
-                }
-                return node;
-            });
-        });
+    interface Props {
+        id: string;
+        type?: 'element' | 'connector';
+        currentClass?: string | null;
+        onChange: (value: string) => void;
     }
 
-    let currentSearch: string = "";
+    let {
+        id,
+        type = 'element',
+        currentClass = $bindable(null),
+        onChange
+    }: Props = $props();
+
+    let isPopoverOpen = $state(false);
+
+    // Make node only draggable when popover is closed
+    run(() => {
+        if (isPopoverOpen) {
+            currentNodes.update((nodes) => {
+                return nodes.map((node) => {
+                    if (node.id === id) {
+                        node.dragHandle = '.none';
+                    }
+                    return node;
+                });
+            });
+        } else {
+            currentNodes.update((nodes) => {
+                return nodes.map((node) => {
+                    if (node.id === id) {
+                        node.dragHandle = '.element-node-inner';
+                    }
+                    return node;
+                });
+            });
+        }
+    });
+
+    let currentSearch: string = $state("");
 
     const classes = (type === 'element' ? Object.keys(VSSo.elementTypes) :
         Object.values(VSSo.elementTypes).flat());
 
-    let shownClasses: string[] = classes;
+    let shownClasses: string[] = $state(classes);
     const updateResults = () => {
         shownClasses = classes.filter((VSSoClass) => {
             return VSSoClass.toLowerCase().includes(currentSearch.toLowerCase());
@@ -65,7 +78,7 @@
 
     // Make popover element compensate for zoom level
     const { viewport } = useSvelteFlow();
-    let zoomLevel = 1;
+    let zoomLevel = $state(1);
     if (type === 'element') {
         viewport.subscribe((value) => {
             zoomLevel = value.zoom;
@@ -73,8 +86,8 @@
     }
 
     // Make scroll work in popover
-    let selectOnHover = false;
-    let listOnHover = false;
+    let selectOnHover = $state(false);
+    let listOnHover = $state(false);
 
     onMount(() => {
         document.addEventListener('pointerdown', (e) => {
@@ -97,10 +110,10 @@
 </script>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="select-outer {type}"
-    on:mouseenter={() => selectOnHover = true}
-    on:mouseleave={() => selectOnHover = false}>
+    onmouseenter={() => selectOnHover = true}
+    onmouseleave={() => selectOnHover = false}>
     <button class="main-class-cont border-input border rounded-md bg-background text-sm h-8"
-        on:click={() => isPopoverOpen = !isPopoverOpen}>
+        onclick={() => isPopoverOpen = !isPopoverOpen}>
         <span>
             {currentClass ? currentClass : "Select Type..."}
         </span>
@@ -119,13 +132,13 @@
         />
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="main-class-list"
-            on:mouseenter={() => listOnHover = true}
-            on:mouseleave={() => listOnHover = false}>
+            onmouseenter={() => listOnHover = true}
+            onmouseleave={() => listOnHover = false}>
             {#if shownClasses.length === 0}
                 <span class="no-classes">No classes found</span>
             {:else}
                 {#each shownClasses as VSSoClass}
-                    <button on:click={() => {selectClass(VSSoClass)}}>{VSSoClass}</button>
+                    <button onclick={() => {selectClass(VSSoClass)}}>{VSSoClass}</button>
                 {/each}
             {/if}
         </div>

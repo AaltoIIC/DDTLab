@@ -1,21 +1,35 @@
 <script lang="ts">
+    import { stopPropagation, createBubbler } from 'svelte/legacy';
+
+    const bubble = createBubbler();
     import { Handle, Position } from '@xyflow/svelte';
     import { Plus, Minus, Plug } from 'lucide-svelte';
     import { onMount } from 'svelte';
     import type { Port } from '../interfaces';
     import { standardInterfaces, getInterfacesByCategory } from '../interfaces';
     
-    export let nodeId: string;
-    export let ports: Port[] = [];
-    export let type: 'input' | 'output';
-    export let onAdd: () => void;
-    export let onRemove: (index: number) => void;
-    export let onUpdateInterface: (index: number, interfaceType: string | undefined) => void;
+    interface Props {
+        nodeId: string;
+        ports?: Port[];
+        type: 'input' | 'output';
+        onAdd: () => void;
+        onRemove: (index: number) => void;
+        onUpdateInterface: (index: number, interfaceType: string | undefined) => void;
+    }
+
+    let {
+        nodeId,
+        ports = [],
+        type,
+        onAdd,
+        onRemove,
+        onUpdateInterface
+    }: Props = $props();
     
-    $: position = type === 'input' ? Position.Left : Position.Right;
-    $: containerClass = type === 'input' ? 'handles-left' : 'handles-right';
-    $: offset = type === 'input' ? -8 : -8;
-    $: side = type === 'input' ? 'left' : 'right';
+    let position = $derived(type === 'input' ? Position.Left : Position.Right);
+    let containerClass = $derived(type === 'input' ? 'handles-left' : 'handles-right');
+    let offset = $derived(type === 'input' ? -8 : -8);
+    let side = $derived(type === 'input' ? 'left' : 'right');
 
     // Force re-render when component mounts to ensure handles are registered
     let mounted = false;
@@ -24,8 +38,8 @@
     });
     
     // Interface selection state
-    let showInterfaceSelector: number | null = null;
-    let selectedCategory: string = 'electrical';
+    let showInterfaceSelector: number | null = $state(null);
+    let selectedCategory: string = $state('electrical');
     
     function selectInterface(index: number, interfaceId: string | undefined) {
         onUpdateInterface(index, interfaceId);
@@ -65,7 +79,7 @@
             </span>
             <button 
                 class="handle-interface" 
-                on:click|stopPropagation={() => showInterfaceSelector = showInterfaceSelector === i ? null : i}
+                onclick={stopPropagation(() => showInterfaceSelector = showInterfaceSelector === i ? null : i)}
                 title="Set interface type"
                 style="color: {getInterfaceColor(port.interfaceType)}"
             >
@@ -74,7 +88,7 @@
             {#if ports.length > 0}
                 <button 
                     class="handle-remove" 
-                    on:click|stopPropagation={() => onRemove(i)}
+                    onclick={stopPropagation(() => onRemove(i))}
                     title="Remove {type}"
                 >
                     <Minus size={10} />
@@ -82,35 +96,35 @@
             {/if}
             
             {#if showInterfaceSelector === i}
-                <!-- svelte-ignore a11y-no-static-element-interactions -->
-                <!-- svelte-ignore a11y-click-events-have-key-events -->
-                <div class="interface-selector" on:click|stopPropagation>
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <div class="interface-selector" onclick={stopPropagation(bubble('click'))}>
                     <div class="interface-categories">
                         <button 
                             class="category-tab" 
                             class:active={selectedCategory === 'electrical'}
-                            on:click={() => selectedCategory = 'electrical'}
+                            onclick={() => selectedCategory = 'electrical'}
                         >
                             Electrical
                         </button>
                         <button 
                             class="category-tab" 
                             class:active={selectedCategory === 'mechanical'}
-                            on:click={() => selectedCategory = 'mechanical'}
+                            onclick={() => selectedCategory = 'mechanical'}
                         >
                             Mechanical
                         </button>
                         <button 
                             class="category-tab" 
                             class:active={selectedCategory === 'fluid'}
-                            on:click={() => selectedCategory = 'fluid'}
+                            onclick={() => selectedCategory = 'fluid'}
                         >
                             Fluid
                         </button>
                         <button 
                             class="category-tab" 
                             class:active={selectedCategory === 'data'}
-                            on:click={() => selectedCategory = 'data'}
+                            onclick={() => selectedCategory = 'data'}
                         >
                             Data
                         </button>
@@ -119,7 +133,7 @@
                         <button 
                             class="interface-option"
                             class:selected={!port.interfaceType}
-                            on:click={() => selectInterface(i, undefined)}
+                            onclick={() => selectInterface(i, undefined)}
                         >
                             None
                         </button>
@@ -127,7 +141,7 @@
                             <button 
                                 class="interface-option"
                                 class:selected={port.interfaceType === intf.id}
-                                on:click={() => selectInterface(i, intf.id)}
+                                onclick={() => selectInterface(i, intf.id)}
                             >
                                 {intf.name}
                             </button>
@@ -139,7 +153,7 @@
     {/each}
     <button 
         class="handle-add" 
-        on:click|stopPropagation={onAdd}
+        onclick={stopPropagation(onAdd)}
         title="Add {type}"
         style="top: {20 + ports.length * 30}px;"
     >

@@ -1,17 +1,27 @@
 <script lang="ts">
-    export let text: string = '';
-    export let position: 'right' | 'left' | 'top' | 'bottom' = 'right';
-    export let disabled: boolean = false;
+    interface Props {
+        text?: string;
+        position?: 'right' | 'left' | 'top' | 'bottom';
+        disabled?: boolean;
+        children?: import('svelte').Snippet;
+    }
+
+    let {
+        text = '',
+        position = 'right',
+        disabled = false,
+        children
+    }: Props = $props();
     
-    let showTooltip = false;
-    let tooltipElement: HTMLDivElement;
+    let showTooltip = $state(false);
+    let tooltipElement: HTMLDivElement = $state();
 </script>
 
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="tooltip-wrapper"
-    on:mouseenter={() => showTooltip = true}
-    on:mouseleave={() => showTooltip = false}>
-    <slot />
+    onmouseenter={() => showTooltip = true}
+    onmouseleave={() => showTooltip = false}>
+    {@render children?.()}
     {#if showTooltip && text && !disabled}
         <div class="tooltip {position}" bind:this={tooltipElement}>
             {text}

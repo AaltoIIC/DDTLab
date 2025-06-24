@@ -1,9 +1,9 @@
 <script lang="ts">
     import { notification } from '$lib/stores/stores'
 
-    let isShown = false;
-    let currentText = '';
-    let currentType = '';
+    let isShown = $state(false);
+    let currentText = $state('');
+    let currentType = $state('');
     let currentTimeout: any;
 
     notification.subscribe(value => {
@@ -55,10 +55,10 @@
                 <p>{currentText}</p>
             </div>
             <div class="close-cont">
-                <!-- svelte-ignore a11y-click-events-have-key-events -->
-                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <svg
-                    on:click={closeNotification}
+                    onclick={closeNotification}
                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>              

@@ -1,15 +1,29 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    export let icon: string = '';
-    export let isActive: boolean = true;
-    export let options: string[] = [];
-    export let optionIcons: string[] = [];
-    export let onClick: (option: string) => void = () => {};
-    export let color: string = 'var(--main-color)';
-    export let textColor: 'light' | 'dark' = 'light';
+    interface Props {
+        icon?: string;
+        isActive?: boolean;
+        options?: string[];
+        optionIcons?: string[];
+        onClick?: (option: string) => void;
+        color?: string;
+        textColor?: 'light' | 'dark';
+        children?: import('svelte').Snippet;
+    }
 
-    let isDropdownOpen = false;
-    let onHover = false;
+    let {
+        icon = '',
+        isActive = true,
+        options = [],
+        optionIcons = [],
+        onClick = () => {},
+        color = 'var(--main-color)',
+        textColor = 'light',
+        children
+    }: Props = $props();
+
+    let isDropdownOpen = $state(false);
+    let onHover = $state(false);
 
     onMount(() => {
         document.addEventListener('pointerdown', (event) => {
@@ -20,10 +34,10 @@
     });
 </script>
 
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="main-button-cont {isDropdownOpen ? "open" : ""}"
-    on:mouseenter={() => {onHover = true}}
-    on:mouseleave={() => {onHover = false}}>
+    onmouseenter={() => {onHover = true}}
+    onmouseleave={() => {onHover = false}}>
 <button
     class={`btn ${textColor === 'dark' ? 'dark-txt' : 'light-txt'}`}
     style={`${(isActive ?
@@ -31,14 +45,14 @@
         :
             'pointer-events: none !important; background-color: var(--main-color-dark-2); opacity: 0.7;'
     )}`}
-    on:click={() => {isDropdownOpen = !isDropdownOpen}}>
+    onclick={() => {isDropdownOpen = !isDropdownOpen}}>
     {#if icon}
         <span class="main-icon">
                 {@html icon} 
         </span>             
     {/if}
     <span class="main-text" style="{icon ? '' : 'padding-left: 14px !important;'}">
-        <slot></slot>
+        {@render children?.()}
         <svg class="icon-dropdown" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
           </svg>
@@ -46,7 +60,7 @@
 </button>
 <div class="main-dropdown shadow-md">
     {#each options as option, index}
-        <button on:click={() => {onClick(option); isDropdownOpen = false;}}>
+        <button onclick={() => {onClick(option); isDropdownOpen = false;}}>
             {#if optionIcons.length > index}
                 <span class="option-icon">
                     {@html optionIcons[index]}

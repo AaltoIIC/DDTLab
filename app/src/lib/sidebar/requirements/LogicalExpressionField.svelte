@@ -4,22 +4,26 @@
     import { onMount } from "svelte";
     import type { LogicalExpressionType } from "$lib/types/types";
 
-    export let value: LogicalExpressionType = {
+   interface Props {
+      value?: LogicalExpressionType;
+   }
+
+   let { value = $bindable({
         leftHandSide: '',
         rightHandSide: '',
         operator: '='
-    };
+    }) }: Props = $props();
 
 
-    let operator = {value: '=', label: '='};
+    let operator = $state({value: '=', label: '='});
     const updateOperator = (e: any) => {
         value.operator = e.value;
     };
 
     // Fill input fields with connector name on click
-    let leftInFocus = false;
-    let rightInFocus = false;
-    let inputOnHover = false;
+    let leftInFocus = $state(false);
+    let rightInFocus = $state(false);
+    let inputOnHover = $state(false);
     onMount(() => {
         document.addEventListener('click', () => {
             if (inputOnHover) return;

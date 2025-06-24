@@ -1,15 +1,22 @@
 <script lang="ts">
+    import { stopPropagation, createBubbler } from 'svelte/legacy';
+
+    const bubble = createBubbler();
     import { Plus, X } from 'lucide-svelte';
     
-    export let metadata: Array<{ key: string; value: string }> = [];
-    export let onUpdate: (metadata: Array<{ key: string; value: string }>) => void;
+    interface Props {
+        metadata?: Array<{ key: string; value: string }>;
+        onUpdate: (metadata: Array<{ key: string; value: string }>) => void;
+    }
+
+    let { metadata = [], onUpdate }: Props = $props();
     
-    let newKey = '';
-    let newValue = '';
-    let showAddForm = false;
-    let editingIndex: number | null = null;
-    let editKey = '';
-    let editValue = '';
+    let newKey = $state('');
+    let newValue = $state('');
+    let showAddForm = $state(false);
+    let editingIndex: number | null = $state(null);
+    let editKey = $state('');
+    let editValue = $state('');
     
     function addMetadata() {
         if (newKey.trim() && newValue.trim()) {
@@ -74,7 +81,7 @@
         {#if !showAddForm}
             <button 
                 class="add-button" 
-                on:click|stopPropagation={() => showAddForm = true}
+                onclick={stopPropagation(() => showAddForm = true)}
                 title="Add metadata"
             >
                 <Plus size={12} />
@@ -92,8 +99,8 @@
                             type="text"
                             bind:value={editKey}
                             placeholder="Key"
-                            on:keydown={(e) => handleKeyDown(e, 'edit')}
-                            on:click|stopPropagation
+                            onkeydown={(e) => handleKeyDown(e, 'edit')}
+                            onclick={stopPropagation(bubble('click'))}
                             autofocus
                         />
                         <input
@@ -101,20 +108,20 @@
                             type="text"
                             bind:value={editValue}
                             placeholder="Value"
-                            on:keydown={(e) => handleKeyDown(e, 'edit')}
-                            on:click|stopPropagation
+                            onkeydown={(e) => handleKeyDown(e, 'edit')}
+                            onclick={stopPropagation(bubble('click'))}
                         />
                         <div class="edit-actions">
                             <button
                                 class="save-button"
-                                on:click|stopPropagation={saveEdit}
+                                onclick={stopPropagation(saveEdit)}
                                 title="Save"
                             >
                                 ✓
                             </button>
                             <button
                                 class="cancel-button"
-                                on:click|stopPropagation={cancelEdit}
+                                onclick={stopPropagation(cancelEdit)}
                                 title="Cancel"
                             >
                                 ✗
@@ -124,15 +131,15 @@
                 {:else}
                     <div 
                         class="metadata-content"
-                        on:click|stopPropagation={() => startEdit(index)}
-                        on:dblclick|stopPropagation
+                        onclick={stopPropagation(() => startEdit(index))}
+                        ondblclick={stopPropagation(bubble('dblclick'))}
                     >
                         <span class="metadata-key">{item.key}:</span>
                         <span class="metadata-value">{item.value}</span>
                     </div>
                     <button
                         class="remove-button"
-                        on:click|stopPropagation={() => removeMetadata(index)}
+                        onclick={stopPropagation(() => removeMetadata(index))}
                         title="Remove"
                     >
                         <X size={10} />
@@ -148,8 +155,8 @@
                     type="text"
                     bind:value={newKey}
                     placeholder="Key"
-                    on:keydown={(e) => handleKeyDown(e, 'add')}
-                    on:click|stopPropagation
+                    onkeydown={(e) => handleKeyDown(e, 'add')}
+                    onclick={stopPropagation(bubble('click'))}
                     autofocus
                 />
                 <input
@@ -157,24 +164,24 @@
                     type="text"
                     bind:value={newValue}
                     placeholder="Value"
-                    on:keydown={(e) => handleKeyDown(e, 'add')}
-                    on:click|stopPropagation
+                    onkeydown={(e) => handleKeyDown(e, 'add')}
+                    onclick={stopPropagation(bubble('click'))}
                 />
                 <div class="add-actions">
                     <button
                         class="save-button"
-                        on:click|stopPropagation={addMetadata}
+                        onclick={stopPropagation(addMetadata)}
                         title="Add"
                     >
                         ✓
                     </button>
                     <button
                         class="cancel-button"
-                        on:click|stopPropagation={() => {
+                        onclick={stopPropagation(() => {
                             showAddForm = false;
                             newKey = '';
                             newValue = '';
-                        }}
+                        })}
                         title="Cancel"
                     >
                         ✗

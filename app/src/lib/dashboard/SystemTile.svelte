@@ -7,8 +7,12 @@
     import SystemIllustration from "./SystemIllustration.svelte";
     import { cloneSystem, removeSystem } from "$lib/stores/stores";
 
-    export let system: SystemType;
-    let dialogBox: DialogBox;
+  interface Props {
+    system: SystemType;
+  }
+
+  let { system }: Props = $props();
+    let dialogBox: DialogBox = $state();
 
     const handleMenu = (option: string) => {
         if (option === "Duplicate") {
@@ -25,10 +29,10 @@
         }
     }
 </script>
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="tile shadow"
-      on:click={() => {
+      onclick={() => {
       const stageParam = system.stage === 'concept' ? '?stage=concept' : '';
       goto(`/editor/${system.id}${stageParam}`);
   }}>

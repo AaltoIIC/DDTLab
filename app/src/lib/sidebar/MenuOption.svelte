@@ -1,21 +1,37 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import { onMount } from 'svelte';
 
-    export let icon: string = '';
-    export let iconColor: string = 'black';
-    export let options: string[] = [];
-    export let optionIcons: string[] = [];
-    export let onClick: (option: string) => void = () => {};
-    export let visible = true;
-    export let isOpen = false;
+    interface Props {
+        icon?: string;
+        iconColor?: string;
+        options?: string[];
+        optionIcons?: string[];
+        onClick?: (option: string) => void;
+        visible?: boolean;
+        isOpen?: boolean;
+    }
 
-    let isDropdownOpen = false;
-    let onHover = false;
+    let {
+        icon = '',
+        iconColor = 'black',
+        options = [],
+        optionIcons = [],
+        onClick = () => {},
+        visible = true,
+        isOpen = $bindable(false)
+    }: Props = $props();
+
+    let isDropdownOpen = $state(false);
+    let onHover = $state(false);
     
     // Update parent when internal state changes
-    $: if (isDropdownOpen !== isOpen) {
-        isOpen = isDropdownOpen;
-    }
+    run(() => {
+        if (isDropdownOpen !== isOpen) {
+            isOpen = isDropdownOpen;
+        }
+    });
 
     onMount(() => {
         document.addEventListener('pointerdown', (event) => {
@@ -27,20 +43,20 @@
     });
 </script>
 
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="main-button-cont {isDropdownOpen ? "open" : ""} {visible ? 'visible' : ''}"
-    on:mouseenter={() => {onHover = true}}
-    on:mouseleave={() => {onHover = false}}>
+    onmouseenter={() => {onHover = true}}
+    onmouseleave={() => {onHover = false}}>
 <button
     class="btn"
     aria-label="Dropdown"
-    on:click={(e) => {e.stopPropagation(); isDropdownOpen = !isDropdownOpen; isOpen = isDropdownOpen}}
+    onclick={(e) => {e.stopPropagation(); isDropdownOpen = !isDropdownOpen; isOpen = isDropdownOpen}}
     style:color={iconColor}>
         {@html icon}
 </button>
 <div class="main-dropdown shadow">
     {#each options as option, index}
-        <button on:click={(e) => {e.stopPropagation(); onClick(option); isDropdownOpen = false; isOpen = false;}}>
+        <button onclick={(e) => {e.stopPropagation(); onClick(option); isDropdownOpen = false; isOpen = false;}}>
             {#if optionIcons.length > index}
                 <span class="option-icon">
                     {@html optionIcons[index]}

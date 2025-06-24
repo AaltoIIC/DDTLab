@@ -7,17 +7,21 @@
     } from '$lib/helpers';
     import EditConnectorPopup from './EditConnectorPopup.svelte';
 
-    export let elementName: string;
-    export let type: 'input' | 'output' = 'output';
-    export let nodeOnHover: boolean = false;
-    let btnOnHover: boolean = false;
+    interface Props {
+        elementName: string;
+        type?: 'input' | 'output';
+        nodeOnHover?: boolean;
+    }
+
+    let { elementName, type = 'output', nodeOnHover = $bindable(false) }: Props = $props();
+    let btnOnHover: boolean = $state(false);
     let isAddingNew: boolean = false;
-    let addBtn: HTMLSpanElement;
+    let addBtn: HTMLSpanElement = $state();
 
     
     // Make button and layover compensate for zoom level
     const { viewport } = useSvelteFlow();
-    let zoomLevel = 1;
+    let zoomLevel = $state(1);
     viewport.subscribe((value) => {
         zoomLevel = value.zoom;
     });
@@ -27,11 +31,11 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <span class="btn-add-cont {type}"
     style="transform: scale({1/zoomLevel});"
-    on:mouseenter={() => {btnOnHover = true; nodeOnHover = false;}}
-    on:mouseleave={() => {btnOnHover = false; nodeOnHover = true;}}>
+    onmouseenter={() => {btnOnHover = true; nodeOnHover = false;}}
+    onmouseleave={() => {btnOnHover = false; nodeOnHover = true;}}>
     <button class="add-btn {nodeOnHover || btnOnHover || isAddingNew ? 'hover' : ''}"
         aria-label="Add Connector"
-        on:click={() => {selectNode(elementName);}}
+        onclick={() => {selectNode(elementName);}}
         bind:this={addBtn}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

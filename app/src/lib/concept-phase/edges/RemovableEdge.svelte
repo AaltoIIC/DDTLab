@@ -1,42 +1,58 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/svelte';
     import { currentEdges, addToHistory } from '$lib/stores/stores';
     import type { CompatibilityStatus } from '../interfaces';
     
-    export let id: EdgeProps['id'];
-    export let sourceX: EdgeProps['sourceX'];
-    export let sourceY: EdgeProps['sourceY'];
-    export let targetX: EdgeProps['targetX'];
-    export let targetY: EdgeProps['targetY'];
-    export let sourcePosition: EdgeProps['sourcePosition'];
-    export let targetPosition: EdgeProps['targetPosition'];
-    export let markerEnd: EdgeProps['markerEnd'];
-    export let data: { compatibility?: CompatibilityStatus; adapterRequired?: string; message?: string } = {};
+    interface Props {
+        id: EdgeProps['id'];
+        sourceX: EdgeProps['sourceX'];
+        sourceY: EdgeProps['sourceY'];
+        targetX: EdgeProps['targetX'];
+        targetY: EdgeProps['targetY'];
+        sourcePosition: EdgeProps['sourcePosition'];
+        targetPosition: EdgeProps['targetPosition'];
+        markerEnd: EdgeProps['markerEnd'];
+        data?: { compatibility?: CompatibilityStatus; adapterRequired?: string; message?: string };
+    }
+
+    let {
+        id,
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+        sourcePosition,
+        targetPosition,
+        markerEnd,
+        data = {}
+    }: Props = $props();
     
-    $: edgePath = getSmoothStepPath({
+    let edgePath = $derived(getSmoothStepPath({
         sourceX,
         sourceY,
         sourcePosition,
         targetX,
         targetY,
         targetPosition,
-    });
+    }));
     
-    $: centerX = (sourceX + targetX) / 2;
-    $: centerY = (sourceY + targetY) / 2;
+    let centerX = $derived((sourceX + targetX) / 2);
+    let centerY = $derived((sourceY + targetY) / 2);
     
     // Determine edge color based on compatibility
-    $: {
+    run(() => {
         console.log('Edge data:', id, data);
-    }
+    });
     
-    $: strokeColor = {
+    let strokeColor = $derived({
         'direct': '#10b981',     // green
         'adapter': '#f59e0b',    // yellow
         'incompatible': '#ef4444' // red
-    }[data?.compatibility || 'direct'];
+    }[data?.compatibility || 'direct']);
     
-    $: strokeWidth = data?.compatibility === 'adapter' ? 3 : 2;
+    let strokeWidth = $derived(data?.compatibility === 'adapter' ? 3 : 2);
     
     function handleDelete() {
         currentEdges.update(edges => edges.filter(edge => edge.id !== id));
@@ -65,7 +81,7 @@
                 {data.message}
             </div>
         {/if}
-        <button class="edge-button" on:click={handleDelete}>
+        <button class="edge-button" onclick={handleDelete}>
             ×
         </button>
     </div>

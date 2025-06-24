@@ -27,8 +27,13 @@
     import Breadcrumb from "$lib/editor/Breadcrumb.svelte";
     import ConceptualStageLayout from "$lib/concept-phase/ConceptualStageLayout.svelte";
 
-    // initialize the editor
-    export let data;
+    
+    interface Props {
+        // initialize the editor
+        data: any;
+    }
+
+    let { data }: Props = $props();
     
     // Check if we're in conceptual stage
     const isConceptualStage = data.stage === 'concept';

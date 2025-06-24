@@ -9,12 +9,16 @@
     import ConceptLibrarySlider from './ConceptLibrarySlider.svelte';
     import ConceptTemplateSlider from './ConceptTemplateSlider.svelte';
 
-    export let onAddPackage: () => void;
-    export let onAddPart: () => void = () => {};
-    export let onAddItem: () => void = () => {};
+  interface Props {
+    onAddPackage: () => void;
+    onAddPart?: () => void;
+    onAddItem?: () => void;
+  }
+
+  let { onAddPackage, onAddPart = () => {}, onAddItem = () => {} }: Props = $props();
     
-    let isLibraryOpen = false;
-    let isTemplateSliderOpen = false;
+    let isLibraryOpen = $state(false);
+    let isTemplateSliderOpen = $state(false);
     
     function handleHomeClick() {
         // Reset to root level before navigating away
@@ -48,7 +52,7 @@
 <div class="sidebar">
     <div class="top-buttons">
         <Tooltip text="Home" position="right">
-            <button class="menu-option-logo" on:click={handleHomeClick}>
+            <button class="menu-option-logo" onclick={handleHomeClick}>
                 <div class="logo-cont">
                     <img class="logo-icon" src="/icon.svg" alt="Home" />
                 </div>
@@ -57,20 +61,20 @@
 
         {#if !$currentPackageView}
             <Tooltip text="Add Package" position="right">
-                <button class="menu-option" on:click={onAddPackage}>
+                <button class="menu-option" onclick={onAddPackage}>
                     <Package class="option-icon" />
                 </button>
             </Tooltip>
         {:else}
             {#if $currentPackageView.packageId.startsWith('part-')}
                 <Tooltip text="Add Item" position="right">
-                    <button class="menu-option" on:click={onAddItem}>
+                    <button class="menu-option" onclick={onAddItem}>
                         <Box class="option-icon" />
                     </button>
                 </Tooltip>
             {:else}
                 <Tooltip text="Add Part" position="right">
-                    <button class="menu-option" on:click={onAddPart}>
+                    <button class="menu-option" onclick={onAddPart}>
                         <Component class="option-icon" />
                     </button>
                 </Tooltip>
@@ -80,13 +84,13 @@
         <div class="separator"></div>
 
         <Tooltip text="Concept Library" position="right">
-            <button class="menu-option" class:active={isLibraryOpen} on:click={toggleLibrary}>
+            <button class="menu-option" class:active={isLibraryOpen} onclick={toggleLibrary}>
                 <Library class="option-icon" />
             </button>
         </Tooltip>
 
         <Tooltip text="Saved Templates" position="right">
-            <button class="menu-option" class:active={isTemplateSliderOpen} on:click={toggleTemplateSlider}>
+            <button class="menu-option" class:active={isTemplateSliderOpen} onclick={toggleTemplateSlider}>
                 <FileText class="option-icon" />
             </button>
         </Tooltip>

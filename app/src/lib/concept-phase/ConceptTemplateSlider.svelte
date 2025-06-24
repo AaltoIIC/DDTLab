@@ -1,18 +1,24 @@
 <script lang="ts">
+    import { stopPropagation } from 'svelte/legacy';
+
     import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy } from 'lucide-svelte';
     import { slide } from 'svelte/transition';
     import { templates, deleteTemplate, duplicateTemplate, exportTemplate, importTemplate } from './utils/templateStorage';
     import type { ConceptTemplate } from './types/template';
     
-    export let isOpen = false;
-    export let onClose: () => void;
+    interface Props {
+        isOpen?: boolean;
+        onClose: () => void;
+    }
+
+    let { isOpen = false, onClose }: Props = $props();
     
-    let expandedCategories: Record<string, boolean> = {
+    let expandedCategories: Record<string, boolean> = $state({
         all: true
-    };
+    });
     
-    let isDragging = false;
-    let selectedTemplate: ConceptTemplate | null = null;
+    let isDragging = $state(false);
+    let selectedTemplate: ConceptTemplate | null = $state(null);
     
     function toggleCategory(category: string) {
         expandedCategories[category] = !expandedCategories[category];
@@ -90,17 +96,17 @@
 {#if isOpen}
     <div 
         class="slider-overlay {isDragging ? 'dragging' : ''}" 
-        on:click={onClose} 
+        onclick={onClose} 
         transition:slide={{ duration: 300, axis: 'x' }}
     ></div>
     <div class="slider-panel" transition:slide={{ duration: 300, axis: 'x' }}>
         <div class="slider-header">
             <h2 class="slider-title">Saved Templates</h2>
             <div class="header-actions">
-                <button class="icon-button" on:click={handleImport} title="Import template">
+                <button class="icon-button" onclick={handleImport} title="Import template">
                     <Upload size={18} />
                 </button>
-                <button class="close-button" on:click={onClose}>
+                <button class="close-button" onclick={onClose}>
                     <X size={20} />
                 </button>
             </div>
@@ -108,7 +114,7 @@
         
         <div class="slider-content">
             <div class="library-section">
-                <button class="library-header" on:click={() => toggleCategory('all')}>
+                <button class="library-header" onclick={() => toggleCategory('all')}>
                     <ChevronRight 
                         size={16} 
                         class="chevron {expandedCategories.all ? 'expanded' : ''}"
@@ -124,9 +130,9 @@
                                 <div 
                                     class="template-card"
                                     draggable="true"
-                                    on:dragstart={(e) => handleDragStart(e, template)}
-                                    on:dragend={handleDragEnd}
-                                    on:click={() => selectedTemplate = template}
+                                    ondragstart={(e) => handleDragStart(e, template)}
+                                    ondragend={handleDragEnd}
+                                    onclick={() => selectedTemplate = template}
                                     class:selected={selectedTemplate?.id === template.id}
                                 >
                                     <div class="template-header">
@@ -143,21 +149,21 @@
                                     <div class="template-actions">
                                         <button 
                                             class="action-button" 
-                                            on:click|stopPropagation={() => handleDuplicate(template)}
+                                            onclick={stopPropagation(() => handleDuplicate(template))}
                                             title="Duplicate"
                                         >
                                             <Copy size={14} />
                                         </button>
                                         <button 
                                             class="action-button" 
-                                            on:click|stopPropagation={() => handleExport(template)}
+                                            onclick={stopPropagation(() => handleExport(template))}
                                             title="Export"
                                         >
                                             <Download size={14} />
                                         </button>
                                         <button 
                                             class="action-button delete" 
-                                            on:click|stopPropagation={() => handleDelete(template)}
+                                            onclick={stopPropagation(() => handleDelete(template))}
                                             title="Delete"
                                         >
                                             <Trash2 size={14} />

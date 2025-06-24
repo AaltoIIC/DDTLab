@@ -1,32 +1,40 @@
 <script lang="ts">
+    import { run } from 'svelte/legacy';
+
     import { onMount } from 'svelte';
     import { fmiComponents, componentLinks, currentNodes } from '$lib/stores/stores';
     import type { FMIComponentType } from '$lib/types/types';
     import { generateId } from '$lib/helpers';
     import { useSvelteFlow } from "@xyflow/svelte";
     
-    export let isOpen = false;
+    interface Props {
+        isOpen?: boolean;
+    }
+
+    let { isOpen = $bindable(false) }: Props = $props();
     
-    let searchQuery = '';
+    let searchQuery = $state('');
     let selectedCategory: string = 'all';
-    let expandedCategories: Set<string> = new Set(['motors', 'propellers', 'sensors']);
+    let expandedCategories: Set<string> = $state(new Set(['motors', 'propellers', 'sensors']));
     
     // Handle viewport adjustment like requirements popover
     const { setViewport, getViewport } = useSvelteFlow();
     const popoverWidth = 340;
-    $: if (isOpen) {
-        const currentViewport = getViewport();
-        setViewport({
-            ...currentViewport,
-            x: currentViewport.x + popoverWidth
-        });
-    } else {
-        const currentViewport = getViewport();
-        setViewport({
-            ...currentViewport,
-            x: currentViewport.x - popoverWidth
-        });
-    }
+    run(() => {
+        if (isOpen) {
+            const currentViewport = getViewport();
+            setViewport({
+                ...currentViewport,
+                x: currentViewport.x + popoverWidth
+            });
+        } else {
+            const currentViewport = getViewport();
+            setViewport({
+                ...currentViewport,
+                x: currentViewport.x - popoverWidth
+            });
+        }
+    });
     
     // Mock components for MVP
     const mockComponents: FMIComponentType[] = [
@@ -111,21 +119,21 @@
         }
     });
     
-    $: filteredComponents = $fmiComponents.filter(comp => {
+    let filteredComponents = $derived($fmiComponents.filter(comp => {
         const matchesSearch = comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             comp.description.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesSearch;
-    });
+    }));
     
-    $: componentsByCategory = filteredComponents.reduce((acc, comp) => {
+    let componentsByCategory = $derived(filteredComponents.reduce((acc, comp) => {
         if (!acc[comp.category]) {
             acc[comp.category] = [];
         }
         acc[comp.category].push(comp);
         return acc;
-    }, {} as Record<string, FMIComponentType[]>);
+    }, {} as Record<string, FMIComponentType[]>));
     
-    $: selectedNodeId = $currentNodes.find(n => n.selected)?.id || null;
+    let selectedNodeId = $derived($currentNodes.find(n => n.selected)?.id || null);
     
     const toggleCategory = (category: string) => {
         if (expandedCategories.has(category)) {
@@ -181,7 +189,7 @@
 </script>
 
 <div class="main-fmi-cont {isOpen ? 'open' : ''} shadow-sm" style:width={popoverWidth + 'px'}>
-    <button class="btn-close" aria-label="Close" on:click={() => isOpen = false}>
+    <button class="btn-close" aria-label="Close" onclick={() => isOpen = false}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
         </svg>          
@@ -190,7 +198,7 @@
     <div class="fmi-header">
         <h3>FMI Components</h3>
         <div class="header-actions">
-            <button class="btn-small" on:click={handleUpload} title="Upload FMU">
+            <button class="btn-small" onclick={handleUpload} title="Upload FMU">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                 </svg>
@@ -217,7 +225,7 @@
                 <div class="category-section">
                     <button 
                         class="category-header"
-                        on:click={() => toggleCategory(category)}
+                        onclick={() => toggleCategory(category)}
                     >
                         <svg 
                             class="expand-icon {expandedCategories.has(category) ? 'expanded' : ''}"
@@ -239,7 +247,7 @@
                             {#each components as component}
                                 <div 
                                     class="component-item {$componentLinks[selectedNodeId || ''] === component.id ? 'linked' : ''}"
-                                    on:click={() => linkComponent(component.id)}
+                                    onclick={() => linkComponent(component.id)}
                                     role="button"
                                     tabindex="0"
                                 >
@@ -265,7 +273,7 @@
     </div>
     
     <div class="auto-select-section">
-        <button class="auto-select-btn" on:click={handleAutoSelect}>
+        <button class="auto-select-btn" onclick={handleAutoSelect}>
             <div class="auto-select-title">Auto</div>
             <div class="auto-select-description">Run auto select of components based on test scenarios and requirements</div>
         </button>

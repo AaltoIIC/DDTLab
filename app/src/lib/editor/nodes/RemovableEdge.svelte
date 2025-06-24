@@ -10,26 +10,42 @@
   import { currentEdges, addToHistory } from '$lib/stores/stores';
 
   type $$Props = EdgeProps;
-  $$restProps
+  rest
 
-  export let sourceX: $$Props['sourceX'];
-  export let sourceY: $$Props['sourceY'];
-  export let sourcePosition: $$Props['sourcePosition'];
-  export let targetX: $$Props['targetX'];
-  export let targetY: $$Props['targetY'];
-  export let targetPosition: $$Props['targetPosition'];
-  export let markerEnd: $$Props['markerEnd'] = undefined;
-  export let style: $$Props['style'] = undefined;
-  export let id: $$Props['id'];
+  interface Props {
+    sourceX: $$Props['sourceX'];
+    sourceY: $$Props['sourceY'];
+    sourcePosition: $$Props['sourcePosition'];
+    targetX: $$Props['targetX'];
+    targetY: $$Props['targetY'];
+    targetPosition: $$Props['targetPosition'];
+    markerEnd?: $$Props['markerEnd'];
+    style?: $$Props['style'];
+    id: $$Props['id'];
+    [key: string]: any
+  }
 
-  $: [edgePath, labelX, labelY] = getSmoothStepPath({
+  let {
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+    markerEnd = undefined,
+    style = undefined,
+    id,
+    ...rest
+  }: Props = $props();
+
+  let [edgePath, labelX, labelY] = $derived(getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
     targetX,
     targetY,
     targetPosition
-  });
+  }));
 
   const onEdgeClick = () => {
     currentEdges.update((edges) => {
@@ -38,35 +54,35 @@
     addToHistory();
   }
 
-  let hover = false;
+  let hover = $state(false);
   
   // Make delete button compensate for zoom level
   const { viewport } = useSvelteFlow();
-  let zoomLevel = 1;
+  let zoomLevel = $state(1);
   viewport.subscribe((value) => {
       zoomLevel = value.zoom;
   });
 </script>
 <BaseEdge path={edgePath} {markerEnd} {style} />
 <EdgeLabelRenderer>
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <!-- svelte-ignore a11y-mouse-events-have-key-events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- svelte-ignore a11y_mouse_events_have_key_events -->
   <div class="hover-helper"
       style:transform="translate(-50%, -50%) translate({labelX}px,{labelY}px)"
       style:width="{Math.abs(sourceX - targetX)}px"
       style:height="{Math.abs(sourceY - targetY)}px"
-      on:mouseenter={() => {hover = true}}
-      on:mouseleave={() => {hover = false}}>
+      onmouseenter={() => {hover = true}}
+      onmouseleave={() => {hover = false}}>
   </div>
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <!-- svelte-ignore a11y-mouse-events-have-key-events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- svelte-ignore a11y_mouse_events_have_key_events -->
   <div
     class="edgeButtonContainer nodrag nopan"
     style:transform="translate(-50%, -50%) translate({labelX}px,{labelY}px) scale({1/zoomLevel})"
-    on:mouseenter={() => {hover = true}}
-    on:mouseleave={() => {hover = false}}
+    onmouseenter={() => {hover = true}}
+    onmouseleave={() => {hover = false}}
   >
-    <button class="edgeButton {hover ? "hover" : ""}" on:click={onEdgeClick} aria-label="Remove Connection">
+    <button class="edgeButton {hover ? "hover" : ""}" onclick={onEdgeClick} aria-label="Remove Connection">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
       </svg>               

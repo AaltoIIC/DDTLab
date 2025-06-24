@@ -117,7 +117,7 @@
         return ports.find((p: Port) => p.name === portName);
     }
     
-    let flowContainer: HTMLDivElement;
+    let flowContainer: HTMLDivElement = $state();
     
     // Global drag over prevention
     onMount(() => {
@@ -254,7 +254,7 @@
 
 
 
-  <div class="conceptual-editor" on:dragover={handleDragOver} on:drop={handleDrop} role="application" aria-label="Conceptual stage editor">
+  <div class="conceptual-editor" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
       <div class="flow-container" bind:this={flowContainer}>
           <SvelteFlow
               nodes={currentNodes}

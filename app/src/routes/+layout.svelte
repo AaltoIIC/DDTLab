@@ -1,10 +1,15 @@
-<script>
+<script lang="ts">
     import "../app.css";
     import Notification from "$lib/Notification.svelte";
     import CookieNotice from "$lib/CookieNotice.svelte";
     import { onMount } from "svelte";
+    interface Props {
+        children?: import('svelte').Snippet;
+    }
+
+    let { children }: Props = $props();
     
-    let showCookieNotice = false;
+    let showCookieNotice = $state(false);
     
     onMount(() => {
         if (localStorage.getItem("cookieNotice") !== "true") {
@@ -17,7 +22,7 @@
         showCookieNotice = false;
     };
 </script>
-<slot></slot>
+{@render children?.()}
 <Notification />
 {#if showCookieNotice}
     <CookieNotice onClick={closeNotice} />

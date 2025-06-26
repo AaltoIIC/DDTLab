@@ -10,7 +10,6 @@
   import { currentEdges, addToHistory } from '$lib/stores/stores';
 
   type $$Props = EdgeProps;
-  rest
 
   interface Props {
     sourceX: $$Props['sourceX'];

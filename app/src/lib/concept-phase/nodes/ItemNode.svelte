@@ -117,12 +117,14 @@
     let showContextMenu = $state(false);
     let contextMenuX = $state(0);
     let contextMenuY = $state(0);
-    let nodeElement: HTMLDivElement = $state();
+    let nodeElement: HTMLDivElement | undefined = $state();
 
     function handleContextMenu(event: MouseEvent) {
         event.preventDefault();
         event.stopPropagation();
         
+        if (!nodeElement) return;
+
         // Position relative to the node
         const rect = nodeElement.getBoundingClientRect();
         contextMenuX = event.clientX - rect.left + nodeElement.scrollLeft;
@@ -259,7 +261,7 @@
             <select 
                 class="field-select"
                 value={data.orderStatus || 'Not Ordered'}
-                onchange={(e) => updateNodeData('orderStatus', e.target.value)}
+                onchange={(e) => updateNodeData('orderStatus', (e.target as HTMLSelectElement).value)}
                 onclick={stopPropagation(bubble('click'))}
             >
                 <option value="Delivered">Delivered</option>

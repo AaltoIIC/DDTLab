@@ -3,7 +3,7 @@
     import Button from "./Button.svelte";
     import Popup from "./Popup.svelte";
 
-    let popup: SvelteComponent = $state();
+    let popup: SvelteComponent | undefined = $state();
     let dialogText = $state("");
     let confirmText = $state("");
     let denyText = $state("");  

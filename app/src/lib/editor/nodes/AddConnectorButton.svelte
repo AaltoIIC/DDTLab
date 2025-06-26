@@ -16,7 +16,7 @@
     let { elementName, type = 'output', nodeOnHover = $bindable(false) }: Props = $props();
     let btnOnHover: boolean = $state(false);
     let isAddingNew: boolean = false;
-    let addBtn: HTMLSpanElement = $state();
+    let addBtn: HTMLSpanElement | undefined = $state();
 
     
     // Make button and layover compensate for zoom level

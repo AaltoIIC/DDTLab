@@ -46,10 +46,10 @@
     }
 
     // Handle new connector parameters
-    let newConnectorName: string = $state();
-    let newConnectorClass: string | null = $state();
-    let newConnectorDataType: { value: string, label: string } = $state();
-    let newConnectorUnit: { value: string, label: string } = $state();
+    let newConnectorName: string = $state("");
+    let newConnectorClass: string | null = $state(null);
+    let newConnectorDataType: { value: string, label: string } | undefined = $state();
+    let newConnectorUnit: { value: string, label: string } | undefined = $state();
     if (isExistingConnector) {
         const connector = ($currentNodes.find((node) => node.id === elementName)?.data as any)
             .element.connectors.find((connector: any) => connector.name === connectorName)
@@ -95,8 +95,8 @@
                     name: newConnectorName,
                     class: newConnectorClass,
                     type: type,
-                    dataType: newConnectorDataType.value,
-                    unit: newConnectorUnit.value
+                    dataType: newConnectorDataType?.value,
+                    unit: newConnectorUnit?.value
                 }
             );
             return newNodes;
@@ -114,8 +114,8 @@
             
             connector.name = newConnectorName;
             connector.class = newConnectorClass;
-            connector.dataType = newConnectorDataType.value;
-            connector.unit = newConnectorUnit.value;
+            connector.dataType = newConnectorDataType?.value;
+            connector.unit = newConnectorUnit?.value;
             
             return newNodes;
         });

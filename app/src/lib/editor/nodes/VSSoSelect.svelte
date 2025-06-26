@@ -13,7 +13,7 @@
         id: string;
         type?: 'element' | 'connector';
         currentClass?: string | null;
-        onChange: (value: string) => void;
+        onChange?: (value: string) => void;
     }
 
     let {
@@ -63,7 +63,7 @@
     const selectClass = (VSSoClass: string) => {
         currentClass = VSSoClass;
         isPopoverOpen = false;
-        onChange(VSSoClass);
+        onChange?.(VSSoClass);
     }
 
     currentNodes.subscribe((value) => {

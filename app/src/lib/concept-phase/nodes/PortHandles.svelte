@@ -5,7 +5,7 @@
     import { Handle, Position } from '@xyflow/svelte';
     import { Plus, Minus, Plug } from 'lucide-svelte';
     import { onMount } from 'svelte';
-    import type { Port } from '../interfaces';
+    import type { InterfaceCategory, Port } from '../interfaces';
     import { standardInterfaces, getInterfacesByCategory } from '../interfaces';
     
     interface Props {
@@ -39,7 +39,7 @@
     
     // Interface selection state
     let showInterfaceSelector: number | null = $state(null);
-    let selectedCategory: string = $state('electrical');
+    let selectedCategory: InterfaceCategory = $state('electrical');
     
     function selectInterface(index: number, interfaceId: string | undefined) {
         onUpdateInterface(index, interfaceId);

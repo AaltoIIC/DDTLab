@@ -34,8 +34,8 @@
         });
     });
 
-    let mainPopupCont: HTMLDivElement = $state();
-    let cover: HTMLDivElement = $state();
+    let mainPopupCont: HTMLDivElement | undefined = $state();
+    let cover: HTMLDivElement | undefined = $state();
     let opacityTimeout: any = $state();
     run(() => {
         if (isOpen) {   

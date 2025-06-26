@@ -12,7 +12,7 @@
   }
 
   let { system }: Props = $props();
-    let dialogBox: DialogBox = $state();
+    let dialogBox: DialogBox | undefined = $state();
 
     const handleMenu = (option: string) => {
         if (option === "Duplicate") {
@@ -20,7 +20,7 @@
         } else if (option === "Edit") {
             goto(`/editor/${system.id}`);
         } else if (option === "Delete") {
-            dialogBox.openDialog("Are you sure you want to delete this system?", "Delete", "Cancel")
+            dialogBox?.openDialog("Are you sure you want to delete this system?", "Delete", "Cancel")
             .then((result: boolean) => {
                 if (result) {
                     removeSystem(system.id);

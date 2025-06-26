@@ -23,17 +23,13 @@
 
         saveSystem
 
-    } from "$lib/stores/stores.js";
+    } from "$lib/stores/stores";
     import Breadcrumb from "$lib/editor/Breadcrumb.svelte";
     import ConceptualStageLayout from "$lib/concept-phase/ConceptualStageLayout.svelte";
 
     
-    interface Props {
-        // initialize the editor
-        data: any;
-    }
-
-    let { data }: Props = $props();
+    // initialize the editor
+    let { data } = $props();
     
     // Check if we're in conceptual stage
     const isConceptualStage = data.stage === 'concept';

@@ -79,7 +79,7 @@
     let tempName = $state(data.declaredName);
     let tempComment = $state(data.comment);
 
-    function updateNodeData(field: 'declaredName' | 'comment' | 'metadata', value: any) {
+    function updateNodeData(field: string, value: any) {
         currentNodes.update(nodes => {
             return nodes.map(node => {
                 if (node.id === id) {
@@ -138,12 +138,14 @@
     let showContextMenu = $state(false);
     let contextMenuX = $state(0);
     let contextMenuY = $state(0);
-    let nodeElement: HTMLDivElement = $state();
+    let nodeElement: HTMLDivElement | undefined = $state();
 
-    function handleContextMenu(event: MouseEvent) {
+    function handleContextMenu(event: MouseEvent) { //TODO: Repeating functions in multiple files, can refactor later
         event.preventDefault();
         event.stopPropagation();
         
+        if (!nodeElement) return;
+
         // Position relative to the node
         const rect = nodeElement.getBoundingClientRect();
         contextMenuX = event.clientX - rect.left + nodeElement.scrollLeft;
@@ -182,8 +184,9 @@
         showContextMenu = false;
     }
   </script>
-
-    <div class="package-node" ondblclick={stopPropagation(handleDoubleClick)} oncontextmenu={handleContextMenu} bind:this={nodeElement}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+     <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="package-node" ondblclick={stopPropagation(handleDoubleClick as (event: Event) => void)} oncontextmenu={handleContextMenu} bind:this={nodeElement}>
       <!-- Input Handles -->
       <PortHandles 
           nodeId={id}
@@ -283,7 +286,7 @@
               <select 
                   class="field-select"
                   value={data.orderStatus || 'Not Ordered'}
-                  onchange={(e) => updateNodeData('orderStatus', e.target.value)}
+                  onchange={(e) => updateNodeData('orderStatus', (e.target as HTMLSelectElement).value)}
                   onclick={stopPropagation(bubble('click'))}
               >
                   <option value="Delivered">Delivered</option>

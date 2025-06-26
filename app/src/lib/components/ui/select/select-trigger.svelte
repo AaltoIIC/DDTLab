@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { Select as SelectPrimitive } from "bits-ui";
 	import ChevronDown from "lucide-svelte/icons/chevron-down";
+	import type { Snippet } from 'svelte';
 	import { cn } from "$lib/utils.js";
 
 	type $$Props = SelectPrimitive.TriggerProps;
 	type $$Events = SelectPrimitive.TriggerEvents;
 
 	interface Props {
-		class?: $$Props["class"];
-		children?: import('svelte').Snippet<[any]>;
+		class?: string;
+		children?: Snippet<[any]>;
 		[key: string]: any
 	}
 
@@ -28,7 +29,7 @@
 	on:click
 	on:keydown
 >
-	{#snippet children({ builder })}
+	{#snippet children({ builder }: { builder: any })} 
 		{@render children_render?.({ builder, })}
 		<div>
 			<ChevronDown class="h-4 w-4 opacity-50" />

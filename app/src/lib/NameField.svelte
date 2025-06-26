@@ -16,7 +16,7 @@
         onInput
     }: Props = $props();
     let spanWidth = $state(0);
-    let inputElement: HTMLInputElement = $state();
+    let inputElement: HTMLInputElement | undefined = $state();
 
     const measureWidth = () => {
         if (!inputElement) return;

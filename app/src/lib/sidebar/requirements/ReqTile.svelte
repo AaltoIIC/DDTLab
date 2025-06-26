@@ -10,10 +10,10 @@
 
     let { requirement }: Props = $props();
 
-    let dialogBox: SvelteComponent = $state();
+    let dialogBox: SvelteComponent | undefined = $state();
 
     const handleDelete = () => {
-        dialogBox.openDialog("Are you sure you want to delete requirement?", "Yes", "No")
+        dialogBox?.openDialog("Are you sure you want to delete requirement?", "Yes", "No")
             .then((result: boolean) => {
                 if (result) {
                     currentReqs.update((reqs) => {

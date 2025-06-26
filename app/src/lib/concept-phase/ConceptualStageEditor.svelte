@@ -117,7 +117,7 @@
         return ports.find((p: Port) => p.name === portName);
     }
     
-    let flowContainer: HTMLDivElement = $state();
+    let flowContainer: HTMLDivElement | undefined = $state();
     
     // Global drag over prevention
     onMount(() => {
@@ -148,6 +148,8 @@
         try {
             const data = JSON.parse(jsonData);
             console.log('Dropping data:', data);
+            
+            if (!flowContainer) return;
             
             // Get drop position relative to the flow container
             const rect = flowContainer.getBoundingClientRect();

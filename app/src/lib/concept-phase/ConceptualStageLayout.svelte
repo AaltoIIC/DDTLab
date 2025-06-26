@@ -13,7 +13,7 @@
     import { Save } from 'lucide-svelte';
     import { saveTemplate } from './utils/templateStorage';
     
-    let conceptEditor: ConceptualStageEditor = $state();
+    let conceptEditor: ConceptualStageEditor | undefined = $state();
     let showSaveDialog = $state(false);
     let templateName = $state('');
     let templateDescription = $state('');

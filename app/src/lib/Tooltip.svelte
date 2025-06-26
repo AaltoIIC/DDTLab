@@ -14,7 +14,7 @@
     }: Props = $props();
     
     let showTooltip = $state(false);
-    let tooltipElement: HTMLDivElement = $state();
+    let tooltipElement: HTMLDivElement | undefined = $state();
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->

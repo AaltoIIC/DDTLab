@@ -64,13 +64,20 @@
         newConnectorUnit = { value: "-", label: "-" };
     }
     
+    let initialized = $state(false);
+
     run(() => {
-        if (isOpen && !isExistingConnector) {
-            newConnectorName = nameNewConnector();
-            newConnectorClass = null;
-            newConnectorDataType = { value: "no-dt", label: "No Data Type" };
-            newConnectorUnit = { value: "-", label: "-" };
+        if (isOpen && !initialized) {
+            selectNode(elementName);
+            if (!isExistingConnector) {
+                newConnectorName = nameNewConnector();
+                newConnectorClass = null;
+                newConnectorDataType = { value: "no-dt", label: "No Data Type" };
+                newConnectorUnit = { value: "-", label: "-" };
+            }
+            initialized = true;
         }
+        if (!isOpen) initialized = false;
     });
 
     let isNameError = $state(false);

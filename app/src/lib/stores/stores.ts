@@ -114,7 +114,9 @@ export const cloneSystem = (id: string) => {
             systems.push(newSystem);
             return systems;
         });
+        return newSystem;
     }
+    return null;
 }
 
 // history

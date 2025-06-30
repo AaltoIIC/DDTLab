@@ -5,7 +5,7 @@
     import Connectors from "./Connectors.svelte";
     import { type ElementDataType, type SubsystemDataType } from "$lib/types/types";
     import {
-        isNameValid, generateId
+        isNameValid, generateId, nameElement, generateName
      } from "$lib/helpers";
     import {
         currentEdges,
@@ -17,7 +17,8 @@
         isSubsystemNode,
         componentLinks,
         fmiComponents,
-        createSubsystem
+        createSubsystem,
+        cloneSystem,
     } from "$lib/stores/stores";
     import VSSoSelect from "./VSSoSelect.svelte";
     import { onMount } from 'svelte';
@@ -115,18 +116,28 @@
 
     const duplicateComponent = () => {
         const nodes = get(currentNodes);
-        const original = nodes.find(n => n.id === id);
-        if (!original) return;
-        
-        const duplicatedNode = _.cloneDeep(original);
-        duplicatedNode.id = `${original.id} (Copy)`;
-        duplicatedNode.position = {
-            x: original.position.x + 40,
-            y: original.position.y + 40,
-        },
+        const currentNode = nodes.find(n => n.id === id);
+        const elementNames = get(currentNodes).map(elem => elem.id);
 
-    currentNodes.update(nodes => [...nodes, duplicatedNode]);
-    addToHistory();
+        if (currentNode) {
+            const newNode = {
+                ..._.cloneDeep(currentNode),
+                id: generateName(currentNode.id, elementNames),
+                position: {
+                    x: currentNode.position.x + 20,
+                    y: currentNode.position.y + 20
+                },
+                selected: false
+            };
+
+            const subsystemData = newNode.data.element as SubsystemDataType;
+            if (subsystemData.subsystemId) {
+                subsystemData.subsystemId = cloneSystem(subsystemData.subsystemId)?.id;
+            }
+
+            currentNodes.update(n => [...n, newNode]);
+            addToHistory();
+        }
     }
 
     const handleDoubleClick = (e: MouseEvent) => {
@@ -239,9 +250,7 @@
     <Connectors type="output" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
     <Connectors type="input" bind:nodeOnHover={hover} elementName={id} elementData={data.element} />
 
-</div>
-
-{#if showDropdown}
+    {#if showDropdown}
         <div 
             class="menu-overlay"
             use:portal
@@ -260,7 +269,8 @@
                 {/each}
             </ul>
         </div>
-{/if}
+    {/if}
+</div>
 
 <style>
     .menu-overlay {

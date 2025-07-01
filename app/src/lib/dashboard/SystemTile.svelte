@@ -36,6 +36,9 @@
       const stageParam = system.stage === 'concept' ? '?stage=concept' : '';
       goto(`/editor/${system.id}${stageParam}`);
   }}>
+    <div class="stage-type system-info">
+        {system.stage?.toUpperCase()}
+    </div>
     <div class="illustration-cont">
         <SystemIllustration {system} />
     </div>
@@ -72,7 +75,7 @@
     }
     .tile {
         width: 175px;
-        height: 228px;
+        height: 248px;
         margin: 0 0 15px 15px;
         box-sizing: border-box;
         color: rgba(0, 0, 0, 0.9);
@@ -105,5 +108,10 @@
             width: 100%;
             margin: 0 0 15px 0;
         }
+    }
+    .stage-type {
+        height: 20px;
+        width: 175px;
+        text-align: center;
     }
 </style>

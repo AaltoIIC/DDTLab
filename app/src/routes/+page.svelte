@@ -21,15 +21,6 @@
         <div class="systems-outer">
             <div class="title-cont">
                 <h2>Your Systems:</h2>
-                <div class="controls">
-                    <a data-sveltekit-preload-data="hover" href="/editor" aria-label="Add system">
-                        <button aria-label="Add system">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>                      
-                        </button>
-                    </a>
-                </div>
             </div>
             <div class="ddt-cont">
                 {#each (Array.isArray($systems) ? $systems : []).filter(s => !s.isSubsystem).slice().reverse() as system}
@@ -177,27 +168,6 @@
         width: 80%;
         max-width: 975px;
         min-height: calc(100vh - 214px);
-    }
-    .controls {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    .controls button {
-        background-color: var(--main-dark-color);
-        border: none;
-        border-radius: 40px;
-        width: 34.5px;
-        height: 34.5px;
-        color: rgba(255, 255, 255, 0.9);
-        cursor: pointer;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    .controls button svg {
-        width: 18px;
-        height: 18px;
     }
     .title-cont {
         display: flex;

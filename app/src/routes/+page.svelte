@@ -23,8 +23,10 @@
                 <h2>Your Systems:</h2>
             </div>
             <div class="ddt-cont">
-                {#each (Array.isArray($systems) ? $systems : []).filter(s => !s.isSubsystem).slice().reverse() as system}
-                    <SystemTile {system} />
+                {#each (Array.isArray($systems) ? $systems : []).filter(s => !s.isSubsystem).slice() as system}
+                    {#key system.id}
+                        <SystemTile {system} />
+                    {/key}
                 {/each}
                 <NewSystemTile />
             </div>

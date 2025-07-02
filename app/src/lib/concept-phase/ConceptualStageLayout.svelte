@@ -163,12 +163,12 @@
                     <Save size={16} />
                     Save as Template
                 </button>
-            </div>
-            <div class="stage-indicator">
-                Conceptual Stage
-                {#if $currentPackageView}
-                    - {$currentPackageView.packageName}
-                {/if}
+                <div class="stage-indicator">
+                    Conceptual Stage
+                    {#if $currentPackageView}
+                        - {$currentPackageView.packageName}
+                    {/if}
+                </div>
             </div>
         </div>
         
@@ -236,7 +236,7 @@
         border-bottom: 1px solid #e5e7eb;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        /* justify-content: space-between; */
         padding: 0 20px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }

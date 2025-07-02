@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { SvelteFlow, Background, Controls, MiniMap } from '@xyflow/svelte';
+    import { SvelteFlow, Background, Controls, MiniMap, BackgroundVariant } from '@xyflow/svelte';
     import type { Node, Edge, NodeTypes, EdgeTypes, Connection } from '@xyflow/svelte';
     import '@xyflow/svelte/dist/style.css';
     import PackageNode from './nodes/PackageNode.svelte';
@@ -268,7 +268,7 @@
               }}
               onconnect={onConnect}
           >
-              <Background />
+              <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
               <Controls />
               <MiniMap />
           </SvelteFlow>

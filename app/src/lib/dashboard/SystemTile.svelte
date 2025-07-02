@@ -7,18 +7,20 @@
     import SystemIllustration from "./SystemIllustration.svelte";
     import { cloneSystem, removeSystem } from "$lib/stores/stores";
 
-  interface Props {
-    system: SystemType;
-  }
+    interface Props {
+        system: SystemType;
+    }
 
-  let { system }: Props = $props();
+    let { system }: Props = $props();
     let dialogBox: DialogBox | undefined = $state();
+
+    const stageParam = system.stage === 'concept' ? '?stage=concept' : '';
 
     const handleMenu = (option: string) => {
         if (option === "Duplicate") {
             cloneSystem(system.id);
         } else if (option === "Edit") {
-            goto(`/editor/${system.id}`);
+            goto(`/editor/${system.id}${stageParam}`);
         } else if (option === "Delete") {
             dialogBox?.openDialog("Are you sure you want to delete this system?", "Delete", "Cancel")
             .then((result: boolean) => {
@@ -33,7 +35,6 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="tile shadow"
       onclick={() => {
-      const stageParam = system.stage === 'concept' ? '?stage=concept' : '';
       goto(`/editor/${system.id}${stageParam}`);
   }}>
     <div class="stage-type system-info">

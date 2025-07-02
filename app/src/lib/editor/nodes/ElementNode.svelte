@@ -42,6 +42,7 @@
     interface Props {
         id: string;
         data: {
+        name: string;
         element: ElementDataType | SubsystemDataType;
     };
         [key: string]: any
@@ -56,28 +57,30 @@
         }
     });
 
-    let currentName = $state(id);
+    let currentName = $state(data.name);
     let isNameError = $state(false);
     const validateName = () => {
-        const isNameTaken = (currentName !== id) && $currentNodes.some((node) => (
-            node.id.replace(/\s+/g, '').toLowerCase() == currentName.replace(/\s+/g, '').toLowerCase()
-        ));
+        const isNameTaken = (currentName !== data.name) && $currentNodes.some((node) => {
+            const nodeName = (node.data as {name: string})?.name;
+            if (!nodeName) return false;
+            return nodeName.replace(/\s+/g, '').toLowerCase() == currentName.replace(/\s+/g, '').toLowerCase()
+        });
         
         isNameError = !isNameValid(currentName) || isNameTaken;
     }
 
     const saveName = () => {
         if (!isNameError) {
-            if (currentName !== id) {
+            if (currentName !== data.name) {
                 currentNodes.update((nodes) => {
-                    const nodeIndex = nodes.findIndex((node) => node.id === id);
-                    nodes[nodeIndex].id = currentName;
+                    const nodeIndex = nodes.findIndex((node) => node.data.name === data.name);
+                    nodes[nodeIndex].data.name = currentName;
                     return nodes;
                 });
                 addToHistory();
             }
         } else {
-            currentName = id;
+            currentName = data.name;
             isNameError = false;
         }
 

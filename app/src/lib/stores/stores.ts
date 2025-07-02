@@ -30,7 +30,10 @@ export const currentNodes = persistentStore<Node[]>('currentNodes', [
     {
       id: 'root',
       type: 'RootSystem',
-      data: { label: 'Node' },
+      data: { 
+        label: 'Node',
+        name: 'Root Node'
+        },
       position: { x: 0, y: 150 }
     } as {} as Node
 ]);

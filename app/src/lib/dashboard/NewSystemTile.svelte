@@ -90,7 +90,7 @@
     }
     .main-tile {
         width: 175px;
-        height: 228px;
+        height: 248px;
         border-radius: var(--main-border-radius);
         background-color: white;
         cursor: pointer;

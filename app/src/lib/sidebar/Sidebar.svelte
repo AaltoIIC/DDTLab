@@ -8,7 +8,7 @@
         createSystem,
         createSubsystem,
     } from "$lib/stores/stores";
-    import { nameElement, makeValidFileName } from "$lib/helpers";
+    import { nameElement, generateId, makeValidFileName } from "$lib/helpers";
     import { type ElementDataType } from "$lib/types/types";
     import ReqsPopover from "./requirements/ReqsPopover.svelte";
     import TestScenariosPopover from './testScenarios/TestScenariosPopover.svelte';
@@ -53,10 +53,11 @@
         if (option === 'Component') {
             currentNodes.update((nodes) => {
                 return [...nodes, {
-                    id: nameElement('component'),
+                    id: generateId($currentNodes.map(n => n.id)),
                     type: 'Element',
                     position: { x: 30, y: 30 },
                     data: {
+                        name: nameElement('component'),
                         element: {
                             type: 'component',
                             VSSoClass: null,
@@ -70,7 +71,7 @@
             addToHistory();
         } else if (option === 'Sub-System') {
             currentNodes.update((nodes) => {
-                const nodeId = nameElement('system');
+                const nodeId = generateId($currentNodes.map(n => n.id));
                 const subsystem = createSubsystem($currentSystemMeta.id, nodeId);
 
                 const elementData: SubsystemDataType = {
@@ -86,6 +87,7 @@
                     type: 'Element',
                     position: { x: 30, y: 30 },
                     data: {
+                        name: nameElement('system'),
                         element: elementData
                     },
                     dragHandle: '.element-node-inner',

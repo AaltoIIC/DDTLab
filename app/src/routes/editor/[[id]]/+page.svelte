@@ -168,6 +168,7 @@
 {#if isConceptualStage}
     <SvelteFlowProvider>
         <ConceptualStageLayout />
+        <TopBar />
     </SvelteFlowProvider>
 {:else}
     <SvelteFlowProvider>

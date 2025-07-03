@@ -17,24 +17,7 @@
     let selectedCategory: string = 'all';
     let expandedCategories: Set<string> = $state(new Set(['motors', 'propellers', 'sensors']));
     
-    // Handle viewport adjustment like requirements popover
-    const { setViewport, getViewport } = useSvelteFlow();
     const popoverWidth = 340;
-    run(() => {
-        if (isOpen) {
-            const currentViewport = getViewport();
-            setViewport({
-                ...currentViewport,
-                x: currentViewport.x + popoverWidth
-            });
-        } else {
-            const currentViewport = getViewport();
-            setViewport({
-                ...currentViewport,
-                x: currentViewport.x - popoverWidth
-            });
-        }
-    });
     
     // Mock components for MVP
     const mockComponents: FMIComponentType[] = [

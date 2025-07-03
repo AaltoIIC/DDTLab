@@ -5,7 +5,7 @@
     import Connectors from "./Connectors.svelte";
     import { type ElementDataType, type SubsystemDataType } from "$lib/types/types";
     import {
-        isNameValid, generateId, nameElement
+        isNameValid, generateId, nameElement, generateName
      } from "$lib/helpers";
     import {
         currentEdges,
@@ -42,6 +42,7 @@
     interface Props {
         id: string;
         data: {
+        name: string;
         element: ElementDataType | SubsystemDataType;
     };
         [key: string]: any
@@ -56,28 +57,30 @@
         }
     });
 
-    let currentName = $state(id);
+    let currentName = $state(data.name);
     let isNameError = $state(false);
     const validateName = () => {
-        const isNameTaken = (currentName !== id) && $currentNodes.some((node) => (
-            node.id.replace(/\s+/g, '').toLowerCase() == currentName.replace(/\s+/g, '').toLowerCase()
-        ));
+        const isNameTaken = (currentName !== data.name) && $currentNodes.some((node) => {
+            const nodeName = (node.data as {name: string})?.name;
+            if (!nodeName) return false;
+            return nodeName.replace(/\s+/g, '').toLowerCase() == currentName.replace(/\s+/g, '').toLowerCase()
+        });
         
         isNameError = !isNameValid(currentName) || isNameTaken;
     }
 
     const saveName = () => {
         if (!isNameError) {
-            if (currentName !== id) {
+            if (currentName !== data.name) {
                 currentNodes.update((nodes) => {
-                    const nodeIndex = nodes.findIndex((node) => node.id === id);
-                    nodes[nodeIndex].id = currentName;
+                    const nodeIndex = nodes.findIndex((node) => node.data.name === data.name);
+                    nodes[nodeIndex].data.name = currentName;
                     return nodes;
                 });
                 addToHistory();
             }
         } else {
-            currentName = id;
+            currentName = data.name;
             isNameError = false;
         }
 
@@ -117,11 +120,12 @@
     const duplicateComponent = () => {
         const nodes = get(currentNodes);
         const currentNode = nodes.find(n => n.id === id);
+        const elementNames = get(currentNodes).map(elem => elem.id);
 
         if (currentNode) {
             const newNode = {
                 ..._.cloneDeep(currentNode),
-                id: `${currentNode.id} - (Copy)`,
+                id: generateName(currentNode.id, elementNames),
                 position: {
                     x: currentNode.position.x + 20,
                     y: currentNode.position.y + 20

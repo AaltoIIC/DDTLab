@@ -30,8 +30,8 @@
         if (isPopoverOpen) {
             currentNodes.update((nodes) => {
                 return nodes.map((node) => {
-                    if (node.id === id) {
-                        node.dragHandle = '.none';
+                    if (node.id === id && node.dragHandle !== '.none') {
+                        return {...node, dragHandle: '.none'};
                     }
                     return node;
                 });
@@ -39,8 +39,8 @@
         } else {
             currentNodes.update((nodes) => {
                 return nodes.map((node) => {
-                    if (node.id === id) {
-                        node.dragHandle = '.element-node-inner';
+                    if (node.id === id && node.dragHandle !== '.element-node-inner') {
+                        return {...node, dragHandle: '.element-node-inner'};
                     }
                     return node;
                 });

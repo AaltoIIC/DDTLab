@@ -19,7 +19,9 @@
         fmiComponents,
         createSubsystem,
         cloneSystem,
-    } from "$lib/stores/stores";
+        getSystem,
+        saveSystem,
+    } from "$lib/stores/stores.svelte";
     import VSSoSelect from "./VSSoSelect.svelte";
     import { onMount } from 'svelte';
     import { get } from 'svelte/store';
@@ -70,20 +72,27 @@
     }
 
     const saveName = () => {
-        if (!isNameError) {
-            if (currentName !== data.name) {
-                currentNodes.update((nodes) => {
-                    const nodeIndex = nodes.findIndex((node) => node.data.name === data.name);
-                    nodes[nodeIndex].data.name = currentName;
-                    return nodes;
-                });
-                addToHistory();
+        if (!isNameError && currentName !== data.name) {
+            currentNodes.update((nodes) => {
+                const nodeIndex = nodes.findIndex((node) => node.data.name === data.name);
+                nodes[nodeIndex].data.name = currentName;
+                return nodes;
+            });
+            if (isSubsystemNode(data)) {
+                const subsystemId = (data.element as SubsystemDataType).subsystemId;
+                if (subsystemId) {
+                    const subsystem = getSystem(subsystemId);
+                    if (subsystem) {
+                        subsystem.name = currentName;
+                        saveSystem(subsystem);
+                    }
+                }
             }
-        } else {
+            addToHistory();
+        } else if (isNameError) {
             currentName = data.name;
             isNameError = false;
         }
-
     }
 
     // handle VSSo class selection
@@ -376,8 +385,8 @@
         border: solid 2px var(--main-error-color);
     }
     .main-element-node {
-        width: 172px;
-        height: 172px;
+        width: 200px;
+        height: 200px;
         border: solid 3px rgba(0, 0, 0, 0.1);
         border-radius: 15px;
         backdrop-filter: blur(15px);

@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { 
     currentNodes
-} from '$lib/stores/stores';
+} from '$lib/stores/stores.svelte';
 import { get } from 'svelte/store';
 
 export const getScreenSize = () => {
@@ -18,7 +18,7 @@ export const getScreenSize = () => {
     }
 }
 
-export const nameElement = (type: 'component'|'system') => {
+export const nameElement = (type: 'component'|'subsystem') => {
     const elementNames = get(currentNodes).map(elem => elem.id);
     const capitalType = type.charAt(0).toUpperCase() + type.slice(1);
     let newSystemName = `New ${capitalType}`;

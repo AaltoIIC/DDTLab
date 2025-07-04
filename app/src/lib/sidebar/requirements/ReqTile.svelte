@@ -2,7 +2,7 @@
     import type { RequirementType } from "$lib/types/types";
     import DialogBox from "$lib/DialogBox.svelte";
     import type { SvelteComponent } from "svelte";
-    import { currentReqs, addToHistory } from "$lib/stores/stores";
+    import { currentReqs, addToHistory } from "$lib/stores/stores.svelte";
 
     interface Props {
         requirement: RequirementType;

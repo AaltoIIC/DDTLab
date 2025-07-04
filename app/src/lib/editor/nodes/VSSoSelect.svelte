@@ -7,7 +7,7 @@
     import VSSo from "../VSSo.json";
     import { Input } from "$lib/components/ui/input";
     import { onMount } from "svelte";
-    import { currentNodes } from '$lib/stores/stores';
+    import { currentNodes } from '$lib/stores/stores.svelte';
 
     interface Props {
         id: string;

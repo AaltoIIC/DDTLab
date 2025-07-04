@@ -3,7 +3,7 @@ import {
     currentNodes,
     currentEdges,
     currentReqs
-} from '$lib/stores/stores'
+} from '$lib/stores/stores.svelte'
 import { get } from 'svelte/store'
 
 const TTL_prefix = `@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .

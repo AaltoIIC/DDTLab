@@ -5,7 +5,7 @@
     import { Component, X } from 'lucide-svelte';
     import type { NodeProps } from '@xyflow/svelte';
     import { useUpdateNodeInternals } from '@xyflow/svelte';
-    import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
+    import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { navigateToPackage } from '../packageStore';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';

@@ -1,6 +1,6 @@
   <script lang="ts">
       import { navigationContext, navigateToParent, currentSystemMeta, currentNodes, currentEdges, currentReqs,
-  history, addToHistory, currentViewSystemId, systems } from '$lib/stores/stores';
+  history, addToHistory, currentViewSystemId, systems } from '$lib/stores/stores.svelte';
       import { get } from 'svelte/store';
       import type { SystemMetaType } from '$lib/types/types';
 

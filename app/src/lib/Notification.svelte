@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { notification } from '$lib/stores/stores'
+    import { notification } from '$lib/stores/stores.svelte'
 
     let isShown = $state(false);
     let currentText = $state('');

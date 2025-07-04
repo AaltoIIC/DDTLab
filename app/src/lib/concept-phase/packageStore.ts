@@ -1,6 +1,6 @@
 import { writable, derived, get } from 'svelte/store';
 import type { Node, Edge } from '@xyflow/svelte';
-import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
+import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
 
 export interface PackageView {
     packageId: string;

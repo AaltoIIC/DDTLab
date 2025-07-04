@@ -5,7 +5,7 @@
         useSvelteFlow
     } from '@xyflow/svelte';
     import _ from 'lodash';
-    import { currentNodes, addToHistory } from '$lib/stores/stores';
+    import { currentNodes, addToHistory } from '$lib/stores/stores.svelte';
     import { selectNode } from '$lib/helpers';
     import EditConnectorPopup from './EditConnectorPopup.svelte';
 

@@ -2,7 +2,7 @@
     import { run } from 'svelte/legacy';
 
     import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/svelte';
-    import { currentEdges, addToHistory } from '$lib/stores/stores';
+    import { currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import type { CompatibilityStatus } from '../interfaces';
     
     interface Props {

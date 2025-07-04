@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
+import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
 import type { Port } from '../interfaces';
 
 export interface PortData {

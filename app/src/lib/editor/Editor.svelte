@@ -16,7 +16,7 @@
 
       addToHistory
 
-    } from '../stores/stores';
+    } from '../stores/stores.svelte';
     import RootSystemNode from './nodes/RootSystemNode.svelte';
     import ElementNode from './nodes/ElementNode.svelte';
     import RemovableEdge from './nodes/RemovableEdge.svelte';

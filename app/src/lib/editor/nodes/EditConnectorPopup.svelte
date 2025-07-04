@@ -7,7 +7,7 @@
     import * as Select from "$lib/components/ui/select";
     import { Input } from "$lib/components/ui/input";
     import VSSoSelect from './VSSoSelect.svelte';
-    import { addToHistory, currentNodes } from '$lib/stores/stores';
+    import { addToHistory, currentNodes } from '$lib/stores/stores.svelte';
     import _ from 'lodash';
     import { onMount } from 'svelte';
     import {

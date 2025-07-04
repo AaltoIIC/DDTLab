@@ -7,7 +7,7 @@
     useSvelteFlow
   } from '@xyflow/svelte';
   import _ from 'lodash';
-  import { currentEdges, addToHistory } from '$lib/stores/stores';
+  import { currentEdges, addToHistory } from '$lib/stores/stores.svelte';
 
   type $$Props = EdgeProps;
 

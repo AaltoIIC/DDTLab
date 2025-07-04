@@ -7,7 +7,7 @@
     import LogicalExpressionField from "./LogicalExpressionField.svelte";
     import type { LogicalExpressionType, RequirementType } from "$lib/types/types";
     import { generateName, isNameValid } from "$lib/helpers";
-    import { currentReqs, addToHistory } from "$lib/stores/stores";
+    import { currentReqs, addToHistory } from "$lib/stores/stores.svelte";
     import { useSvelteFlow } from "@xyflow/svelte";
     import ReqTile from "./ReqTile.svelte";
 

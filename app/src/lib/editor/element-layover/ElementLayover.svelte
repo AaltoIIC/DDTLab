@@ -6,7 +6,7 @@
     import {
         currentNodes,
         addToHistory
-    } from '$lib/stores/stores';
+    } from '$lib/stores/stores.svelte';
     import { writable } from 'svelte/store';
     
     

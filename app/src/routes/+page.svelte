@@ -4,7 +4,7 @@
     import {
         notification,
         systems
-    } from "$lib/stores/stores";
+    } from "$lib/stores/stores.svelte";
     import ResourceTile from "$lib/dashboard/ResourceTile.svelte";
     import Header from "$lib/Header.svelte";
 

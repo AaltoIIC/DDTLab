@@ -193,9 +193,9 @@ export const navigationContext = writable<NavigationContextType>({
 
 export const currentViewSystemId = writable<string>('');
 
-export const createSubsystem = (parentSystemId: string, parentNodeId: string): SystemType => {
+export const createSubsystem = (parentSystemId: string, parentNodeId: string, name: string): SystemType => {
     const subsystem = createSystem();
-    subsystem.name = `Subsystem of ${get(currentSystemMeta).name}`;
+    subsystem.name = name;
 
     const subsystemRootNode = {
         id: 'root',

@@ -6,7 +6,7 @@
       import type { NodeProps } from '@xyflow/svelte';
       import { useUpdateNodeInternals } from '@xyflow/svelte';
       import { navigateToPackage } from '../packageStore';
-      import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
+      import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
       import { createPortHandlers, type PortData } from './portUtils';
       import PortHandles from './PortHandles.svelte';
       import MetadataEditor from '../MetadataEditor.svelte';

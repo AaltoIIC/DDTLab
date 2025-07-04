@@ -2,7 +2,7 @@
     import { run } from 'svelte/legacy';
 
     import { onMount } from 'svelte';
-    import { fmiComponents, componentLinks, currentNodes } from '$lib/stores/stores';
+    import { fmiComponents, componentLinks, currentNodes } from '$lib/stores/stores.svelte';
     import type { FMIComponentType } from '$lib/types/types';
     import { generateId } from '$lib/helpers';
     import { useSvelteFlow } from "@xyflow/svelte";

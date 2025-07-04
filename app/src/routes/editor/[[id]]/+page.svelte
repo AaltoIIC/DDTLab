@@ -23,7 +23,7 @@
 
         saveSystem
 
-    } from "$lib/stores/stores";
+    } from "$lib/stores/stores.svelte.js";
     import Breadcrumb from "$lib/editor/Breadcrumb.svelte";
     import ConceptualStageLayout from "$lib/concept-phase/ConceptualStageLayout.svelte";
 

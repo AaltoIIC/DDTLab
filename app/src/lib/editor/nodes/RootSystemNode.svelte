@@ -1,7 +1,7 @@
 <script lang="ts">
     import { type NodeProps } from '@xyflow/svelte';
     import { onMount } from 'svelte';
-    import { currentNodes } from '$lib/stores/stores';
+    import { currentNodes } from '$lib/stores/stores.svelte';
    interface Props {
       [key: string]: any
    }

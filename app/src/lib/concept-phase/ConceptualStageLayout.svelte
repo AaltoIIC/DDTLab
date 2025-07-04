@@ -5,7 +5,7 @@
     import ConceptualStageEditor from './ConceptualStageEditor.svelte';
     import ConceptualStageSidebar from './ConceptualStageSidebar.svelte';
     import PackageBreadcrumb from './PackageBreadcrumb.svelte';
-    import { currentSystemMeta, currentNodes, currentEdges } from '$lib/stores/stores';
+    import { currentSystemMeta, currentNodes, currentEdges } from '$lib/stores/stores.svelte';
     import { currentPackageView, packageViewStack, navigateToRoot, navigateToPackage } from './packageStore';
     import type { PackageView } from './packageStore';
     import { onMount, onDestroy } from 'svelte';

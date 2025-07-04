@@ -7,7 +7,7 @@
     import ItemNode from './nodes/ItemNode.svelte';
     import RemovableEdge from './edges/RemovableEdge.svelte';
     import { get } from 'svelte/store';
-    import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores';
+    import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { 
         currentPackageView, 
         navigateToPackage,

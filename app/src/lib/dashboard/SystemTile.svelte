@@ -5,7 +5,7 @@
     import DropdownMenu from "$lib/DropdownMenu.svelte";
     import { formatDate } from "$lib/helpers";
     import SystemIllustration from "./SystemIllustration.svelte";
-    import { cloneSystem, removeSystem } from "$lib/stores/stores";
+    import { cloneSystem, removeSystem } from "$lib/stores/stores.svelte";
 
     interface Props {
         system: SystemType;

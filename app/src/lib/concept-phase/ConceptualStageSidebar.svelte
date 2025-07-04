@@ -4,7 +4,7 @@
     import Package from "lucide-svelte/icons/package";
     import { Component, Box, Library, FileText } from "lucide-svelte";
     import { currentPackageView, navigateToRoot } from './packageStore';
-    import { currentNodes } from '$lib/stores/stores';
+    import { currentNodes } from '$lib/stores/stores.svelte';
     import { get } from 'svelte/store';
     import ConceptLibrarySlider from './ConceptLibrarySlider.svelte';
     import ConceptTemplateSlider from './ConceptTemplateSlider.svelte';

@@ -111,7 +111,7 @@
         left: 0;
         margin-top: 6px;
         width: fit-content;
-        max-width: 172px;
+        max-width: 200px;
         padding: 0;
         background-color: white;
         transition: opacity 0.2s;

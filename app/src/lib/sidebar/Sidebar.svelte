@@ -7,7 +7,8 @@
         currentSystemMeta,
         createSystem,
         createSubsystem,
-    } from "$lib/stores/stores";
+        saveSystem,
+    } from "$lib/stores/stores.svelte";
     import { nameElement, generateId, makeValidFileName } from "$lib/helpers";
     import { type ElementDataType } from "$lib/types/types";
     import ReqsPopover from "./requirements/ReqsPopover.svelte";
@@ -50,12 +51,13 @@
     }
 
     const handleAdd = (option: string) => {
+        const nodesLength = $currentNodes.length - 1;
         if (option === 'Component') {
             currentNodes.update((nodes) => {
                 return [...nodes, {
                     id: generateId($currentNodes.map(n => n.id)),
                     type: 'Element',
-                    position: { x: 30, y: 30 },
+                    position: { x: 30, y: 30 + nodesLength * 100 },
                     data: {
                         name: nameElement('component'),
                         element: {
@@ -70,29 +72,32 @@
             });
             addToHistory();
         } else if (option === 'Sub-System') {
+            const nodeId = generateId($currentNodes.map(n => n.id));
+            const nodeName = nameElement('subsystem');
+            const subsystem = createSubsystem($currentSystemMeta.id, nodeId, nodeName);
+
+            const elementData: SubsystemDataType = {
+                type: 'system',
+                VSSoClass: null,
+                connectors: [],
+                subsystemId: subsystem.id,
+                hasSubsystems: true,
+            };
+
+            const node = {
+                id: nodeId,
+                type: 'Element',
+                position: { x: 30, y: 30 + nodesLength * 100 },
+                data: {
+                    name: nodeName,
+                    element: elementData
+                },
+                dragHandle: '.element-node-inner',
+                parentId: 'root'
+            };
+
             currentNodes.update((nodes) => {
-                const nodeId = generateId($currentNodes.map(n => n.id));
-                const subsystem = createSubsystem($currentSystemMeta.id, nodeId);
-
-                const elementData: SubsystemDataType = {
-                    type: 'system',
-                    VSSoClass: null,
-                    connectors: [],
-                    subsystemId: subsystem.id,
-                    hasSubsystems: true,
-                };
-
-                return [...nodes, {
-                    id: nodeId,
-                    type: 'Element',
-                    position: { x: 30, y: 30 },
-                    data: {
-                        name: nameElement('system'),
-                        element: elementData
-                    },
-                    dragHandle: '.element-node-inner',
-                    parentId: 'root'
-                }];
+                return [...nodes, node];
             });
             addToHistory();
         }

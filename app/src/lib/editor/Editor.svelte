@@ -7,13 +7,13 @@
       type NodeTypes,
       type EdgeTypes,
       ConnectionLineType,
+      MiniMap,
       type Node
     } from '@xyflow/svelte';
     import '@xyflow/svelte/dist/style.css';
     import {
       currentNodes,
       currentEdges,
-
       addToHistory
 
     } from '../stores/stores.svelte';
@@ -31,6 +31,9 @@
       'default': RemovableEdge
     } as {} as EdgeTypes;
 
+    function nodeVisibility(node: Node) {
+      return node.type === 'RootSystem' ? 'transparent' : 'x';
+    }
 </script>
 <SvelteFlow
   nodes={currentNodes}
@@ -50,4 +53,5 @@
 >
   <Controls position="bottom-right" />
   <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
+  <MiniMap nodeColor={nodeVisibility}/>
 </SvelteFlow>

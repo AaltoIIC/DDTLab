@@ -40,7 +40,7 @@ export interface SystemType extends SystemMetaType {
     nodes: Node[];
     edges: Edge[];
     requirements: RequirementType[];
-    isSubsystem?: boolean;
+    parentSystemId?: string | null;
     stage?: 'concept' | 'design';
 }
 

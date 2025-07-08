@@ -73,8 +73,8 @@
             addToHistory();
         } else if (option === 'Sub-System') {
             const nodeId = generateId($currentNodes.map(n => n.id));
-            const nodeName = nameElement('subsystem');
-            const subsystem = createSubsystem($currentSystemMeta.id, nodeId, nodeName);
+            const sysName = nameElement('subsystem');
+            const subsystem = createSubsystem($currentSystemMeta.id, nodeId, sysName);
 
             const elementData: SubsystemDataType = {
                 type: 'system',
@@ -89,7 +89,7 @@
                 type: 'Element',
                 position: { x: 30, y: 30 + nodesLength * 100 },
                 data: {
-                    name: nodeName,
+                    name: sysName,
                     element: elementData
                 },
                 dragHandle: '.element-node-inner',

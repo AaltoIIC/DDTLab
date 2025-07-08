@@ -82,7 +82,7 @@
                 nodes: [],
                 edges: [],
                 requirements: [],
-                isSubsystem: false,
+                parentSystemId: null,
                 stage: 'concept'
             });
         } else {
@@ -106,7 +106,7 @@
                 }],
                 edges: [],
                 requirements: [],
-                isSubsystem: false
+                parentSystemId: null,
             });
         }
 

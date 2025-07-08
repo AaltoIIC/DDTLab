@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { 
-    currentNodes
+    currentNodes,
+    systems
 } from '$lib/stores/stores.svelte';
 import { get } from 'svelte/store';
 
@@ -19,16 +20,17 @@ export const getScreenSize = () => {
 }
 
 export const nameElement = (type: 'component'|'subsystem') => {
-    const elementNames = get(currentNodes).map(elem => elem.id);
+    const elementNames = get(currentNodes).map(elem => elem.data.name);
+    const allNames = elementNames.concat(get(systems).map(s => s.name));
     const capitalType = type.charAt(0).toUpperCase() + type.slice(1);
-    let newSystemName = `New ${capitalType}`;
+    let newElemName = `New ${capitalType}`;
     let i = 2;
-    while (elementNames.includes(newSystemName)) {
-        newSystemName = `New ${capitalType} (${i})`
+    while (allNames.includes(newElemName)) {
+        newElemName = `New ${capitalType} (${i})`
         i++;
     }
 
-    return newSystemName;
+    return newElemName;
 }
 
 // Check if a name is valid

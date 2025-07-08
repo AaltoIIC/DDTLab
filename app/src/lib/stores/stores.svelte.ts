@@ -64,7 +64,7 @@ export const saveCurrentSystem = () => {
         nodes: get(currentNodes),
         edges: get(currentEdges),
         requirements: get(currentReqs),
-        isSubsystem: currentSystem?.isSubsystem || false,
+        parentSystemId: currentSystem?.parentSystemId || null,
         stage: currentSystem?.stage || 'design',
     });
 }
@@ -97,22 +97,28 @@ export const setCurrentSystem = (id: string) => {
 }
 
 export const removeSystem = (id: string) => {
-    const sysIndex = get(systems).findIndex(s => s.id === id);
-
-    if (sysIndex !== -1) {
-        systems.update((systems) => {
-            systems.splice(sysIndex, 1);
-            return systems;
+    function inner(id: string, allSystems: SystemType[]): SystemType[] {
+        const children = allSystems.filter((sys) => sys.parentSystemId === id);
+        children.forEach((child) => {
+            allSystems = inner(child.id, allSystems);
         });
+
+        return allSystems.filter((sys) => sys.id !== id);
     }
+
+    systems.update((systems) => {
+        systems = inner(id, systems);
+        return systems;
+    });
 }
 
 export const cloneSystem = (id: string) => {
     const system = getSystem(id);
+    const allNames = (get(currentNodes).map(n => n.data.name) as string[]).concat(get(systems).map(s => s.name));
     if (system) {
         const newSystem = _.cloneDeep(system);
         newSystem.id = generateId(get(systems).map(s => s.id));
-        newSystem.name = `Copy of ${newSystem.name}`;
+        newSystem.name = generateName(`Copy of ${newSystem.name}`, allNames);
         systems.update((systems) => {
             systems.push(newSystem);
             return systems;
@@ -213,7 +219,7 @@ export const createSubsystem = (parentSystemId: string, parentNodeId: string, na
         nodes: [subsystemRootNode],
         edges: [],
         requirements: [],
-        isSubsystem: true,
+        parentSystemId: parentSystemId,
     });
 
     return subsystem;

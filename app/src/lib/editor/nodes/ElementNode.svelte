@@ -21,6 +21,8 @@
         cloneSystem,
         getSystem,
         saveSystem,
+        systems,
+        removeSystem,
     } from "$lib/stores/stores.svelte";
     import VSSoSelect from "./VSSoSelect.svelte";
     import { onMount } from 'svelte';
@@ -59,23 +61,40 @@
         }
     });
 
-    let currentName = $state(data.name);
+    let currentName = $derived.by( () => {
+        const syss = $systems;
+        if (isSubsystemNode(data)) {
+            const subsystem = syss.find( sys => sys.id === (data.element as SubsystemDataType).subsystemId );
+            return  subsystem ? subsystem.name : data.name;
+        }
+        else {return data.name;}
+    });
+
+    // svelte-ignore state_referenced_locally
+    let inputName = $state(currentName);
+
     let isNameError = $state(false);
     const validateName = () => {
-        const isNameTaken = (currentName !== data.name) && $currentNodes.some((node) => {
-            const nodeName = (node.data as {name: string})?.name;
-            if (!nodeName) return false;
-            return nodeName.replace(/\s+/g, '').toLowerCase() == currentName.replace(/\s+/g, '').toLowerCase()
-        });
+        const nodeNames = get(currentNodes)
+            .map(n => n.data?.name)
+            .filter((name): name is string => typeof name === 'string');
+
+    const systemNames = get(systems)
+        .map(s => s.name)
+        .filter((name): name is string => typeof name === 'string');
+
+  const allNames = nodeNames.concat(systemNames);
+        console.log(allNames)
+        const isNameTaken = (inputName !== data.name) && allNames.some(name => name.replace(/\s+/g, '').toLowerCase() === inputName.replace(/\s+/g, '').toLowerCase());
         
-        isNameError = !isNameValid(currentName) || isNameTaken;
+        isNameError = !isNameValid(inputName) || isNameTaken;
     }
 
     const saveName = () => {
-        if (!isNameError && currentName !== data.name) {
+        if (!isNameError && inputName !== data.name) {
             currentNodes.update((nodes) => {
                 const nodeIndex = nodes.findIndex((node) => node.data.name === data.name);
-                nodes[nodeIndex].data.name = currentName;
+                nodes[nodeIndex].data.name = inputName;
                 return nodes;
             });
             if (isSubsystemNode(data)) {
@@ -83,14 +102,14 @@
                 if (subsystemId) {
                     const subsystem = getSystem(subsystemId);
                     if (subsystem) {
-                        subsystem.name = currentName;
+                        subsystem.name = inputName;
                         saveSystem(subsystem);
                     }
                 }
             }
             addToHistory();
         } else if (isNameError) {
-            currentName = data.name;
+            inputName = currentName;
             isNameError = false;
         }
     }
@@ -123,18 +142,24 @@
         currentEdges.update((edges) => {
             return edges.filter((edge) => edge.source !== id && edge.target !== id);
         });
+
+        const subsystemData = data.element as SubsystemDataType;
+        if (isSubsystemNode(data) && subsystemData.subsystemId) {
+            removeSystem(subsystemData.subsystemId);
+        };        
         addToHistory();
     }
 
     const duplicateComponent = () => {
         const nodes = get(currentNodes);
         const currentNode = nodes.find(n => n.id === id);
-        const elementNames = get(currentNodes).map(elem => elem.id);
+        const elementNames = nodes.map(elem => elem.data.name) as string[];
+        const allNames = elementNames.concat(get(systems).map(s => s.name));
 
         if (currentNode) {
             const newNode = {
                 ..._.cloneDeep(currentNode),
-                id: generateName(currentNode.id, elementNames),
+                id: generateId(nodes.map( n => n.id )),
                 position: {
                     x: currentNode.position.x + 20,
                     y: currentNode.position.y + 20
@@ -144,11 +169,17 @@
 
             const subsystemData = newNode.data.element as SubsystemDataType;
             if (subsystemData.subsystemId) {
-                subsystemData.subsystemId = cloneSystem(subsystemData.subsystemId)?.id;
+                const newSubsystem = cloneSystem(subsystemData.subsystemId)!;
+                subsystemData.subsystemId = newSubsystem.id;
+            }
+            else {
+                newNode.data.name = generateName('Copy of ' + currentNode.data.name, elementNames);
             }
 
             currentNodes.update(n => [...n, newNode]);
             addToHistory();
+
+            console.log(JSON.stringify(newNode));
         }
     }
 
@@ -218,7 +249,7 @@
         <div class="top-param-cont">
             <input class="main-name-field {isNameError ? 'error' : ''}"
                 type="text"
-                bind:value={currentName}
+                bind:value={inputName}
                 oninput={validateName}
                 onblur={saveName} />
             <div class="element-type-cont {data.element.type === 'system' ? 'subsystem-type' : ''}">

@@ -14,7 +14,7 @@
         sourcePosition: EdgeProps['sourcePosition'];
         targetPosition: EdgeProps['targetPosition'];
         markerEnd: EdgeProps['markerEnd'];
-        data?: { compatibility?: CompatibilityStatus; adapterRequired?: string; message?: string };
+        data?: { compatibility?: CompatibilityStatus; adapterRequired?: string; message?: string; connectionType?: 'binding' | 'flow' };
     }
 
     let {
@@ -46,13 +46,22 @@
         console.log('Edge data:', id, data);
     });
     
-    let strokeColor = $derived({
-        'direct': '#10b981',     // green
-        'adapter': '#f59e0b',    // yellow
-        'incompatible': '#ef4444' // red
-    }[data?.compatibility || 'direct']);
+    // Determine edge color based on connection type and compatibility
+    let strokeColor = $derived(
+        data?.compatibility === 'incompatible' ? '#ef4444' :
+        data?.connectionType === 'binding' ? '#dc2626' :
+        data?.connectionType === 'flow' ? '#3b82f6' :
+        {
+            'direct': '#10b981',     // green
+            'adapter': '#f59e0b',    // yellow
+            'incompatible': '#ef4444' // red
+        }[data?.compatibility || 'direct']
+    );
     
-    let strokeWidth = $derived(data?.compatibility === 'adapter' ? 3 : 2);
+    let strokeWidth = $derived(data?.connectionType === 'binding' ? 3 : 2);
+    
+    // Stroke pattern for binding connections
+    let strokeDasharray = $derived(data?.connectionType === 'binding' ? '0' : '5,5');
     
     function handleDelete() {
         currentEdges.update(edges => edges.filter(edge => edge.id !== id));
@@ -63,7 +72,7 @@
 <BaseEdge 
     path={edgePath[0]} 
     {markerEnd} 
-    style={`stroke: ${strokeColor}; stroke-width: ${strokeWidth}px;`}
+    style={`stroke: ${strokeColor}; stroke-width: ${strokeWidth}px; stroke-dasharray: ${strokeDasharray};`}
 />
 
 <EdgeLabelRenderer>
@@ -71,6 +80,11 @@
         style="position: absolute; transform: translate(-50%, -50%); transform: translate({centerX}px, {centerY}px)"
         class="nodrag nopan edge-button-container"
     >
+        {#if data?.connectionType}
+            <div class="connection-type-label {data.connectionType}-label">
+                {data.connectionType === 'binding' ? 'Binding' : 'Flow'}
+            </div>
+        {/if}
         {#if data?.compatibility === 'adapter' && data?.adapterRequired}
             <div class="adapter-label">
                 {data.adapterRequired}
@@ -145,5 +159,30 @@
         white-space: nowrap;
         pointer-events: none;
         font-weight: 500;
+    }
+    
+    .connection-type-label {
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 10px;
+        white-space: nowrap;
+        pointer-events: none;
+        font-weight: 500;
+    }
+    
+    .binding-label {
+        background: #fef2f2;
+        border: 1px solid #dc2626;
+        color: #991b1b;
+    }
+    
+    .flow-label {
+        background: #eff6ff;
+        border: 1px solid #3b82f6;
+        color: #1e40af;
     }
 </style>

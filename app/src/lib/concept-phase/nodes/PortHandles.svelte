@@ -98,7 +98,7 @@
             {#if showInterfaceSelector === i}
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <div class="interface-selector" onclick={stopPropagation(bubble('click'))}>
+                <div class="interface-selector" onclick={stopPropagation(bubble('click'))} onwheel={stopPropagation(bubble('wheel'))}>
                     <div class="interface-categories">
                         <button 
                             class="category-tab" 

@@ -77,12 +77,12 @@
 
 <div class="metadata-section">
     <div class="metadata-header">
-        <span class="metadata-title">Metadata</span>
+        <span class="metadata-title">Attributes</span>
         {#if !showAddForm}
             <button 
                 class="add-button" 
                 onclick={stopPropagation(() => showAddForm = true)}
-                title="Add metadata"
+                title="Add attribute"
             >
                 <Plus size={12} />
             </button>

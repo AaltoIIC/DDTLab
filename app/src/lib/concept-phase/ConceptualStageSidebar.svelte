@@ -8,15 +8,22 @@
     import { get } from 'svelte/store';
     import ConceptLibrarySlider from './ConceptLibrarySlider.svelte';
     import ConceptTemplateSlider from './ConceptTemplateSlider.svelte';
+    import ConceptPartSlider from './ConceptPartSlider.svelte';
+    // import ConceptItemSlider from './ConceptItemSlider.svelte';
+    // import ConceptPartSlider from './ConceptLibrarySlider.svelte';
+    import ConceptItemSlider from './ConceptTemplateSlider.svelte';
+    import { overSome } from 'lodash';
 
-  interface Props {
-    onAddPackage: () => void;
-    onAddPart?: () => void;
-    onAddItem?: () => void;
-  }
+    interface Props {
+        onAddPackage: () => void;
+        onAddPart?: () => void;
+        onAddItem?: () => void;
+    }
 
-  let { onAddPackage, onAddPart = () => {}, onAddItem = () => {} }: Props = $props();
+    let { onAddPackage, onAddPart = () => {}, onAddItem = () => {} }: Props = $props();
     
+    let isPartDefOpen = $state(false);
+    let isItemDefOpen = $state(false);
     let isLibraryOpen = $state(false);
     let isTemplateSliderOpen = $state(false);
     
@@ -26,26 +33,28 @@
         goto('/');
     }
     
-    function toggleLibrary() {
-        isLibraryOpen = !isLibraryOpen;
-        if (isLibraryOpen) {
-            isTemplateSliderOpen = false;
-        }
+    function closeAllSliders() {
+        isItemDefOpen = isPartDefOpen = isLibraryOpen = isTemplateSliderOpen = false;
     }
-    
-    function closeLibrary() {
-        isLibraryOpen = false;
+
+    function togglePartDefSlider() {
+        closeAllSliders();
+        isPartDefOpen = true;
+    }
+
+    function toggleItemDefSlider() {
+        closeAllSliders();
+        isItemDefOpen = true;
+    }
+
+    function toggleLibrary() {
+        closeAllSliders();
+        isLibraryOpen = true;
     }
     
     function toggleTemplateSlider() {
-        isTemplateSliderOpen = !isTemplateSliderOpen;
-        if (isTemplateSliderOpen) {
-            isLibraryOpen = false;
-        }
-    }
-    
-    function closeTemplateSlider() {
-        isTemplateSliderOpen = false;
+        closeAllSliders();
+        isTemplateSliderOpen = true;
     }
 </script>
 
@@ -59,27 +68,25 @@
             </button>
         </Tooltip>
 
-        {#if !$currentPackageView}
-            <Tooltip text="Add Package" position="right">
-                <button class="menu-option" onclick={onAddPackage}>
-                    <Package class="option-icon" />
-                </button>
-            </Tooltip>
-        {:else}
-            {#if $currentPackageView.packageId.startsWith('part-')}
-                <Tooltip text="Add Item" position="right">
-                    <button class="menu-option" onclick={onAddItem}>
-                        <Box class="option-icon" />
-                    </button>
-                </Tooltip>
-            {:else}
-                <Tooltip text="Add Part" position="right">
-                    <button class="menu-option" onclick={onAddPart}>
-                        <Component class="option-icon" />
-                    </button>
-                </Tooltip>
-            {/if}
-        {/if}
+
+        <Tooltip text="Add Package" position="right">
+            <button class="menu-option" onclick={onAddPackage}>
+                <Package class="option-icon" />
+            </button>
+        </Tooltip>
+
+        <Tooltip text="Add Part" position="right">
+            <button class="menu-option" class:active={isPartDefOpen} onclick={togglePartDefSlider}>
+                <Component class="option-icon" />
+            </button>
+        </Tooltip>
+
+        <Tooltip text="Add Item" position="right">
+            <button class="menu-option" class:active={isItemDefOpen} onclick={toggleItemDefSlider}>
+                <Box class="option-icon" />
+            </button>
+        </Tooltip>
+
 
         <div class="separator"></div>
 
@@ -97,8 +104,12 @@
     </div>
 </div>
 
-<ConceptLibrarySlider isOpen={isLibraryOpen} onClose={closeLibrary} />
-<ConceptTemplateSlider isOpen={isTemplateSliderOpen} onClose={closeTemplateSlider} />
+<!-- DISABLE FOR NOW AS CONCEPT STAGE IS BEING REFACTORED-->
+
+<ConceptPartSlider isOpen={isPartDefOpen} onClose={closeAllSliders} />
+<ConceptItemSlider isOpen={isItemDefOpen} onClose={closeAllSliders} />
+<ConceptLibrarySlider isOpen={isLibraryOpen} onClose={closeAllSliders} />
+<ConceptTemplateSlider isOpen={isTemplateSliderOpen} onClose={closeAllSliders} />
 
   <style>
       .sidebar {

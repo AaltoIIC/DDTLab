@@ -8,7 +8,7 @@
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
-    import MetadataEditor from '../MetadataEditor.svelte';
+    import AttributeEditor from '../AttributeEditor.svelte';
     import ContextMenu from '../ContextMenu.svelte';
     import { get } from 'svelte/store';
 
@@ -163,6 +163,8 @@
 
 </script>
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+ <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div class="item-node" class:selected oncontextmenu={handleContextMenu} bind:this={nodeElement}>
     <!-- Input Handles -->
     <PortHandles 
@@ -273,7 +275,7 @@
             </select>
         </div>
         
-        <MetadataEditor 
+        <AttributeEditor
             metadata={data.metadata || []}
             onUpdate={(metadata) => updateNodeData('metadata', metadata)}
         />

@@ -9,7 +9,7 @@
       import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
       import { createPortHandlers, type PortData } from './portUtils';
       import PortHandles from './PortHandles.svelte';
-      import MetadataEditor from '../MetadataEditor.svelte';
+      import AttributeEditor from '../AttributeEditor.svelte';
       import ContextMenu from '../ContextMenu.svelte';
       import { get } from 'svelte/store';
 
@@ -298,7 +298,7 @@
               </select>
           </div>
           
-          <MetadataEditor 
+          <AttributeEditor 
               metadata={data.metadata || []}
               onUpdate={handleMetadataUpdate}
           />

@@ -4,9 +4,11 @@
     const bubble = createBubbler();
     import { Handle, Position } from '@xyflow/svelte';
     import { Plus, Minus, Plug } from 'lucide-svelte';
-    import { onMount } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import type { InterfaceCategory, Port } from '../interfaces';
     import { standardInterfaces, getInterfacesByCategory } from '../interfaces';
+    
+    type TabCategory = InterfaceCategory | 'all';
     
     interface Props {
         nodeId: string;
@@ -39,11 +41,42 @@
     
     // Interface selection state
     let showInterfaceSelector: number | null = $state(null);
-    let selectedCategory: InterfaceCategory = $state('electrical');
+    let selectedCategory: TabCategory = $state('all');
+    let searchQuery: string = $state('');
+    let searchInputRef: HTMLInputElement | null = null;
     
     function selectInterface(index: number, interfaceId: string | undefined) {
         onUpdateInterface(index, interfaceId);
         showInterfaceSelector = null;
+        searchQuery = ''; // Reset search when closing
+    }
+    
+    // Filter interfaces based on search query
+    function getFilteredInterfaces(category: TabCategory) {
+        let interfaces;
+        if (category === 'all') {
+            interfaces = Object.values(standardInterfaces);
+        } else {
+            interfaces = getInterfacesByCategory(category);
+        }
+        
+        if (!searchQuery.trim()) return interfaces;
+        
+        const query = searchQuery.toLowerCase();
+        return interfaces.filter(intf => 
+            intf.name.toLowerCase().includes(query) || 
+            intf.id.toLowerCase().includes(query)
+        );
+    }
+    
+    // Open interface selector and reset search
+    async function openInterfaceSelector(index: number) {
+        showInterfaceSelector = showInterfaceSelector === index ? null : index;
+        if (showInterfaceSelector === index) {
+            searchQuery = ''; // Reset search when opening
+            await tick(); // Wait for DOM update
+            searchInputRef?.focus(); // Focus the search input
+        }
     }
     
     function getInterfaceColor(interfaceType: string | undefined): string {
@@ -79,7 +112,7 @@
             </span>
             <button 
                 class="handle-interface" 
-                onclick={stopPropagation(() => showInterfaceSelector = showInterfaceSelector === i ? null : i)}
+                onclick={stopPropagation(() => openInterfaceSelector(i))}
                 title="Set interface type"
                 style="color: {getInterfaceColor(port.interfaceType)}"
             >
@@ -98,8 +131,26 @@
             {#if showInterfaceSelector === i}
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <div class="interface-selector" onclick={stopPropagation(bubble('click'))}>
+                <div class="interface-selector" onclick={stopPropagation(bubble('click'))} onwheel={stopPropagation(bubble('wheel'))}>
+                    <div class="search-container">
+                        <input
+                            type="text"
+                            class="search-input"
+                            placeholder="Search interfaces..."
+                            bind:value={searchQuery}
+                            bind:this={searchInputRef}
+                            onclick={stopPropagation(() => {})}
+                            onkeydown={stopPropagation(() => {})}
+                        />
+                    </div>
                     <div class="interface-categories">
+                        <button 
+                            class="category-tab" 
+                            class:active={selectedCategory === 'all'}
+                            onclick={() => selectedCategory = 'all'}
+                        >
+                            All
+                        </button>
                         <button 
                             class="category-tab" 
                             class:active={selectedCategory === 'electrical'}
@@ -137,15 +188,23 @@
                         >
                             None
                         </button>
-                        {#each getInterfacesByCategory(selectedCategory) as intf}
+                        {#each getFilteredInterfaces(selectedCategory) as intf}
                             <button 
                                 class="interface-option"
                                 class:selected={port.interfaceType === intf.id}
                                 onclick={() => selectInterface(i, intf.id)}
                             >
                                 {intf.name}
+                                {#if selectedCategory === 'all'}
+                                    <span class="interface-category-badge" style="background-color: {getInterfaceColor(intf.id)}20; color: {getInterfaceColor(intf.id)}">
+                                        {intf.category}
+                                    </span>
+                                {/if}
                             </button>
                         {/each}
+                        {#if getFilteredInterfaces(selectedCategory).length === 0}
+                            <div class="no-results">No matching interfaces found</div>
+                        {/if}
                     </div>
                 </div>
             {/if}
@@ -274,8 +333,8 @@
         border-radius: 4px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         z-index: 1000;
-        min-width: 200px;
-        max-height: 300px;
+        min-width: 250px;
+        max-height: 350px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
@@ -413,5 +472,44 @@
 
     .handles-right :global(.handle) {
         right: 11px;
+    }
+    
+    .search-container {
+        padding: 8px;
+        border-bottom: 1px solid #e5e7eb;
+        background: #f9fafb;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 6px 10px;
+        font-size: 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    
+    .search-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+    
+    .no-results {
+        padding: 20px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 12px;
+        font-style: italic;
+    }
+    
+    .interface-category-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 9px;
+        font-weight: 500;
+        margin-left: 8px;
+        text-transform: capitalize;
     }
 </style>

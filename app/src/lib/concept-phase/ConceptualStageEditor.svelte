@@ -6,6 +6,7 @@
     import PartNode from './nodes/PartNode.svelte';
     import ItemNode from './nodes/ItemNode.svelte';
     import RemovableEdge from './edges/RemovableEdge.svelte';
+    import ConnectionTypeDropdown from './ConnectionTypeDropdown.svelte';
     import { get } from 'svelte/store';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { 
@@ -190,6 +191,12 @@
         }
     }
     
+    // State for connection type dropdown
+    let showConnectionDropdown = $state(false);
+    let pendingConnection: Connection | null = $state(null);
+    let dropdownX = $state(0);
+    let dropdownY = $state(0);
+    
     function onConnect(params: Connection) {
         console.log('Connection params:', params);
         
@@ -197,18 +204,57 @@
         const sourceNode = nodes.find(n => n.id === params.source);
         const targetNode = nodes.find(n => n.id === params.target);
         
-        const sourcePort = findPort(sourceNode, params.sourceHandle);
-        const targetPort = findPort(targetNode, params.targetHandle);
+        // Check if source or target is a package node
+        if (sourceNode?.type === 'package' || targetNode?.type === 'package') {
+            console.log('Cannot connect to/from package nodes');
+            return; // Prevent connection
+        }
+        
+        // Store the pending connection and show dropdown at midpoint of connection
+        pendingConnection = params;
+        
+        // Calculate position for dropdown (midpoint of the connection)
+        const sourceElement = document.querySelector(`[data-id="${params.source}"]`);
+        const targetElement = document.querySelector(`[data-id="${params.target}"]`);
+        
+        if (sourceElement && targetElement) {
+            const sourceRect = sourceElement.getBoundingClientRect();
+            const targetRect = targetElement.getBoundingClientRect();
+            
+            dropdownX = (sourceRect.left + targetRect.left) / 2;
+            dropdownY = (sourceRect.top + targetRect.top) / 2;
+        } else {
+            // Fallback to center of viewport
+            dropdownX = window.innerWidth / 2;
+            dropdownY = window.innerHeight / 2;
+        }
+        
+        showConnectionDropdown = true;
+    }
+    
+    function handleConnectionTypeSelect(connectionType: 'binding' | 'flow') {
+        if (!pendingConnection) return;
+        
+        const nodes = get(currentNodes);
+        const sourceNode = nodes.find(n => n.id === pendingConnection.source);
+        const targetNode = nodes.find(n => n.id === pendingConnection.target);
+        
+        const sourcePort = findPort(sourceNode, pendingConnection.sourceHandle);
+        const targetPort = findPort(targetNode, pendingConnection.targetHandle);
         
         console.log('Source port:', sourcePort, 'Target port:', targetPort);
         
-        let edgeData: any = { compatibility: 'direct' };
+        let edgeData: any = { 
+            compatibility: 'direct',
+            connectionType: connectionType // Store the connection type
+        };
         
         if (sourcePort && targetPort) {
             const compatibility = checkCompatibility(sourcePort, targetPort);
             console.log('Compatibility check:', compatibility);
             
             edgeData = {
+                ...edgeData,
                 compatibility: compatibility.status,
                 adapterRequired: compatibility.adapterType,
                 message: compatibility.message
@@ -218,10 +264,10 @@
         // Check if an edge already exists between these nodes with these handles
         const existingEdges = get(currentEdges);
         const duplicateEdgeIndex = existingEdges.findIndex(edge => 
-            edge.source === params.source &&
-            edge.target === params.target &&
-            edge.sourceHandle === params.sourceHandle &&
-            edge.targetHandle === params.targetHandle
+            edge.source === pendingConnection.source &&
+            edge.target === pendingConnection.target &&
+            edge.sourceHandle === pendingConnection.sourceHandle &&
+            edge.targetHandle === pendingConnection.targetHandle
         );
         
         if (duplicateEdgeIndex !== -1) {
@@ -238,11 +284,11 @@
         } else {
             // Create new edge with compatibility metadata
             const newEdge: Edge = {
-                id: `${params.source}-${params.target}-${Date.now()}`,
-                source: params.source!,
-                target: params.target!,
-                sourceHandle: params.sourceHandle,
-                targetHandle: params.targetHandle,
+                id: `${pendingConnection.source}-${pendingConnection.target}-${Date.now()}`,
+                source: pendingConnection.source!,
+                target: pendingConnection.target!,
+                sourceHandle: pendingConnection.sourceHandle,
+                targetHandle: pendingConnection.targetHandle,
                 type: 'default',
                 data: edgeData
             };
@@ -251,6 +297,13 @@
         }
         
         addToHistory();
+        showConnectionDropdown = false;
+        pendingConnection = null;
+    }
+    
+    function handleConnectionCancel() {
+        showConnectionDropdown = false;
+        pendingConnection = null;
     } 
 </script>
 
@@ -274,6 +327,15 @@
           </SvelteFlow>
       </div>
   </div>
+  
+  {#if showConnectionDropdown}
+      <ConnectionTypeDropdown 
+          x={dropdownX}
+          y={dropdownY}
+          onSelect={handleConnectionTypeSelect}
+          onCancel={handleConnectionCancel}
+      />
+  {/if}
 
   <style>
       .conceptual-editor {

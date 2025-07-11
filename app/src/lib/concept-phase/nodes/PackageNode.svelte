@@ -7,8 +7,7 @@
       import { useUpdateNodeInternals } from '@xyflow/svelte';
       import { navigateToPackage } from '../packageStore';
       import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
-      import { createPortHandlers, type PortData } from './portUtils';
-      import PortHandles from './PortHandles.svelte';
+      import { type PortData } from './portUtils';
       import AttributeEditor from '../AttributeEditor.svelte';
       import ContextMenu from '../ContextMenu.svelte';
       import { get } from 'svelte/store';
@@ -55,16 +54,6 @@
     if (!data.metadata) data.metadata = [];
   });
 
-    // Create port handlers
-    const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<PackageData>(id);
-    
-    function handleUpdateInputInterface(index: number, interfaceType: string | undefined) {
-        updatePortInterface('input', index, interfaceType);
-    }
-    
-    function handleUpdateOutputInterface(index: number, interfaceType: string | undefined) {
-        updatePortInterface('output', index, interfaceType);
-    }
     
     // Update React Flow internals when data changes
     const updateNodeInternals = useUpdateNodeInternals();
@@ -187,15 +176,6 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
      <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div class="package-node" ondblclick={stopPropagation(handleDoubleClick as (event: Event) => void)} oncontextmenu={handleContextMenu} bind:this={nodeElement}>
-      <!-- Input Handles -->
-      <PortHandles 
-          nodeId={id}
-          ports={data.inputs || []}
-          type="input"
-          onAdd={addInput}
-          onRemove={removeInput}
-          onUpdateInterface={handleUpdateInputInterface}
-      />
 
       <div class="package-header">
           <div class="package-header-left">
@@ -304,15 +284,6 @@
           />
       </div>
 
-      <!-- Output Handles -->
-      <PortHandles 
-          nodeId={id}
-          ports={data.outputs || []}
-          type="output"
-          onAdd={addOutput}
-          onRemove={removeOutput}
-          onUpdateInterface={handleUpdateOutputInterface}
-      />
       
       <ContextMenu 
           bind:visible={showContextMenu}

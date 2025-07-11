@@ -11,7 +11,7 @@
     import { isNameValid } from "$lib/helpers";
     import { goto } from "$app/navigation";
 
-    let currentName = $derived($currentSystemMeta.name);
+    let currentName = $state($currentSystemMeta.name);
     let isNameError = $state(false);
 
     const checkAndUpdateName = () => {

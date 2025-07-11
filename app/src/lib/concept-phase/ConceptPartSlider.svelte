@@ -213,11 +213,11 @@
     .name-field {
         display: flex;
         gap: 12px;
+        font-size: 14px;
         align-items: center;
     }
 
     .name-label {
-        font-size: 14px;
         font-weight: 500;
     }
 

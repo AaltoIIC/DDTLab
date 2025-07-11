@@ -236,11 +236,11 @@
         if (!pendingConnection) return;
         
         const nodes = get(currentNodes);
-        const sourceNode = nodes.find(n => n.id === pendingConnection.source);
-        const targetNode = nodes.find(n => n.id === pendingConnection.target);
+        const sourceNode = nodes.find(n => n.id === pendingConnection?.source);
+        const targetNode = nodes.find(n => n.id === pendingConnection?.target);
         
-        const sourcePort = findPort(sourceNode, pendingConnection.sourceHandle);
-        const targetPort = findPort(targetNode, pendingConnection.targetHandle);
+        const sourcePort = findPort(sourceNode, pendingConnection?.sourceHandle);
+        const targetPort = findPort(targetNode, pendingConnection?.targetHandle);
         
         console.log('Source port:', sourcePort, 'Target port:', targetPort);
         
@@ -264,7 +264,7 @@
         // Check if an edge already exists between these nodes with these handles
         const existingEdges = get(currentEdges);
         const duplicateEdgeIndex = existingEdges.findIndex(edge => 
-            edge.source === pendingConnection.source &&
+            edge.source === pendingConnection?.source &&
             edge.target === pendingConnection.target &&
             edge.sourceHandle === pendingConnection.sourceHandle &&
             edge.targetHandle === pendingConnection.targetHandle

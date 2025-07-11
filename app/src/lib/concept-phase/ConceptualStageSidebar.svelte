@@ -11,7 +11,7 @@
     import ConceptPartSlider from './ConceptPartSlider.svelte';
     // import ConceptItemSlider from './ConceptItemSlider.svelte';
     // import ConceptPartSlider from './ConceptLibrarySlider.svelte';
-    import ConceptItemSlider from './ConceptTemplateSlider.svelte';
+    import ConceptItemSlider from './ConceptItemSlider.svelte';
     import { overSome } from 'lodash';
 
     interface Props {

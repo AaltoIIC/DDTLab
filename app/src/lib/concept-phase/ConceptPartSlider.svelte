@@ -105,7 +105,7 @@
                             bind:value={searchTerm}
                         />
                     </div>
-                        {#if false}
+                        {#if true}
                             <p class="placeholder-text">No part definitions yet. Create a part definition to get started.</p>
                         {:else}
                             Placeholder Text

@@ -31,7 +31,7 @@
         default: RemovableEdge,
     } as {} as EdgeTypes;
 
-    export function addPackageNode() {
+    export function addPackageNode(name: String = 'New Package') {
             console.log('addPackageNode called');
             const existingNodes = get(currentNodes);
             const newNode: Node = {
@@ -39,7 +39,7 @@
               type: 'package',
               position: { x: 250, y: 100 + existingNodes.length * 150 },
               data: {
-                  declaredName: 'New Package',
+                  declaredName: name,
                   comment: '',
                   id: `PKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
                   orderStatus: 'Not Ordered',
@@ -57,7 +57,7 @@
           currentNodes.subscribe(n => console.log('Total nodes:', n.length))();
     }
     
-    export function addPartNode() {
+    export function addPartNode(name: String = 'New Part') {
         console.log('addPartNode called');
         const existingNodes = get(currentNodes);
         const newNode: Node = {
@@ -65,7 +65,7 @@
             type: 'part',
             position: { x: 250, y: 100 + existingNodes.length * 150 },
             data: {
-                declaredName: 'New Part',
+                declaredName: name,
                 comment: '',
                 id: `PRT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
                 orderStatus: 'Not Ordered',
@@ -82,7 +82,7 @@
         addToHistory(); // Track changes for undo/redo
     }
     
-    export function addItemNode() {
+    export function addItemNode(name: string = 'New Item') {
         console.log('addItemNode called');
         const existingNodes = get(currentNodes);
         const newNode: Node = {
@@ -90,7 +90,7 @@
             type: 'item',
             position: { x: 250, y: 100 + existingNodes.length * 150 },
             data: {
-                declaredName: 'New Item',
+                declaredName: name,
                 comment: '',
                 id: `ITM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
                 orderStatus: 'Not Ordered',

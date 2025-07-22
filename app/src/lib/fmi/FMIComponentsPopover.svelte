@@ -6,6 +6,7 @@
     import type { FMIComponentType } from '$lib/types/types';
     import { generateId } from '$lib/helpers';
     import { useSvelteFlow } from "@xyflow/svelte";
+    import { capitalize } from 'lodash';
     
     interface Props {
         isOpen?: boolean;
@@ -221,7 +222,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                         </svg>
                         <span class="category-icon">{getCategoryIcon(category)}</span>
-                        <span class="category-name">{category.charAt(0).toUpperCase() + category.slice(1)}</span>
+                        <span class="category-name">{capitalize(category)}</span>
                         <span class="component-count">({components.length})</span>
                     </button>
                     

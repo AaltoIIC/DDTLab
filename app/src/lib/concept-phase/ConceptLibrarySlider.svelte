@@ -5,6 +5,7 @@
     import type { ComponentCategory, LibraryComponent } from './types/componentLibrary';
     import { shipDesigns, shipDesignCategories } from './data/shipDesignLibrary';
     import type { ShipDesign, ShipPowertrainType, ShipType } from './types/shipDesign';
+    import { capitalize } from 'lodash';
     
     interface Props {
         isOpen?: boolean;
@@ -180,12 +181,12 @@
     
     function formatPowertrainType(type: ShipPowertrainType): string {
         return type.split('-').map(word => 
-            word.charAt(0).toUpperCase() + word.slice(1)
+            capitalize(word)
         ).join(' ');
     }
     
     function formatShipType(type: ShipType): string {
-        return type.charAt(0).toUpperCase() + type.slice(1);
+        return capitalize(type);
     }
 </script>
 

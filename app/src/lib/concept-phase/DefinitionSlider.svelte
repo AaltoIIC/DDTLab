@@ -1,22 +1,84 @@
 <script lang="ts">
+    import { type ItemDefinition, type PartDefinition } from '$lib/types/types'
+    import { currentPartDefinitions, currentItemDefinitions, addToHistory } from '$lib/stores/stores.svelte'
+    import { generateId, validateName } from '$lib/helpers';
     import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, Search, CirclePlus, Plus } from 'lucide-svelte';
     import { slide, fade } from 'svelte/transition';
+    import { capitalize } from 'lodash';
 
     interface Props {
+        type: 'part' | 'item';
         isOpen?: boolean;
         onClose: () => void;
     }
 
-    let { isOpen = false, onClose }: Props = $props();
+    let { type, isOpen = false, onClose }: Props = $props();
+
+    let currentDefs = $derived.by(() => {
+        return type === 'part' ? currentPartDefinitions : currentItemDefinitions;
+    });
 
     let newDefMenuOpen = $state(false);
-    let itemDefsExpanded = $state(false);
+    let defsExpanded = $state(false);
     let isDragging = $state(false);
     let searchTerm = $state('');
 
+    let description = $state(''); // TODO: Implement description adding
+
+    let inputName = $state('');
+    let isNameError = $state(false);
+
+    const validateNameLocal = () => {
+        isNameError = validateName('', inputName, $currentDefs.map( p => p.name ));
+    }
     function handleImport() {} // TODO: Implement eventually
 
-    function handleAddItem() {}
+    function addDefinition() {
+        validateNameLocal();
+        if (!isNameError) {
+            const baseDef = {
+                id: generateId($currentDefs.map( p => p.id )),
+                name: inputName,
+                description: description,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                data: {
+                    attributes: [],
+                    itemRefs: [],
+                    nodes: [],
+                    edges: [],
+                }
+            };
+
+            if (type === 'part') {
+                const newDef: PartDefinition = {
+                    ...baseDef,
+                    type: 'part',
+                    data: {
+                        ...baseDef.data,
+                        partRefs: [],
+                    }
+                }
+                currentPartDefinitions.update(defs => [...defs, newDef]);
+            }
+            else {
+                const newDef: ItemDefinition = {
+                    ...baseDef,
+                    type: 'item'
+                }
+                currentItemDefinitions.update(defs => [...defs, newDef]);
+            }
+
+            addToHistory(); 
+            closeNewDef();
+        }
+    }
+
+    function closeNewDef() {
+        inputName = '';
+        description = '';
+        newDefMenuOpen = false;
+    }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -29,7 +91,7 @@
     ></div>
     <div class="slider-panel" transition:slide={{ duration: 300, axis: 'x' }}>
         <div class="slider-header">
-            <h2 class="slider-title">Item Definitions</h2>
+            <h2 class="slider-title">{capitalize(type)} Definitions</h2>
             <div class="header-actions">
                 <button class="icon-button" onclick={handleImport} title="Import template">
                     <Upload size={18} />
@@ -47,21 +109,23 @@
                             <span>
                                 <CirclePlus size={18} />
                             </span>
-                            <span>Define a New Item</span>
+                            <span>Define a New {capitalize(type)}</span>
                         </button>
                 {:else}
                     <div>
                         <div class="library-content" transition:slide={{ duration: 200}}>
                             <div class="new-definition-title">
-                                New item definition
+                                New {type} definition
                             </div>
                             <form class="definition-form">
                                 <div class="name-field">
-                                    <label for="item-nameinput" class="name-label">Name:</label>
+                                    <label for="nameinput" class="name-label">Name:</label>
                                     <input
-                                        id="item-nameinput"
-                                        class="name-input"
-                                        type="text" 
+                                        id="nameinput"
+                                        class="name-input {isNameError ? 'error' : ''}"
+                                        type="text"
+                                        bind:value={inputName}
+                                        oninput={validateNameLocal}
                                     />
                                 </div>
                                 <div class="information-field">
@@ -69,12 +133,16 @@
                                     <span class="add-button"><Plus size={16}/></span>
                                 </div>
                                 <div class="information-field">
+                                    <span class="information-label">Parts</span>
+                                    <span class="add-button"><Plus size={16}/></span>
+                                </div>
+                                <div class="information-field">
                                     <span class="information-label">Items</span>
                                     <span class="add-button"><Plus size={16}/></span>
                                 </div>
                                 <div class="action-buttons">
-                                    <button class="action-button" onclick={() => newDefMenuOpen = false}>Cancel</button>
-                                    <button class="action-button">Add</button>
+                                    <button type="button" class="action-button" onclick={closeNewDef}>Cancel</button>
+                                    <button type="button" class="action-button" onclick={addDefinition}>Add</button>
                                 </div>
                             </form>
                         </div>
@@ -82,13 +150,13 @@
                 {/if}
             </div>
             <div class="library-section">
-                <button class="library-header" onclick={() => itemDefsExpanded = !itemDefsExpanded}>
-                    <span class="chevron {itemDefsExpanded ? 'expanded' : ''}">
+                <button class="library-header" onclick={() => defsExpanded = !defsExpanded}>
+                    <span class="chevron {defsExpanded ? 'expanded' : ''}">
                         <ChevronRight size={16} />
                     </span>
-                    <span>All Item Definitions (0)</span>
+                    <span>All {capitalize(type)} Definitions ({$currentDefs.length})</span>
                 </button>
-                {#if itemDefsExpanded}
+                {#if defsExpanded}
                     <div class="library-content" transition:slide={{ duration: 200 }}>
                     <div class="search-container">
                             <span class="search-icon">
@@ -97,14 +165,18 @@
                         <input
                             type="text"
                             class="search-input"
-                            placeholder="Search items..."
+                            placeholder="Search {type}s"
                             bind:value={searchTerm}
                         />
                     </div>
-                        {#if true}
-                            <p class="placeholder-text">No item definitions yet. Create an item definition to get started.</p>
+                        {#if $currentDefs.length > 0}
+                            <ul>
+                                {#each $currentDefs as definition}
+                                    <li>{definition.name}</li>
+                                {/each}
+                            </ul>
                         {:else}
-                            Placeholder Text
+                            <p class="placeholder-text">No {type} definitions yet. Create a {type} definition to get started.</p>
                         {/if}
                     </div>
                 {/if}
@@ -230,6 +302,11 @@
     .name-input:focus {
         border-color: #3b82f6;
         box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+
+    .name-input.error {
+        border-color: var(--main-error-color);
+        box-shadow: 0 0 0 2px rgba(227, 97, 97, 0.1)
     }
 
     .information-field {

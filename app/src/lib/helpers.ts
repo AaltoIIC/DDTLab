@@ -4,6 +4,7 @@ import {
     systems
 } from '$lib/stores/stores.svelte';
 import { get } from 'svelte/store';
+import { capitalize } from 'lodash';
 
 export const getScreenSize = () => {
     if (browser) {
@@ -22,7 +23,7 @@ export const getScreenSize = () => {
 export const nameElement = (type: 'component'|'subsystem') => {
     const elementNames = get(currentNodes).map(elem => elem.data.name);
     const allNames = elementNames.concat(get(systems).map(s => s.name));
-    const capitalType = type.charAt(0).toUpperCase() + type.slice(1);
+    const capitalType = capitalize(type);
     let newElemName = `New ${capitalType}`;
     let i = 2;
     while (allNames.includes(newElemName)) {

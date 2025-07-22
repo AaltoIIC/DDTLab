@@ -8,11 +8,8 @@
     import { get } from 'svelte/store';
     import ConceptLibrarySlider from './ConceptLibrarySlider.svelte';
     import ConceptTemplateSlider from './ConceptTemplateSlider.svelte';
-    import ConceptPartSlider from './ConceptPartSlider.svelte';
-    // import ConceptItemSlider from './ConceptItemSlider.svelte';
-    // import ConceptPartSlider from './ConceptLibrarySlider.svelte';
-    import ConceptItemSlider from './ConceptItemSlider.svelte';
     import { overSome } from 'lodash';
+    import DefinitionSlider from './DefinitionSlider.svelte';
 
     interface Props {
         onAddPackage: () => void;
@@ -106,8 +103,8 @@
 
 <!-- DISABLE FOR NOW AS CONCEPT STAGE IS BEING REFACTORED-->
 
-<ConceptPartSlider isOpen={isPartDefOpen} onClose={closeAllSliders} />
-<ConceptItemSlider isOpen={isItemDefOpen} onClose={closeAllSliders} />
+<DefinitionSlider type='part' isOpen={isPartDefOpen} onClose={closeAllSliders} />
+<DefinitionSlider type='item' isOpen={isItemDefOpen} onClose={closeAllSliders} />
 <ConceptLibrarySlider isOpen={isLibraryOpen} onClose={closeAllSliders} />
 <ConceptTemplateSlider isOpen={isTemplateSliderOpen} onClose={closeAllSliders} />
 

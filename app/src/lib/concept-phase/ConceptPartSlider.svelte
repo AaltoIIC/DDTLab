@@ -1,4 +1,7 @@
 <script lang="ts">
+    import { type PartDefinition } from '$lib/types/types'
+    import { currentPartDefinitions, addToHistory } from '$lib/stores/stores.svelte'
+    import { generateId, validateName } from '$lib/helpers';
     import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, Search, CirclePlus, Plus } from 'lucide-svelte';
     import { slide, fade } from 'svelte/transition';
 
@@ -14,9 +17,45 @@
     let isDragging = $state(false);
     let searchTerm = $state('');
 
+    let description = $state(''); // TODO: Implement description adding
+
+    let inputName = $state('');
+    let isNameError = $state(false);
+
+    const validateNameLocal = () => {
+        isNameError = validateName('', inputName, $currentPartDefinitions.map( p => p.name ));
+    }
     function handleImport() {} // TODO: Implement eventually
 
-    function handleAddPart() {}
+    function addPartDefinition() {
+        validateNameLocal();
+        if (!isNameError) {
+            const newPartDef: PartDefinition = {
+                id: generateId($currentPartDefinitions.map( p => p.id )),
+                type: 'part',
+                name: inputName,
+                description: description,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                data: {
+                    attributes: [],
+                    partRefs: [],
+                    itemRefs: [],
+                    nodes: [],
+                    edges: [],
+                }
+            }
+            currentPartDefinitions.update(defs => [...defs, newPartDef]);
+            addToHistory(); 
+            closeNewPartDef();
+        }
+    }
+
+    function closeNewPartDef() {
+        inputName = '';
+        description = '';
+        newDefMenuOpen = false;
+    }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -60,8 +99,10 @@
                                     <label for="part-nameinput" class="name-label">Name:</label>
                                     <input
                                         id="part-nameinput"
-                                        class="name-input"
-                                        type="text" 
+                                        class="name-input {isNameError ? 'error' : ''}"
+                                        type="text"
+                                        bind:value={inputName}
+                                        oninput={validateNameLocal}
                                     />
                                 </div>
                                 <div class="information-field">
@@ -77,8 +118,8 @@
                                     <span class="add-button"><Plus size={16}/></span>
                                 </div>
                                 <div class="action-buttons">
-                                    <button class="action-button" onclick={() => newDefMenuOpen = false}>Cancel</button>
-                                    <button class="action-button">Add</button>
+                                    <button type="button" class="action-button" onclick={closeNewPartDef}>Cancel</button>
+                                    <button type="button" class="action-button" onclick={addPartDefinition}>Add</button>
                                 </div>
                             </form>
                         </div>
@@ -90,7 +131,7 @@
                     <span class="chevron {partDefsExpanded ? 'expanded' : ''}">
                         <ChevronRight size={16} />
                     </span>
-                    <span>All Part Definitions (0)</span>
+                    <span>All Part Definitions ({$currentPartDefinitions.length})</span>
                 </button>
                 {#if partDefsExpanded}
                     <div class="library-content" transition:slide={{ duration: 200 }}>
@@ -105,10 +146,14 @@
                             bind:value={searchTerm}
                         />
                     </div>
-                        {#if true}
-                            <p class="placeholder-text">No part definitions yet. Create a part definition to get started.</p>
+                        {#if $currentPartDefinitions.length > 0}
+                            <ul>
+                                {#each $currentPartDefinitions as partDefinition}
+                                    <li>{partDefinition.name}</li>
+                                {/each}
+                            </ul>
                         {:else}
-                            Placeholder Text
+                            <p class="placeholder-text">No part definitions yet. Create a part definition to get started.</p>
                         {/if}
                     </div>
                 {/if}
@@ -234,6 +279,11 @@
     .name-input:focus {
         border-color: #3b82f6;
         box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+
+    .name-input.error {
+        border-color: var(--main-error-color);
+        box-shadow: 0 0 0 2px rgba(227, 97, 97, 0.1)
     }
 
     .information-field {

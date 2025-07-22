@@ -1,13 +1,16 @@
-import type {
-    NotificationType,
-    SystemMetaType,
-    SystemType,
-    RequirementType,
-    HistoryEntryType,
-    NavigationContextType,
-    SubsystemDataType,
-    NodeDataType,
-    FMIComponentType
+import {
+    type NotificationType,
+    type SystemMetaType,
+    type SystemType,
+    type RequirementType,
+    type HistoryEntryType,
+    type NavigationContextType,
+    type SubsystemDataType,
+    type NodeDataType,
+    type FMIComponentType,
+    type ConceptTemplate,
+    type PartDefinition,
+    type ItemDefinition,
 } from '../types/types';
 import {    
     type Node,
@@ -17,7 +20,7 @@ import {
     generateId,
     generateName
 } from '$lib/helpers';
-import { writable, get } from 'svelte/store';
+import { writable, get, derived } from 'svelte/store';
 import persistentStore from './persistentStore';
 import _ from 'lodash';
 
@@ -41,6 +44,12 @@ export const currentEdges = persistentStore<Edge[]>('currentEdges', []);
 export const currentReqs = persistentStore<RequirementType[]>('currentReqs', []);
 
 export const systems = persistentStore<SystemType[]>('systems', []);
+
+export const templates = persistentStore<ConceptTemplate[]>('concepTemplates', []);
+
+
+export const currentPartDefinitions = persistentStore<PartDefinition[]>('partDefinitions', []);
+export const currentItemDefinitions = persistentStore<ItemDefinition[]>('itemDefinitions', []);
 
 export const saveSystem = (system: SystemType) => {
     systems.update((systems) => {
@@ -141,7 +150,8 @@ export const addToHistory = () => {
             systemMeta: get(currentSystemMeta),
             nodes: get(currentNodes),
             edges: get(currentEdges),
-            requirements: get(currentReqs)
+            requirements: get(currentReqs),
+            partDefinitions: get(currentPartDefinitions)
         });
         h.data.push(entry);
         h.currentIndex = -1;
@@ -157,6 +167,7 @@ const setHistoryEntry = (entry: HistoryEntryType) => {
     currentNodes.set(entry.nodes);
     currentEdges.set(entry.edges);
     currentReqs.set(entry.requirements);
+    currentPartDefinitions.set(entry.partDefinitions)
 }
 
 export const handleUndo = () => {
@@ -296,5 +307,91 @@ export const resetNavigation = () => {
     currentViewSystemId.set(get(currentSystemMeta).id);
 }
 
-  export const fmiComponents = persistentStore<FMIComponentType[]>('fmiComponents', []);
-  export const componentLinks = persistentStore<Record<string, string>>('componentLinks', {});
+export const fmiComponents = persistentStore<FMIComponentType[]>('fmiComponents', []);
+export const componentLinks = persistentStore<Record<string, string>>('componentLinks', {});
+
+// TODO: Add template storage logic
+
+export const templatesByCategory = derived(templates, $templates => {
+    const grouped: Record<string, ConceptTemplate[]> = {
+        uncategorized: []
+    };
+    
+    $templates.forEach(template => {
+        const category = template.category || 'uncategorized';
+        if (!grouped[category]) {
+        grouped[category] = [];
+        }
+        grouped[category].push(template);
+    });
+    
+    return grouped;
+});
+
+export function saveTemplate(template: Omit<ConceptTemplate, 'id' | 'createdAt' | 'updatedAt'>): ConceptTemplate {
+  const newTemplate: ConceptTemplate = {
+    ...template,
+    id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+  
+  templates.update(temps => [...temps, newTemplate]);
+  return newTemplate;
+}
+
+export function updateTemplate(id: string, updates: Partial<ConceptTemplate>) {
+  templates.update(temps => 
+    temps.map(t => 
+      t.id === id 
+        ? { ...t, ...updates, updatedAt: Date.now() }
+        : t
+    )
+  );
+}
+
+export function deleteTemplate(id: string) {
+  templates.update(temps => temps.filter(t => t.id !== id));
+}
+
+export function duplicateTemplate(id: string): ConceptTemplate | null {
+  const original = get(templates).find(t => t.id === id);
+  
+  if (!original) return null;
+  
+  const duplicate = saveTemplate({
+    ...original,
+    name: `${original.name} (Copy)`,
+    description: original.description
+  });
+  
+  return duplicate;
+}
+
+export function exportTemplate(id: string): string | null {
+  const template = get(templates).find(t => t.id === id);
+  
+  if (!template) return null;
+  
+  return JSON.stringify(template, null, 2);
+}
+
+export function importTemplate(jsonString: string): ConceptTemplate | null {
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (!parsed.name || !parsed.data || !parsed.data.nodes) {
+      throw new Error('Invalid template format');
+    }
+    
+    return saveTemplate({
+      name: parsed.name,
+      description: parsed.description || '',
+      category: parsed.category,
+      tags: parsed.tags || [],
+      data: parsed.data
+    });
+  } catch (error) {
+    console.error('Failed to import template:', error);
+    return null;
+  }
+}

@@ -42,6 +42,11 @@ export const isNameValid = (name: string) => {
     )
 }
 
+export const validateName = (currentName: string, newName: string, nameList: string[]): boolean => {
+    const isNameTaken = (newName !== currentName) && nameList.some(name => name.replace(/\s+/g, '').toLowerCase() === newName.replace(/\s+/g, '').toLowerCase());
+    return !isNameValid(newName) || isNameTaken;
+}
+
 // function to automatically give a unique name
 export const generateName = (nameBasis: string, names: string[]) => {
     let newName = nameBasis;

@@ -5,7 +5,7 @@
     import Connectors from "./Connectors.svelte";
     import { type ElementDataType, type SubsystemDataType } from "$lib/types/types";
     import {
-        isNameValid, generateId, nameElement, generateName
+        generateId, generateName, validateName
      } from "$lib/helpers";
     import {
         currentEdges,
@@ -72,22 +72,21 @@
 
     // svelte-ignore state_referenced_locally
     let inputName = $state(currentName);
-
     let isNameError = $state(false);
-    const validateName = () => {
+
+    const validateNameLocal = () => {
+    // const validateName = () => {
         const nodeNames = get(currentNodes)
             .map(n => n.data?.name)
             .filter((name): name is string => typeof name === 'string');
 
-    const systemNames = get(systems)
-        .map(s => s.name)
-        .filter((name): name is string => typeof name === 'string');
+        const systemNames = get(systems)
+            .map(s => s.name)
+            .filter((name): name is string => typeof name === 'string');
 
-  const allNames = nodeNames.concat(systemNames);
-        console.log(allNames)
-        const isNameTaken = (inputName !== data.name) && allNames.some(name => name.replace(/\s+/g, '').toLowerCase() === inputName.replace(/\s+/g, '').toLowerCase());
-        
-        isNameError = !isNameValid(inputName) || isNameTaken;
+        const allNames = nodeNames.concat(systemNames);
+
+        isNameError = validateName(currentName, inputName, allNames);
     }
 
     const saveName = () => {
@@ -250,7 +249,7 @@
             <input class="main-name-field {isNameError ? 'error' : ''}"
                 type="text"
                 bind:value={inputName}
-                oninput={validateName}
+                oninput={validateNameLocal}
                 onblur={saveName} />
             <div class="element-type-cont {data.element.type === 'system' ? 'subsystem-type' : ''}">
                 {#if data.element.type === 'system'}

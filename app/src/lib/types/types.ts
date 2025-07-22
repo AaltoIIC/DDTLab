@@ -64,6 +64,7 @@ export interface HistoryEntryType {
     nodes: Node[];
     edges: Edge[];
     requirements: RequirementType[];
+    partDefinitions: PartDefinition[];
 }
 
 export interface SubsystemDataType extends ElementDataType {
@@ -81,29 +82,86 @@ export interface NavigationContextType {
 export type NodeDataType = ElementDataType | SubsystemDataType;
 
 
-  export interface FMIComponentType {
-      id: string;
-      name: string;
-      category: 'motors' | 'propellers' | 'engines' | 'sensors' | 'controllers' | 'other';
-      description: string;
-      filePath?: string;  // For uploaded components
-      modelIdentifier: string;
-      fmiVersion: '2.0' | '3.0';
-      fmiType: 'Co-Simulation' | 'Model Exchange' | 'Co-Simulation & Model Exchange';
-      linkedElements: string[];  // IDs of linked editor elements
-      uploadDate: string;
-      isUserUploaded: boolean;
-  }
+export interface FMIComponentType {
+    id: string;
+    name: string;
+    category: 'motors' | 'propellers' | 'engines' | 'sensors' | 'controllers' | 'other';
+    description: string;
+    filePath?: string;  // For uploaded components
+    modelIdentifier: string;
+    fmiVersion: '2.0' | '3.0';
+    fmiType: 'Co-Simulation' | 'Model Exchange' | 'Co-Simulation & Model Exchange';
+    linkedElements: string[];  // IDs of linked editor elements
+    uploadDate: string;
+    isUserUploaded: boolean;
+}
 
-    export interface FMIVariableType {
-      name: string;
-      type: 'Real' | 'Integer' | 'Boolean' | 'String';
-      unit?: string;
-      description?: string;
-      causality: 'input' | 'output' | 'parameter';
-  }
+export interface FMIVariableType {
+    name: string;
+    type: 'Real' | 'Integer' | 'Boolean' | 'String';
+    unit?: string;
+    description?: string;
+    causality: 'input' | 'output' | 'parameter';
+}
 
-    export interface FMILibraryType {
-      components: FMIComponentType[];
-      categories: string[];
-  }
+export interface FMILibraryType {
+    components: FMIComponentType[];
+    categories: string[];
+}
+
+  // Template stores
+export interface ConceptTemplate {
+    id: string;
+    name: string;
+    description: string;
+    createdAt: number;
+    updatedAt: number;
+    thumbnail?: string;
+    category?: string;
+    tags?: string[];
+    data: {
+        nodes: Node[];
+        edges: Edge[];
+        metadata?: Record<string, any>;
+    };
+}
+
+interface SysMLData {
+    attributes: string[];
+    partRefs: PartDefinition[];
+    itemRefs: ItemDefinition[];
+    nodes: Node[];
+    edges: Edge[];
+}
+
+interface SysMLDefinition extends Omit<ConceptTemplate, 'data'> {
+    data: SysMLData
+}
+
+export interface PartDefinition extends SysMLDefinition {
+    type: 'part';
+}
+
+export interface ItemDefinition extends Omit<SysMLDefinition, 'data'> {
+    type: 'item';
+    data: Omit<SysMLData, 'partRefs'>
+}
+
+export interface TemplateCategory {
+    id: string;
+    name: string;
+    description?: string;
+    icon?: string;
+}
+
+export interface TemplateStore {
+    templates: ConceptTemplate[];
+    categories: TemplateCategory[];
+}
+
+export interface TemplateMetadata {
+    packageCount: number;
+    partCount: number;
+    itemCount: number;
+    connectionCount: number;
+}

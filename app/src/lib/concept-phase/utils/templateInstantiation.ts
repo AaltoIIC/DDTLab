@@ -1,5 +1,5 @@
 import type { Node, Edge } from '@xyflow/svelte';
-import type { ConceptTemplate } from '../types/template';
+import type { ConceptTemplate } from '$lib/types/types';
 
 export function instantiateTemplate(template: ConceptTemplate, position: { x: number, y: number }): { nodes: Node[], edges: Edge[] } {
     const idMap = new Map<string, string>();

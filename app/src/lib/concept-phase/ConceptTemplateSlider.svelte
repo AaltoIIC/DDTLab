@@ -3,8 +3,8 @@
 
     import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy } from 'lucide-svelte';
     import { slide } from 'svelte/transition';
-    import { templates, deleteTemplate, duplicateTemplate, exportTemplate, importTemplate } from './utils/templateStorage';
-    import type { ConceptTemplate } from './types/template';
+    import { templates, deleteTemplate, duplicateTemplate, exportTemplate, importTemplate } from '$lib/stores/stores.svelte';
+    import type { ConceptTemplate } from '$lib/types/types';
     
     interface Props {
         isOpen?: boolean;

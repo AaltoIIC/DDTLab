@@ -57,7 +57,7 @@
           currentNodes.subscribe(n => console.log('Total nodes:', n.length))();
     }
     
-    export function addPartNode(name: String = 'New Part') {
+    export function addPartNode(definitionName: string = '') {
         console.log('addPartNode called');
         const existingNodes = get(currentNodes);
         const newNode: Node = {
@@ -65,7 +65,8 @@
             type: 'part',
             position: { x: 250, y: 100 + existingNodes.length * 150 },
             data: {
-                declaredName: name,
+                declaredName: `New ${definitionName} Part` ,
+                definition: definitionName,
                 comment: '',
                 id: `PRT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
                 orderStatus: 'Not Ordered',

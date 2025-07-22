@@ -11,7 +11,7 @@
     import { isNameValid } from "$lib/helpers";
     import { goto } from "$app/navigation";
 
-    let currentName = $state($currentSystemMeta.name);
+    let currentName = $derived($currentSystemMeta.name);
     let isNameError = $state(false);
 
     const checkAndUpdateName = () => {
@@ -76,7 +76,7 @@
         padding: 0 16px;
         box-sizing: border-box;
         background: var(--main-dark-color);
-        z-index: 100;
+        z-index: 1000;
         border-radius: var(--main-border-radius);
     }
     .undo-redo-cont {

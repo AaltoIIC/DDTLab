@@ -20,6 +20,7 @@
 
     type PartData = {
         declaredName: string;
+        definition: string;
         comment: string;
         id: string;
         orderStatus?: 'Delivered' | 'Pending' | 'Order Placed' | 'Confirmed' | 'In Production / In-House' | 'Not Ordered';
@@ -195,7 +196,7 @@
     <div class="part-header">
         <div class="part-header-left">
             <Component size={14} />
-            <span class="part-title">Part</span>
+            <span class="part-title">{data.definition ? `${data.definition} (Part)` : `Part`}</span>
         </div>
         <button 
             class="delete-button" 

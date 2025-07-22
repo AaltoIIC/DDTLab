@@ -11,7 +11,7 @@
     import { onMount, onDestroy } from 'svelte';
     import { get } from 'svelte/store';
     import { Save } from 'lucide-svelte';
-    import { saveTemplate } from './utils/templateStorage';
+    import { saveTemplate } from '$lib/stores/stores.svelte';
     
     let conceptEditor: ConceptualStageEditor | undefined = $state();
     let showSaveDialog = $state(false);
@@ -151,7 +151,7 @@
 <div class="conceptual-layout">
     <ConceptualStageSidebar 
         onAddPackage={() => conceptEditor?.addPackageNode()} 
-        onAddPart={() => conceptEditor?.addPartNode()}
+        onAddPart={() => conceptEditor?.addPartNode("ABA")}
         onAddItem={() => conceptEditor?.addItemNode()}
     />
     

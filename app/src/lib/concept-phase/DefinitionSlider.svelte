@@ -5,6 +5,8 @@
     import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, Search, CirclePlus, Plus } from 'lucide-svelte';
     import { slide, fade } from 'svelte/transition';
     import { capitalize } from 'lodash';
+    import MetadataEditor from './MetadataEditor.svelte';
+    import DefinitionEditor from './DefinitionEditor.svelte';
 
     interface Props {
         type: 'part' | 'item';
@@ -23,62 +25,8 @@
     let isDragging = $state(false);
     let searchTerm = $state('');
 
-    let description = $state(''); // TODO: Implement description adding
-
-    let inputName = $state('');
-    let isNameError = $state(false);
-
-    const validateNameLocal = () => {
-        isNameError = validateName('', inputName, $currentDefs.map( p => p.name ));
-    }
     function handleImport() {} // TODO: Implement eventually
 
-    function addDefinition() {
-        validateNameLocal();
-        if (!isNameError) {
-            const baseDef = {
-                id: generateId($currentDefs.map( p => p.id )),
-                name: inputName,
-                description: description,
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-                data: {
-                    attributes: [],
-                    itemRefs: [],
-                    nodes: [],
-                    edges: [],
-                }
-            };
-
-            if (type === 'part') {
-                const newDef: PartDefinition = {
-                    ...baseDef,
-                    type: 'part',
-                    data: {
-                        ...baseDef.data,
-                        partRefs: [],
-                    }
-                }
-                currentPartDefinitions.update(defs => [...defs, newDef]);
-            }
-            else {
-                const newDef: ItemDefinition = {
-                    ...baseDef,
-                    type: 'item'
-                }
-                currentItemDefinitions.update(defs => [...defs, newDef]);
-            }
-
-            addToHistory(); 
-            closeNewDef();
-        }
-    }
-
-    function closeNewDef() {
-        inputName = '';
-        description = '';
-        newDefMenuOpen = false;
-    }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -105,48 +53,14 @@
         <div class="slider-content">
             <div class="new-definition">
                 {#if !newDefMenuOpen}
-                        <button class="library-header" onclick={() => newDefMenuOpen = !newDefMenuOpen}>
-                            <span>
-                                <CirclePlus size={18} />
-                            </span>
-                            <span>Define a New {capitalize(type)}</span>
-                        </button>
+                    <button class="library-header" onclick={() => newDefMenuOpen = !newDefMenuOpen}>
+                        <span>
+                            <CirclePlus size={18} />
+                        </span>
+                        <span>Define a New {capitalize(type)}</span>
+                    </button>
                 {:else}
-                    <div>
-                        <div class="library-content" transition:slide={{ duration: 200}}>
-                            <div class="new-definition-title">
-                                New {type} definition
-                            </div>
-                            <form class="definition-form">
-                                <div class="name-field">
-                                    <label for="nameinput" class="name-label">Name:</label>
-                                    <input
-                                        id="nameinput"
-                                        class="name-input {isNameError ? 'error' : ''}"
-                                        type="text"
-                                        bind:value={inputName}
-                                        oninput={validateNameLocal}
-                                    />
-                                </div>
-                                <div class="information-field">
-                                    <span class="information-label">Attributes</span>
-                                    <span class="add-button"><Plus size={16}/></span>
-                                </div>
-                                <div class="information-field">
-                                    <span class="information-label">Parts</span>
-                                    <span class="add-button"><Plus size={16}/></span>
-                                </div>
-                                <div class="information-field">
-                                    <span class="information-label">Items</span>
-                                    <span class="add-button"><Plus size={16}/></span>
-                                </div>
-                                <div class="action-buttons">
-                                    <button type="button" class="action-button" onclick={closeNewDef}>Cancel</button>
-                                    <button type="button" class="action-button" onclick={addDefinition}>Add</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
+                    <DefinitionEditor {currentDefs} {type} isOpen={newDefMenuOpen}/>
                 {/if}
             </div>
             <div class="library-section">
@@ -158,17 +72,17 @@
                 </button>
                 {#if defsExpanded}
                     <div class="library-content" transition:slide={{ duration: 200 }}>
-                    <div class="search-container">
+                        <div class="search-container">
                             <span class="search-icon">
                                 <Search size={14} />
                             </span>
-                        <input
-                            type="text"
-                            class="search-input"
-                            placeholder="Search {type}s"
-                            bind:value={searchTerm}
-                        />
-                    </div>
+                            <input
+                                type="text"
+                                class="search-input"
+                                placeholder="Search {type}s"
+                                bind:value={searchTerm}
+                            />
+                        </div>
                         {#if $currentDefs.length > 0}
                             <ul>
                                 {#each $currentDefs as definition}
@@ -265,97 +179,6 @@
         margin-bottom: 16px;
     }
 
-    .new-definition-title {
-        font-weight: 600;
-        font-size: 16px;
-        color: #4b5563;
-        padding-bottom: 12px;
-    }
-
-    .definition-form {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .name-field {
-        display: flex;
-        gap: 12px;
-        font-size: 14px;
-        align-items: center;
-    }
-
-    .name-label {
-        font-weight: 500;
-    }
-
-    .name-input {
-        width: 100%;
-        padding: 2px 2px 2px 4px;
-        border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        font-weight: 400;
-        outline: none;
-        transition: all 0.2s;
-    }
-
-    .name-input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-    }
-
-    .name-input.error {
-        border-color: var(--main-error-color);
-        box-shadow: 0 0 0 2px rgba(227, 97, 97, 0.1)
-    }
-
-    .information-field {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 4px;
-        padding-top: 4px;
-        border-top: 1px solid #e5e7eb;
-    }
-
-    .information-label {
-        font-size: 12px;
-        font-weight: 600;
-        color: #6b7280;
-    }
-
-    .add-button {
-        background: none;
-        border: none;
-        padding: 2px;
-        cursor: pointer;
-        color: #9ca3af;
-        border-radius: 3px;
-        transition: all 0.2s;
-    }
-
-    .add-button:hover {
-        background-color: #e0f2fe;
-        color: #0284c7;
-    }
-
-    .action-button {
-        flex: 1;
-        padding: 6px;
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 4px;
-        font-size: 12px;
-        color: #6b7280;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .action-button:hover {
-        background: #f3f4f6;
-        color: #374151;
-    }
-
     .library-section {
         margin-bottom: 16px;
     }
@@ -433,10 +256,5 @@
 
     .chevron.expanded {
         transform: rotate(90deg);
-    }
-
-    .action-buttons {
-        display: flex;
-        gap: 8px;
     }
 </style>

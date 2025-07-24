@@ -9,7 +9,7 @@
     import { navigateToPackage } from '../packageStore';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
-    import AttributeEditor from '../AttributeEditor.svelte';
+    import AttributeEditor from '../MetadataEditor.svelte';
     import ContextMenu from '../ContextMenu.svelte';
     import { get } from 'svelte/store';
 

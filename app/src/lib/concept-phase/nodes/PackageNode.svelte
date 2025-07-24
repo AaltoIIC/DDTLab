@@ -8,7 +8,7 @@
       import { navigateToPackage } from '../packageStore';
       import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
       import { type PortData } from './portUtils';
-      import AttributeEditor from '../AttributeEditor.svelte';
+      import AttributeEditor from '../MetadataEditor.svelte';
       import ContextMenu from '../ContextMenu.svelte';
       import { get } from 'svelte/store';
 

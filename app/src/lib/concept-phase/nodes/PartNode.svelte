@@ -2,7 +2,7 @@
     import { run, stopPropagation, createBubbler } from 'svelte/legacy';
 
     const bubble = createBubbler();
-    import { Component, X } from 'lucide-svelte';
+    import { Grid2X2, X } from 'lucide-svelte';
     import type { NodeProps } from '@xyflow/svelte';
     import { useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
@@ -195,7 +195,7 @@
 
     <div class="part-header">
         <div class="part-header-left">
-            <Component size={14} />
+            <Grid2X2 size={14} />
             <span class="part-title">{data.definition ? `${data.definition} (Part)` : `Part`}</span>
         </div>
         <button 

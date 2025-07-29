@@ -2,7 +2,7 @@
     import { run, stopPropagation, createBubbler } from 'svelte/legacy';
 
     const bubble = createBubbler();
-    import { Box, X } from 'lucide-svelte';
+    import { Squircle, X } from 'lucide-svelte';
     import type { NodeProps } from '@xyflow/svelte';
     import { useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
@@ -178,7 +178,7 @@
 
     <div class="item-header">
         <div class="item-header-left">
-            <Box size={12} />
+            <Squircle size={12} />
             <span class="item-title">Item</span>
         </div>
         <button 

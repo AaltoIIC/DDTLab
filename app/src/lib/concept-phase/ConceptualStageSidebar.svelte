@@ -1,8 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import Tooltip from '$lib/Tooltip.svelte';
-    import Package from "lucide-svelte/icons/package";
-    import { Component, Box, Library, FileText } from "lucide-svelte";
+    import { Component, Box, Library, FileText, Package, Grid2X2, Squircle } from "lucide-svelte";
     import { currentPackageView, navigateToRoot } from './packageStore';
     import { currentNodes } from '$lib/stores/stores.svelte';
     import { get } from 'svelte/store';
@@ -74,13 +73,13 @@
 
         <Tooltip text="Add Part" position="right">
             <button class="menu-option" class:active={isPartDefOpen} onclick={togglePartDefSlider}>
-                <Component class="option-icon" />
+                <Grid2X2 class="option-icon" />
             </button>
         </Tooltip>
 
         <Tooltip text="Add Item" position="right">
             <button class="menu-option" class:active={isItemDefOpen} onclick={toggleItemDefSlider}>
-                <Box class="option-icon" />
+                <Squircle class="option-icon" />
             </button>
         </Tooltip>
 

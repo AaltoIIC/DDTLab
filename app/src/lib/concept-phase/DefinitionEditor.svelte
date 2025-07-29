@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { type ItemDefinition, type PartDefinition } from '$lib/types/types'
+    import { type ItemDefinition, type PartDefinition, type SysMLDefinition } from '$lib/types/types'
     import { type Writable } from 'svelte/store';
     import { currentPartDefinitions, currentItemDefinitions, addToHistory } from '$lib/stores/stores.svelte'
     import MetadataEditor from "./MetadataEditor.svelte";
@@ -8,17 +8,34 @@
 
     interface Props {
         type: 'part' | 'item';
-        currentDefs: Writable<PartDefinition[]> | Writable<ItemDefinition[]>
+        currentDefs: Writable<SysMLDefinition[]>
         isOpen: boolean;
         isEdit?: boolean;
     }
 
-    let { type, isOpen, currentDefs, isEdit=false }: Props = $props();
+    let { type, isOpen=$bindable(), currentDefs, isEdit=false }: Props = $props();
 
     let description = $state(''); // TODO: Implement description adding
 
     let inputName = $state('');
     let isNameError = $state(false);
+
+    let attributes: Array<{key: string, value: null}> = $state([]);
+
+    // let partRefs: PartDefinition[] = $state([])
+    // let partMetadata: Array<{key: string, value: null}> = $derived(partRefs.map( p => {
+    //     return {key: p.name, value: null};
+    // }));
+
+    let partMetadata: Array<{key: string, value: null}> = $state([]);
+    let partRefs: PartDefinition[] = $derived(partMetadata.map( data => {
+        return $currentPartDefinitions.find( p => p.name === data.key);
+    }).filter( ref => ref !== undefined ));
+
+    let itemMetadata: Array<{key: string, value: null}> = $state([]);
+    let itemRefs: ItemDefinition[] = $derived(itemMetadata.map( data => {
+        return $currentItemDefinitions.find( it => it.name === data.key);
+    }).filter( ref => ref !== undefined ));
 
     const validateNameLocal = () => {
         isNameError = validateName('', inputName, $currentDefs.map( p => p.name ));
@@ -30,27 +47,30 @@
             const baseDef = {
                 id: generateId($currentDefs.map( p => p.id )),
                 name: inputName,
+                type: type,
                 description: description,
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
                 data: {
-                    attributes: [],
-                    itemRefs: [],
+                    attributes: attributes.map(attr => attr.key),
+                    partRefs: null,
+                    itemRefs,
                     nodes: [],
                     edges: [],
                 }
             };
-
+            
             if (type === 'part') {
                 const newDef: PartDefinition = {
                     ...baseDef,
                     type: 'part',
                     data: {
                         ...baseDef.data,
-                        partRefs: [],
+                        partRefs,
                     }
                 }
                 currentPartDefinitions.update(defs => [...defs, newDef]);
+                console.log(JSON.stringify(newDef));
             }
             else {
                 const newDef: ItemDefinition = {
@@ -58,6 +78,7 @@
                     type: 'item'
                 }
                 currentItemDefinitions.update(defs => [...defs, newDef]);
+                console.log(JSON.stringify(newDef));
             }
 
             addToHistory(); 
@@ -87,9 +108,26 @@
                 oninput={validateNameLocal}
             />
         </div>
-        <MetadataEditor isDefinition={true} onUpdate={() => {}} type='attribute'/>
-        <MetadataEditor isDefinition={true} onUpdate={() => {}} type='part'/>
-        <MetadataEditor isDefinition={true} onUpdate={() => {}} type='item'/>
+        <MetadataEditor 
+            metadata={attributes} 
+            isDefinition={true} 
+            onUpdate={(a: any) => {attributes = a}} 
+            type='attribute'
+        />
+        {#if type === 'part'}
+            <MetadataEditor 
+                metadata={partMetadata}
+                isDefinition={true} 
+                onUpdate={(parts: any) => {partMetadata = parts}} 
+                type='part' 
+                />
+        {/if}
+        <MetadataEditor
+            metadata={itemMetadata}
+            isDefinition={true} 
+            onUpdate={(items: any) => {itemMetadata = items}} 
+            type='item'
+            />
         <div class="action-buttons">
             <button type="button" class="action-button" onclick={closeNewDef}>Cancel</button>
             <button type="button" class="action-button" onclick={addDefinition}>Add</button>

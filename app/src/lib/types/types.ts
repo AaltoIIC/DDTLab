@@ -114,8 +114,8 @@ export interface ConceptTemplate {
     id: string;
     name: string;
     description: string;
-    createdAt: number;
-    updatedAt: number;
+    createdAt: string;
+    updatedAt: string;
     thumbnail?: string;
     category?: string;
     tags?: string[];
@@ -126,7 +126,7 @@ export interface ConceptTemplate {
     };
 }
 
-interface SysMLData {
+interface PartData {
     attributes: string[];
     partRefs: PartDefinition[];
     itemRefs: ItemDefinition[];
@@ -134,18 +134,21 @@ interface SysMLData {
     edges: Edge[];
 }
 
-interface SysMLDefinition extends Omit<ConceptTemplate, 'data'> {
-    data: SysMLData
+interface ItemData extends Omit<PartData, 'partRefs'> {
+    partRefs: null;
 }
 
-export interface PartDefinition extends SysMLDefinition {
+export interface PartDefinition extends Omit<ConceptTemplate, 'data'> {
     type: 'part';
+    data: PartData;
 }
 
-export interface ItemDefinition extends Omit<SysMLDefinition, 'data'> {
+export interface ItemDefinition extends Omit<ConceptTemplate, 'data'> {
     type: 'item';
-    data: Omit<SysMLData, 'partRefs'>
+    data: ItemData;
 }
+
+export type SysMLDefinition = PartDefinition | ItemDefinition;
 
 export interface TemplateCategory {
     id: string;

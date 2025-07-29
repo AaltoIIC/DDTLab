@@ -1,8 +1,9 @@
 <script lang="ts">
-    import { type ItemDefinition, type PartDefinition } from '$lib/types/types'
+    import { type Writable } from 'svelte/store';
+    import { type ItemDefinition, type PartDefinition, type SysMLDefinition } from '$lib/types/types'
     import { currentPartDefinitions, currentItemDefinitions, addToHistory } from '$lib/stores/stores.svelte'
-    import { generateId, validateName } from '$lib/helpers';
-    import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, Search, CirclePlus, Plus } from 'lucide-svelte';
+    import { formatDate } from '$lib/helpers';
+    import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, Search, CirclePlus, SquarePen, defaultAttributes, Grid2x2, Squircle } from 'lucide-svelte';
     import { slide, fade } from 'svelte/transition';
     import { capitalize } from 'lodash';
     import MetadataEditor from './MetadataEditor.svelte';
@@ -16,16 +17,25 @@
 
     let { type, isOpen = false, onClose }: Props = $props();
 
-    let currentDefs = $derived.by(() => {
+    let currentDefs: Writable<SysMLDefinition[]> = $derived.by(() => {
         return type === 'part' ? currentPartDefinitions : currentItemDefinitions;
     });
 
     let newDefMenuOpen = $state(false);
     let defsExpanded = $state(false);
+
     let isDragging = $state(false);
+    let selectedDefinition: PartDefinition | ItemDefinition | null = $state(null);
+
     let searchTerm = $state('');
 
     function handleImport() {} // TODO: Implement eventually
+
+    function handleDelete(definition: PartDefinition | ItemDefinition) {
+        if (confirm(`Are you sure you want to delete ${definition.type} definition "${definition.name}"?`)) {
+                currentDefs.update(defs => defs.filter(d => d.id !== definition.id));
+            }
+        }
 
 </script>
 
@@ -60,7 +70,7 @@
                         <span>Define a New {capitalize(type)}</span>
                     </button>
                 {:else}
-                    <DefinitionEditor {currentDefs} {type} isOpen={newDefMenuOpen}/>
+                    <DefinitionEditor {currentDefs} {type} bind:isOpen={newDefMenuOpen}/>
                 {/if}
             </div>
             <div class="library-section">
@@ -84,11 +94,62 @@
                             />
                         </div>
                         {#if $currentDefs.length > 0}
-                            <ul>
                                 {#each $currentDefs as definition}
-                                    <li>{definition.name}</li>
+                                    <div
+                                        class="template-card"
+                                        onclick={() => selectedDefinition = definition}
+                                        class:selected={selectedDefinition?.id === definition.id}
+                                    >
+                                        <div class="template-header">
+                                            {#if type === 'part'}
+                                                <Grid2x2 size={16} />
+                                            {:else}
+                                                <Squircle size={16} />
+                                            {/if}
+                                            <span class="template-name">{definition.name}</span>
+                                        </div>
+                                        {#if definition.description}
+                                            <p class="template-description">{definition.description}</p>
+                                        {/if}
+                                        <div class="template-meta">
+                                            {#if definition.data.attributes.length}
+                                                attributes: {definition.data.attributes.join(", ")}
+                                            {/if}
+                                            {#if definition.data.partRefs?.length}
+                                                parts:   {definition.data.partRefs.map( ref => ref.name ).join(", ")}
+                                            {/if}
+                                            {#if definition.data.itemRefs.length}
+                                                items:   {definition.data.itemRefs.map( ref => ref.name ).join(", ")}
+                                            {/if}
+                                        </div>
+                                        <div class="template-footer">
+                                            <span class="date">{formatDate(definition.createdAt)}</span>
+                                            <div class="template-actions">
+                                                <button 
+                                                    class="action-button" 
+                                                    
+                                                    title="Duplicate"
+                                                >
+                                                    <Copy size={14} />
+                                                </button>
+                                                <button 
+                                                    class="action-button" 
+                                                    
+                                                    title="Edit"
+                                                >
+                                                    <SquarePen size={14} />
+                                                </button>
+                                                <button 
+                                                    class="action-button delete" 
+                                                    onclick={() => handleDelete(definition)}
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 {/each}
-                            </ul>
                         {:else}
                             <p class="placeholder-text">No {type} definitions yet. Create a {type} definition to get started.</p>
                         {/if}
@@ -256,5 +317,103 @@
 
     .chevron.expanded {
         transform: rotate(90deg);
+    }
+
+    /* Copied from ConceptTemplateSlider.svelte for now, TODO: refactor later so CSS is not repeating
+     I could probably refactor the whole TemplateCard into its own component too. */
+    .template-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 8px;
+        cursor: move;
+        transition: all 0.2s;
+        user-select: none;
+    }
+    
+    .template-card:hover {
+        border-color: #d1d5db;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transform: translateY(-1px);
+    }
+    
+    .template-card.selected {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+    }
+    
+    .template-card:active {
+        opacity: 0.5;
+    }
+    
+    .template-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .template-name {
+        font-weight: 500;
+        color: #1f2937;
+        font-size: 14px;
+    }
+    
+    .template-description {
+        font-size: 12px;
+        color: #6b7280;
+        margin: 0 0 8px 0;
+        line-height: 1.4;
+    }
+    
+    .template-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        color: #9ca3af;
+        margin-bottom: 8px;
+    }
+
+    .template-footer {
+        display: flex;
+        justify-content: space-between;
+        color: #6b7280;
+    }
+
+    .date {
+        font-size: 10px;
+        align-self: flex-end;
+        color: #9ca3af;
+    }
+    
+    .template-actions {
+        display: flex;
+        gap: 4px;
+        justify-content: flex-end;
+    }
+    
+    .action-button {
+        background: none;
+        border: none;
+        padding: 4px 8px;
+        cursor: pointer;
+        color: #6b7280;
+        border-radius: 4px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .action-button:hover {
+        background-color: #f3f4f6;
+        color: #1f2937;
+    }
+    
+    .action-button.delete:hover {
+        background-color: #fee2e2;
+        color: #dc2626;
     }
 </style>

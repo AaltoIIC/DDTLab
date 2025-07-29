@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { stopPropagation } from 'svelte/legacy';
-
+    import { formatDate } from '$lib/helpers';
     import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy } from 'lucide-svelte';
     import { slide } from 'svelte/transition';
     import { templates, deleteTemplate, duplicateTemplate, exportTemplate, importTemplate } from '$lib/stores/stores.svelte';
@@ -81,10 +80,6 @@
         input.click();
     }
     
-    function formatDate(timestamp: number) {
-        return new Date(timestamp).toLocaleDateString();
-    }
-    
     function getNodeCount(template: ConceptTemplate) {
         const packageCount = template.data.nodes.filter(n => n.type === 'package').length;
         const partCount = template.data.nodes.filter(n => n.type === 'part').length;
@@ -117,10 +112,9 @@
         <div class="slider-content">
             <div class="library-section">
                 <button class="library-header" onclick={() => toggleCategory('all')}>
-                    <ChevronRight 
-                        size={16} 
-                        class="chevron {expandedCategories.all ? 'expanded' : ''}"
-                    />
+                    <span class="chevron {expandedCategories.all ? 'expanded' : ''}">
+                        <ChevronRight size={16} />
+                    </span>
                     <span>All Templates ({$templates.length})</span>
                 </button>
                 {#if expandedCategories.all}
@@ -145,31 +139,33 @@
                                         <p class="template-description">{template.description}</p>
                                     {/if}
                                     <div class="template-meta">
-                                        <span class="node-count">{getNodeCount(template)}</span>
-                                        <span class="date">{formatDate(template.createdAt)}</span>
+                                        {getNodeCount(template)}
                                     </div>
-                                    <div class="template-actions">
-                                        <button 
-                                            class="action-button" 
-                                            onclick={stopPropagation(() => handleDuplicate(template))}
-                                            title="Duplicate"
-                                        >
-                                            <Copy size={14} />
-                                        </button>
-                                        <button 
-                                            class="action-button" 
-                                            onclick={stopPropagation(() => handleExport(template))}
-                                            title="Export"
-                                        >
-                                            <Download size={14} />
-                                        </button>
-                                        <button 
-                                            class="action-button delete" 
-                                            onclick={stopPropagation(() => handleDelete(template))}
-                                            title="Delete"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
+                                    <div class="template-footer">
+                                        <span class="date">{formatDate(template.createdAt)}</span>
+                                        <div class="template-actions">
+                                            <button 
+                                                class="action-button" 
+                                                onclick={() => handleDuplicate(template)}
+                                                title="Duplicate"
+                                            >
+                                                <Copy size={14} />
+                                            </button>
+                                            <button 
+                                                class="action-button" 
+                                                onclick={() => handleExport(template)}
+                                                title="Export"
+                                            >
+                                                <Download size={14} />
+                                            </button>
+                                            <button 
+                                                class="action-button delete" 
+                                                onclick={() => handleDelete(template)}
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             {/each}
@@ -358,9 +354,21 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 11px;
+        font-size: 12px;
         color: #9ca3af;
         margin-bottom: 8px;
+    }
+
+    .template-footer {
+        display: flex;
+        justify-content: space-between;
+        color: #6b7280;
+    }
+
+    .date {
+        font-size: 10px;
+        align-self: flex-end;
+        color: #9ca3af;
     }
     
     .template-actions {
@@ -374,7 +382,6 @@
         border: none;
         padding: 4px 8px;
         cursor: pointer;
-        color: #6b7280;
         border-radius: 4px;
         transition: all 0.2s;
         display: flex;

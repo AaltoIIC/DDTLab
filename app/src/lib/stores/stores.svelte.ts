@@ -332,8 +332,8 @@ export function saveTemplate(template: Omit<ConceptTemplate, 'id' | 'createdAt' 
   const newTemplate: ConceptTemplate = {
     ...template,
     id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    createdAt: Date.now(),
-    updatedAt: Date.now()
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
   
   templates.update(temps => [...temps, newTemplate]);
@@ -344,7 +344,7 @@ export function updateTemplate(id: string, updates: Partial<ConceptTemplate>) {
   templates.update(temps => 
     temps.map(t => 
       t.id === id 
-        ? { ...t, ...updates, updatedAt: Date.now() }
+        ? { ...t, ...updates, updatedAt: new Date().toISOString() }
         : t
     )
   );

@@ -3,7 +3,13 @@
 
     const bubble = createBubbler();
     import { Plus, X } from 'lucide-svelte';
-    import { capitalize } from 'lodash';
+    import { capitalize, zip } from 'lodash';
+    import DefinitionDropdown from './DefinitionDropdown.svelte';
+    import DefinitionEditor from './DefinitionEditor.svelte';
+    import { currentPartDefinitions, currentItemDefinitions } from '$lib/stores/stores.svelte';
+    import type { Writable } from 'svelte/store';
+    import type { SysMLDefinition } from '$lib/types/types';
+    import { validateName } from '$lib/helpers';
     
     interface Props {
         metadata?: Array<{ key: string; value: string | null}>;
@@ -21,14 +27,42 @@
     
     let newKey = $state('');
     let newValue: string | null = $state(null);
+    let currentKey = $state('');
     let showAddForm = $state(false);
     let editingIndex: number | null = $state(null);
     let editKey = $state('');
     let editValue: string | null = $state(null);
-    
+
+    let isNameError = $state(false);
+
+    let inputRef: HTMLInputElement | undefined = $state();
+    let options = $derived.by(() => {
+        const defs: SysMLDefinition[] = type === 'part' ? $currentPartDefinitions : $currentItemDefinitions;
+        return defs.map( d => d.name );
+    });
+
+    const isValidDef = () => {
+        if (type === 'attribute') return isDefinition;
+        const defs = type === 'part' ? $currentPartDefinitions : $currentItemDefinitions;
+        const currentDefExists = defs.map( d => d.name).includes(newKey);
+        return isDefinition && currentDefExists;
+    }
+
+    const validateNameLocal = (name: string) => {
+        const nameList = metadata.map( data => data.key)
+        const isNameInvalid = validateName(currentKey, name, nameList);
+        isNameError = isDefinition ? isNameInvalid || !isValidDef() : isNameInvalid;
+    }
+
     function addMetadata() {
-        if (newKey.trim() && newValue?.trim()) {
-            const updated = [...metadata, { key: newKey.trim(), value: newValue.trim() }];
+        // Manually set the newKey for part and item refs
+        if (type !== 'attribute' && isDefinition) {
+            newKey = inputRef?.value ?? '';
+        }
+        validateNameLocal(newKey);
+        if (!isNameError && (newValue?.trim() || isValidDef())) {
+            const updated = [...metadata, { key: newKey.trim(), value: newValue?.trim() ?? null }];
+            currentKey = newKey;
             onUpdate(updated);
             newKey = '';
             newValue = null;
@@ -48,9 +82,10 @@
     }
     
     function saveEdit() {
-        if (editingIndex !== null && editKey.trim() && editValue?.trim()) {
+        validateNameLocal(editKey);
+        if (editingIndex !== null && !isNameError && (editValue?.trim() || isDefinition)) {
             const updated = [...metadata];
-            updated[editingIndex] = { key: editKey.trim(), value: editValue.trim() };
+            updated[editingIndex] = { key: editKey.trim(), value: editValue?.trim() ?? null };
             onUpdate(updated);
             editingIndex = null;
         }
@@ -97,20 +132,22 @@
             </button>
         {/if}
     </div>
-    
+    <!--svelte-ignore a11y_no_static_element_interactions-->
+    <!--svelte-ignore a11y_click_events_have_key_events-->
     {#if metadata.length > 0 || showAddForm}
         <div class="metadata-items">
             {#each metadata as item, index}
                 <div class="metadata-item">
-                    {#if editingIndex === index}
+                    {#if editingIndex === index && type === 'attribute'}
                         <div class="edit-form">
                             <input
-                                class="metadata-input"
+                                class="metadata-input {isNameError ? 'error' : ''}"
                                 type="text"
                                 bind:value={editKey}
                                 placeholder={type === 'attribute' ? 'Key' : 'Search existing ' + type + ' definitions...'}
                                 onkeydown={(e) => handleKeyDown(e, 'edit')}
                                 onclick={stopPropagation(bubble('click'))}
+                                oninput={() => validateNameLocal(editKey)}
                                 autofocus
                             />
                             {#if !isDefinition}
@@ -148,7 +185,7 @@
                             onclick={stopPropagation(() => startEdit(index))}
                             ondblclick={stopPropagation(bubble('dblclick'))}
                         >
-                            <span class="metadata-key">{item.key}:</span>
+                            <span class="metadata-key">{item.key}{!isDefinition ? ':' : ''}</span>
                             <span class="metadata-value">{item.value}</span>
                         </div>
                         <button
@@ -164,48 +201,55 @@
             {/each}
             
             {#if showAddForm}
-                <div class="add-form">
-                    <input
-                        class="metadata-input"
-                        type="text"
-                        bind:value={newKey}
-                        placeholder={type === 'attribute' ? 'Key' : 'Search existing ' + type + ' definitions...'}
-                        onkeydown={(e) => handleKeyDown(e, 'add')}
-                        onclick={stopPropagation(bubble('click'))}
-                        autofocus
-                    />
-                    {#if !isDefinition}
+                <div class = "combobox">
+                    <div class="add-form">
                         <input
-                            class="metadata-input"
+                            bind:this={inputRef}
+                            class="metadata-input {isNameError ? 'error' : ''}"
                             type="text"
-                            bind:value={newValue}
-                            placeholder="Value"
+                            bind:value={newKey}
+                            placeholder={type === 'attribute' ? 'Key' : 'Search existing ' + type + ' definitions...'}
                             onkeydown={(e) => handleKeyDown(e, 'add')}
                             onclick={stopPropagation(bubble('click'))}
+                            oninput={() => validateNameLocal(newKey)}
+                            autofocus
                         />
-                    {/if}
-                    <div class="add-actions">
-                        <button
-                            type="button"
-                            class="save-button"
-                            onclick={stopPropagation(addMetadata)}
-                            title="Add"
-                        >
-                            ✓
-                        </button>
-                        <button
-                            type="button"
-                            class="cancel-button"
-                            onclick={stopPropagation(() => {
-                                showAddForm = false;
-                                newKey = '';
-                                newValue = '';
-                            })}
-                            title="Cancel"
-                        >
-                            ✗
-                        </button>
+                        {#if !isDefinition}
+                            <input
+                                class="metadata-input"
+                                type="text"
+                                bind:value={newValue}
+                                placeholder="Value"
+                                onkeydown={(e) => handleKeyDown(e, 'add')}
+                                onclick={stopPropagation(bubble('click'))}
+                            />
+                        {/if}
+                        <div class="add-actions">
+                            <button
+                                type="button"
+                                class="save-button"
+                                onclick={stopPropagation(addMetadata)}
+                                title="Add"
+                            >
+                                ✓
+                            </button>
+                            <button
+                                type="button"
+                                class="cancel-button"
+                                onclick={stopPropagation(() => {
+                                    showAddForm = false;
+                                    newKey = '';
+                                    newValue = '';
+                                })}
+                                title="Cancel"
+                            >
+                                ✗
+                            </button>
+                        </div>
                     </div>
+                        {#if type !== 'attribute'}
+                            <DefinitionDropdown {type} inputElement={inputRef} {options}/>
+                        {/if}
                 </div>
             {/if}
         </div>
@@ -213,6 +257,12 @@
 </div>
 
 <style>
+    .combobox {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
     .metadata-section {
         border-top: 1px solid #e5e7eb;
     }
@@ -348,6 +398,11 @@
     
     .metadata-input::placeholder {
         color: #9ca3af;
+    }
+
+    .metadata-input.error {
+        border-color: var(--main-error-color);
+        box-shadow: 0 0 0 2px rgba(227, 97, 97, 0.1)
     }
     
     .add-actions,

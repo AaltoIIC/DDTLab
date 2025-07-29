@@ -86,7 +86,7 @@
         addToHistory();
     }
     
-    function handleMetadataUpdate(metadata: Array<{ key: string; value: string }>) {
+    function handleMetadataUpdate(metadata: Array<{ key: string; value: string | null }>) {
         updateNodeData('metadata', metadata);
     }
 

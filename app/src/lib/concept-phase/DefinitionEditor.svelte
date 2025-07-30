@@ -5,43 +5,47 @@
     import MetadataEditor from "./MetadataEditor.svelte";
     import { generateId, validateName } from '$lib/helpers';
     import { slide } from 'svelte/transition';
+    import { update } from 'lodash';
 
     interface Props {
         type: 'part' | 'item';
         currentDefs: Writable<SysMLDefinition[]>
         isOpen: boolean;
-        isEdit?: boolean;
+        editDef?: SysMLDefinition; // If definition is not given, we are in create mode
     }
 
-    let { type, isOpen=$bindable(), currentDefs, isEdit=false }: Props = $props();
+    let { type, isOpen=$bindable(), currentDefs, editDef }: Props = $props();
 
     let description = $state(''); // TODO: Implement description adding
 
-    let inputName = $state('');
+    let currentName = $state(editDef?.name ?? '');
+    let inputName = $state(currentName);
     let isNameError = $state(false);
 
-    let attributes: Array<{key: string, value: null}> = $state([]);
+     const toMetadata = (data: SysMLDefinition[] | string[] | undefined) => {
+        return data?.map( n => {
+            const key = typeof n === 'string' ? n : ('name' in n ? n.name : '');
+            return { key, value: null};
+        }) ?? [];
+    };
 
-    // let partRefs: PartDefinition[] = $state([])
-    // let partMetadata: Array<{key: string, value: null}> = $derived(partRefs.map( p => {
-    //     return {key: p.name, value: null};
-    // }));
+    let attributes: Array<{key: string, value: null}> = $state(toMetadata(editDef?.data.attributes));
 
-    let partMetadata: Array<{key: string, value: null}> = $state([]);
+    let partMetadata: Array<{key: string, value: null}> = $state(toMetadata(editDef?.data.partRefs ?? [])); 
     let partRefs: PartDefinition[] = $derived(partMetadata.map( data => {
         return $currentPartDefinitions.find( p => p.name === data.key);
     }).filter( ref => ref !== undefined ));
 
-    let itemMetadata: Array<{key: string, value: null}> = $state([]);
+    let itemMetadata: Array<{key: string, value: null}> = $state(toMetadata(editDef?.data.itemRefs));
     let itemRefs: ItemDefinition[] = $derived(itemMetadata.map( data => {
         return $currentItemDefinitions.find( it => it.name === data.key);
     }).filter( ref => ref !== undefined ));
 
     const validateNameLocal = () => {
-        isNameError = validateName('', inputName, $currentDefs.map( p => p.name ));
+        isNameError = validateName(currentName, inputName, $currentDefs.map( p => p.name ));
     }
 
-    function addDefinition() {
+    function handleAddDef() {
         validateNameLocal();
         if (!isNameError) {
             const baseDef = {
@@ -82,11 +86,55 @@
             }
 
             addToHistory(); 
-            closeNewDef();
+            handleCloseDef();
         }
     }
 
-    function closeNewDef() {
+    function handleEditDef() {
+        validateNameLocal();
+        if (editDef && !isNameError) {
+            const defIndex = $currentDefs.findIndex(def => editDef.id === def.id)
+            const updatedDefs = [ ...$currentDefs ]
+
+            const baseDef = {
+                ...editDef,
+                name: inputName,
+                description: description,
+                updatedAt: new Date().toISOString(),
+            };
+            
+            if (type === 'part') {
+                const editedDef: PartDefinition = {
+                    ...baseDef,
+                    type: 'part',
+                    data: {
+                        ...editDef.data,
+                        itemRefs,
+                        partRefs
+                    }
+                }
+                updatedDefs[defIndex] = editedDef;
+            }
+            else {
+                const editedDef: ItemDefinition = {
+                    ...baseDef,
+                    type: 'item',
+                    data: {
+                        ...editDef.data,
+                        partRefs: null,
+                        itemRefs
+                    }
+                }
+                updatedDefs[defIndex] = editedDef;
+            }
+
+            currentDefs.update(_ => updatedDefs)
+            addToHistory(); 
+            handleCloseDef();
+        }
+    }
+
+    function handleCloseDef() {
         inputName = '';
         description = '';
         isOpen = false;
@@ -95,7 +143,7 @@
 
 <div class="library-content" transition:slide={{ duration: 200}}>
     <div class="definition-title">
-        {isEdit ? 'Edit' : 'New'} {type} definition
+        {editDef ? 'Edit' : 'New'} {type} definition
     </div>
     <form class="definition-form">
         <div class="name-field">
@@ -129,8 +177,12 @@
             type='item'
             />
         <div class="action-buttons">
-            <button type="button" class="action-button" onclick={closeNewDef}>Cancel</button>
-            <button type="button" class="action-button" onclick={addDefinition}>Add</button>
+            <button type="button" class="action-button" onclick={handleCloseDef}>Cancel</button>
+            {#if editDef}
+                <button type="button" class="action-button" onclick={handleEditDef}>Accept</button>
+            {:else}
+                <button type="button" class="action-button" onclick={handleAddDef}>Add</button>
+            {/if}
         </div>
     </form>
 </div>

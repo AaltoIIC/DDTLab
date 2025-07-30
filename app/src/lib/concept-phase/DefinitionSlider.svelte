@@ -6,7 +6,6 @@
     import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, Search, CirclePlus, SquarePen, defaultAttributes, Grid2x2, Squircle } from 'lucide-svelte';
     import { slide, fade } from 'svelte/transition';
     import { capitalize } from 'lodash';
-    import MetadataEditor from './MetadataEditor.svelte';
     import DefinitionEditor from './DefinitionEditor.svelte';
 
     interface Props {
@@ -26,8 +25,19 @@
 
     let isDragging = $state(false);
     let selectedDefinition: PartDefinition | ItemDefinition | null = $state(null);
-
+    
     let searchTerm = $state('');
+
+    let currentEditId: string | null = $state(null);
+    let editDefMenuOpen: boolean = $derived(currentEditId ? true : false);
+
+    $effect(() => {
+        if (!editDefMenuOpen) {
+            currentEditId = null;
+        }
+    });
+
+    function handleEdit() {}
 
     function handleImport() {} // TODO: Implement eventually
 
@@ -93,62 +103,71 @@
                                 bind:value={searchTerm}
                             />
                         </div>
-                        {#if $currentDefs.length > 0}
+                        {#if $currentDefs.length}
                                 {#each $currentDefs as definition}
-                                    <div
-                                        class="template-card"
-                                        onclick={() => selectedDefinition = definition}
-                                        class:selected={selectedDefinition?.id === definition.id}
-                                    >
-                                        <div class="template-header">
-                                            {#if type === 'part'}
-                                                <Grid2x2 size={16} />
-                                            {:else}
-                                                <Squircle size={16} />
+                                    {#if currentEditId === definition.id}
+                                        <DefinitionEditor
+                                            {type}
+                                            {currentDefs}
+                                            bind:isOpen={editDefMenuOpen}
+                                            editDef={definition}
+                                        />
+                                    {:else}
+                                        <div
+                                            class="template-card"
+                                            onclick={() => selectedDefinition = definition}
+                                            class:selected={selectedDefinition?.id === definition.id}
+                                        >
+                                            <div class="template-header">
+                                                {#if type === 'part'}
+                                                    <Grid2x2 size={16} />
+                                                {:else}
+                                                    <Squircle size={16} />
+                                                {/if}
+                                                <span class="template-name">{definition.name}</span>
+                                            </div>
+                                            {#if definition.description}
+                                                <p class="template-description">{definition.description}</p>
                                             {/if}
-                                            <span class="template-name">{definition.name}</span>
-                                        </div>
-                                        {#if definition.description}
-                                            <p class="template-description">{definition.description}</p>
-                                        {/if}
-                                        <div class="template-meta">
-                                            {#if definition.data.attributes.length}
-                                                attributes: {definition.data.attributes.join(", ")}
-                                            {/if}
-                                            {#if definition.data.partRefs?.length}
-                                                parts:   {definition.data.partRefs.map( ref => ref.name ).join(", ")}
-                                            {/if}
-                                            {#if definition.data.itemRefs.length}
-                                                items:   {definition.data.itemRefs.map( ref => ref.name ).join(", ")}
-                                            {/if}
-                                        </div>
-                                        <div class="template-footer">
-                                            <span class="date">{formatDate(definition.createdAt)}</span>
-                                            <div class="template-actions">
-                                                <button 
-                                                    class="action-button" 
-                                                    
-                                                    title="Duplicate"
-                                                >
-                                                    <Copy size={14} />
-                                                </button>
-                                                <button 
-                                                    class="action-button" 
-                                                    
-                                                    title="Edit"
-                                                >
-                                                    <SquarePen size={14} />
-                                                </button>
-                                                <button 
-                                                    class="action-button delete" 
-                                                    onclick={() => handleDelete(definition)}
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                            <div class="template-meta">
+                                                {#if definition.data.attributes.length}
+                                                    attributes: {definition.data.attributes.join(", ")}
+                                                {/if}
+                                                {#if definition.data.partRefs?.length}
+                                                    parts:   {definition.data.partRefs.map( ref => ref.name ).join(", ")}
+                                                {/if}
+                                                {#if definition.data.itemRefs.length}
+                                                    items:   {definition.data.itemRefs.map( ref => ref.name ).join(", ")}
+                                                {/if}
+                                            </div>
+                                            <div class="template-footer">
+                                                <span class="date">{formatDate(definition.createdAt)}</span>
+                                                <div class="template-actions">
+                                                    <button 
+                                                        class="action-button" 
+                                                        
+                                                        title="Duplicate"
+                                                    >
+                                                        <Copy size={14} />
+                                                    </button>
+                                                    <button 
+                                                        class="action-button" 
+                                                        onclick={() => {currentEditId = definition.id}}
+                                                        title="Edit"
+                                                    >
+                                                        <SquarePen size={14} />
+                                                    </button>
+                                                    <button 
+                                                        class="action-button delete" 
+                                                        onclick={() => handleDelete(definition)}
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    {/if}
                                 {/each}
                         {:else}
                             <p class="placeholder-text">No {type} definitions yet. Create a {type} definition to get started.</p>

@@ -27,11 +27,11 @@
     
     let newKey = $state('');
     let newValue: string | null = $state(null);
-    let currentKey = $state('');
     let showAddForm = $state(false);
     let editingIndex: number | null = $state(null);
     let editKey = $state('');
     let editValue: string | null = $state(null);
+    let currentKey = $state('');
 
     let isNameError = $state(false);
 
@@ -49,9 +49,14 @@
     }
 
     const validateNameLocal = (name: string) => {
-        const nameList = metadata.map( data => data.key)
+        const nameList = metadata.map( data => data.key);
         const isNameInvalid = validateName(currentKey, name, nameList);
         isNameError = isDefinition ? isNameInvalid || !isValidDef() : isNameInvalid;
+    }
+
+    function openAddForm() {
+        showAddForm = true;
+        cancelEdit();
     }
 
     function addMetadata() {
@@ -60,9 +65,8 @@
             newKey = inputRef?.value ?? '';
         }
         validateNameLocal(newKey);
-        if (!isNameError && (newValue?.trim() || isValidDef())) {
+        if (!isNameError) {
             const updated = [...metadata, { key: newKey.trim(), value: newValue?.trim() ?? null }];
-            currentKey = newKey;
             onUpdate(updated);
             newKey = '';
             newValue = null;
@@ -75,25 +79,29 @@
         onUpdate(updated);
     }
     
-    function startEdit(index: number) {
-        editingIndex = index;
-        editKey = metadata[index].key;
-        editValue = metadata[index].value;
+    function openEdit(index: number) {
+        if (type === 'attribute') {
+            showAddForm = false;
+            editingIndex = index;
+            currentKey = editKey = metadata[index].key;
+            editValue = metadata[index].value;
+        }
     }
     
     function saveEdit() {
         validateNameLocal(editKey);
-        if (editingIndex !== null && !isNameError && (editValue?.trim() || isDefinition)) {
+        if (editingIndex !== null && !isNameError) {
             const updated = [...metadata];
             updated[editingIndex] = { key: editKey.trim(), value: editValue?.trim() ?? null };
             onUpdate(updated);
             editingIndex = null;
+            currentKey = ''
         }
     }
     
     function cancelEdit() {
         editingIndex = null;
-        editKey = '';
+        currentKey = editKey = '';
         editValue = null;
     }
     
@@ -110,7 +118,7 @@
             if (action === 'add') {
                 showAddForm = false;
                 newKey = '';
-                newValue = '';
+                newValue = null;
             } else {
                 cancelEdit();
             }
@@ -125,7 +133,7 @@
             <button 
                 type="button"
                 class="add-button" 
-                onclick={stopPropagation(() => showAddForm = true)}
+                onclick={openAddForm}
                 title="Add attribute"
             >
                 <Plus size={isDefinition ? 16 : 12} />
@@ -134,7 +142,7 @@
     </div>
     <!--svelte-ignore a11y_no_static_element_interactions-->
     <!--svelte-ignore a11y_click_events_have_key_events-->
-    {#if metadata.length > 0 || showAddForm}
+    {#if metadata.length || showAddForm}
         <div class="metadata-items">
             {#each metadata as item, index}
                 <div class="metadata-item">
@@ -182,10 +190,10 @@
                     {:else}
                         <div 
                             class="metadata-content"
-                            onclick={stopPropagation(() => startEdit(index))}
+                            onclick={stopPropagation(() => openEdit(index))}
                             ondblclick={stopPropagation(bubble('dblclick'))}
                         >
-                            <span class="metadata-key">{item.key}{!isDefinition ? ':' : ''}</span>
+                            <span class="metadata-key">{item.key}{item.value ? ':' : ''}</span>
                             <span class="metadata-value">{item.value}</span>
                         </div>
                         <button

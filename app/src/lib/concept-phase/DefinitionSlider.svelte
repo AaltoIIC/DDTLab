@@ -39,7 +39,7 @@
 
     function handleEdit() {}
 
-    function handleImport() {} // TODO: Implement eventually
+    function handleImport() {alert("Coming soon!")} // TODO: Implement eventually
 
     function handleDelete(definition: PartDefinition | ItemDefinition) {
         if (confirm(`Are you sure you want to delete ${definition.type} definition "${definition.name}"?`)) {
@@ -145,7 +145,7 @@
                                                 <div class="template-actions">
                                                     <button 
                                                         class="action-button" 
-                                                        
+                                                        onclick={() => alert("Duplication will be added soon!")}
                                                         title="Duplicate"
                                                     >
                                                         <Copy size={14} />

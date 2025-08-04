@@ -39,6 +39,20 @@
 
     function handleEdit() {}
 
+    function handleDragStart(event: DragEvent, definition: SysMLDefinition) {
+        console.log(definition.data.nodes)
+        isDragging = true;
+        event.dataTransfer!.effectAllowed = 'copy';
+        event.dataTransfer!.setData('application/json', JSON.stringify({
+            type: 'template',
+            template: definition
+        }));
+    }
+
+    function handleDragEnd() {
+        isDragging = false;
+    }
+
     function handleImport() {alert("Coming soon!")} // TODO: Implement eventually
 
     function handleDelete(definition: PartDefinition | ItemDefinition) {
@@ -115,6 +129,9 @@
                                     {:else}
                                         <div
                                             class="template-card"
+                                            draggable="true"
+                                            ondragstart={(e) => handleDragStart(e, definition)}
+                                            ondragend={handleDragEnd}
                                             onclick={() => selectedDefinition = definition}
                                             class:selected={selectedDefinition?.id === definition.id}
                                         >
@@ -130,15 +147,17 @@
                                                 <p class="template-description">{definition.description}</p>
                                             {/if}
                                             <div class="template-meta">
+                                                <ul>
                                                 {#if definition.data.attributes.length}
-                                                    attributes: {definition.data.attributes.join(", ")}
+                                                    <li>attributes: {definition.data.attributes.join(", ")}</li>
                                                 {/if}
                                                 {#if definition.data.partRefs?.length}
-                                                    parts:   {definition.data.partRefs.map( ref => ref.name ).join(", ")}
+                                                    <li>parts: {definition.data.partRefs.map( ref => ref.name ).join(", ")}</li>
                                                 {/if}
                                                 {#if definition.data.itemRefs.length}
-                                                    items:   {definition.data.itemRefs.map( ref => ref.name ).join(", ")}
+                                                    <li>items: {definition.data.itemRefs.map( ref => ref.name ).join(", ")}</li>
                                                 {/if}
+                                                </ul>
                                             </div>
                                             <div class="template-footer">
                                                 <span class="date">{formatDate(definition.createdAt)}</span>

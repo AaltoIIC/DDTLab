@@ -270,8 +270,7 @@
     }
 
     :global(.package-node:hover) .handle-label,
-    :global(.part-node:hover) .handle-label,
-    :global(.item-node:hover) .handle-label {
+    :global(.concept-node:hover) .handle-label {
         opacity: 1;
     }
 
@@ -314,15 +313,14 @@
         transform: translateX(50%);
     }
 
+
+    /* PACKAGE NODES NO LONGER SUPPORT PORTS
     :global(.package-node:hover) .handle-add,
     :global(.package-node:hover) .handle-remove,
-    :global(.package-node:hover) .handle-interface,
-    :global(.part-node:hover) .handle-add,
-    :global(.part-node:hover) .handle-remove,
-    :global(.part-node:hover) .handle-interface,
-    :global(.item-node:hover) .handle-add,
-    :global(.item-node:hover) .handle-remove,
-    :global(.item-node:hover) .handle-interface {
+    :global(.package-node:hover) .handle-interface, */
+    :global(.concept-node:hover) .handle-add,
+    :global(.concept-node:hover) .handle-remove,
+    :global(.concept-node:hover) .handle-interface {
         opacity: 1;
     }
     

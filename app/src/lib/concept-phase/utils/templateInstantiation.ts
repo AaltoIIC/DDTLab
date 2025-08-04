@@ -26,6 +26,7 @@ export function instantiateTemplate(template: ConceptTemplate, position: { x: nu
         
         // Deep clone the node data
         const newNodeData = JSON.parse(JSON.stringify(node.data));
+        console.log(newNodeData)
         
         // Update IDs in nested structures if they exist
         if (newNodeData.nodes) {

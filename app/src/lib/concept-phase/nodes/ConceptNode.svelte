@@ -2,31 +2,36 @@
     import { run, stopPropagation, createBubbler } from 'svelte/legacy';
 
     const bubble = createBubbler();
-    import { Squircle, X } from 'lucide-svelte';
-    import type { NodeProps } from '@xyflow/svelte';
+    import { Grid2X2, Squircle, X } from 'lucide-svelte';
     import { useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
+    import { navigateToPackage } from '../packageStore';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
     import AttributeEditor from '../MetadataEditor.svelte';
     import ContextMenu from '../ContextMenu.svelte';
     import { get } from 'svelte/store';
+    import { capitalize } from 'lodash';
 
     type MetadataItem = {
         key: string;
         value: string;
     };
 
-    type ItemData = {
+    type NodeData = {
         declaredName: string;
+        definition: string;
         comment: string;
         id: string;
         orderStatus?: 'Delivered' | 'Pending' | 'Order Placed' | 'Confirmed' | 'In Production / In-House' | 'Not Ordered';
         metadata?: MetadataItem[];
+        nodes?: import('@xyflow/svelte').Node[];
+        edges?: import('@xyflow/svelte').Edge[];
     } & PortData;
 
     interface Props {
-        data: ItemData;
+        data: NodeData;
+        type: 'part' | 'item';
         selected?: boolean;
         id: string;
         dragging?: boolean;
@@ -34,6 +39,7 @@
 
     let {
         data = $bindable(),
+        type,
         selected = false,
         id,
         dragging = false
@@ -51,7 +57,7 @@
     });
 
     // Create port handlers
-    const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<ItemData>(id);
+    const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<NodeData>(id);
     
     function handleUpdateInputInterface(index: number, interfaceType: string | undefined) {
         updatePortInterface('input', index, interfaceType);
@@ -113,6 +119,21 @@
         addToHistory();
     }
 
+    function handleDoubleClick(event: MouseEvent) {
+        // Only navigate inside if the node is a part node.
+        if (type === 'part') {
+            // Check if the click was on an editable field
+            const target = event.target as HTMLElement;
+            if (target.classList.contains('editable') || target.classList.contains('field-input')) {
+                return; // Don't navigate if clicking on editable fields
+            }
+            
+            // Navigate into this part
+            console.log('Opening part:', id, data);
+            navigateToPackage(id, data.declaredName || 'Unnamed Part');            
+        }
+    }
+
     // Context menu handling
     let showContextMenu = $state(false);
     let contextMenuX = $state(0);
@@ -140,17 +161,19 @@
         if (currentNode) {
             const newNode = {
                 ...currentNode,
-                id: `item-${Date.now()}`,
+                id: `${type}-${Date.now()}`,
                 position: {
-                    x: currentNode.position.x + 20,
-                    y: currentNode.position.y + 20
+                    x: currentNode.position.x + 30,
+                    y: currentNode.position.y + 30
                 },
                 data: {
                     ...currentNode.data,
-                    id: `ITM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                    id: `${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
                     inputs: Array.isArray(currentNode.data.inputs) ? currentNode.data.inputs.map(input => ({...input})) : [],
                     outputs: Array.isArray(currentNode.data.outputs) ? currentNode.data.outputs.map(output => ({...output})) : [],
-                    metadata: Array.isArray(currentNode.data.metadata) ? currentNode.data.metadata.map(meta => ({...meta})) : []
+                    metadata: Array.isArray(currentNode.data.metadata) ? currentNode.data.metadata.map(meta => ({...meta})) : [],
+                    nodes: Array.isArray(currentNode.data.nodes) ? currentNode.data.nodes.map(node => ({...node})) : [],
+                    edges: Array.isArray(currentNode.data.edges) ? currentNode.data.edges.map(edge => ({...edge})) : []
                 },
                 selected: false
             };
@@ -162,10 +185,9 @@
     }
 
 </script>
-
 <!-- svelte-ignore a11y_no_static_element_interactions -->
- <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="item-node" class:selected oncontextmenu={handleContextMenu} bind:this={nodeElement}>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div class="concept-node" class:selected ondblclick={handleDoubleClick as (event: Event) => void} oncontextmenu={handleContextMenu} bind:this={nodeElement}>
     <!-- Input Handles -->
     <PortHandles 
         nodeId={id}
@@ -176,22 +198,26 @@
         onUpdateInterface={handleUpdateInputInterface}
     />
 
-    <div class="item-header">
-        <div class="item-header-left">
-            <Squircle size={12} />
-            <span class="item-title">Item</span>
+    <div class="header">
+        <div class="header-left">
+            {#if type === 'part'}
+                <Grid2X2 size={14} />
+            {:else}
+                <Squircle size={14} />
+            {/if}
+            <span class="title">{data.definition ? `${data.definition} (${type})` : `${capitalize(type)}`}</span>
         </div>
         <button 
             class="delete-button" 
             onclick={stopPropagation(handleDelete)}
-            title="Delete item"
+            title={`Delete ${type}`}
         >
-            <X size={10} />
+            <X size={12} />
         </button>
     </div>
 
-    <div class="item-content">
-        <div class="item-field">
+    <div class="content">
+        <div class="field">
             <span class="field-label">Name:</span>
             {#if editingName}
                 <input
@@ -217,12 +243,12 @@
                         tempName = data.declaredName;
                     })}
                 >
-                    {data.declaredName || 'Unnamed Item'}
+                    {data.declaredName || `Unnamed ${capitalize(type)}`}
                 </span>
             {/if}
         </div>
 
-        <div class="item-field">
+        <div class="field">
             <span class="field-label">Comment:</span>
             {#if editingComment}
                 <input
@@ -253,12 +279,12 @@
             {/if}
         </div>
 
-        <div class="item-field">
+        <div class="field">
             <span class="field-label">ID:</span>
             <span class="field-value">{data.id}</span>
         </div>
 
-        <div class="item-field">
+        <div class="field">
             <span class="field-label">Order status:</span>
             <select 
                 class="field-select"
@@ -300,94 +326,93 @@
 </div>
 
 <style>
-    .item-node {
+    .concept-node {
         position: relative;
         background: white;
-        border: 2px solid #e5e7eb;
-        border-radius: 4px;
-        padding: 8px;
-        min-width: 160px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        border: 2px solid #d1d5db;
+        border-radius: 6px;
+        padding: 10px;
+        min-width: 180px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         cursor: move;
         transition: all 0.2s;
     }
 
-    .item-node:hover {
-        border-color: #93c5fd;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .item-node.selected {
+    .concept-node:hover {
         border-color: #60a5fa;
-        box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        cursor: pointer;
     }
 
-    .item-header {
+    .concept-node.selected {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    .header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 8px;
-        padding-bottom: 4px;
-        border-bottom: 1px solid #f3f4f6;
+        margin-bottom: 10px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #e5e7eb;
     }
 
-    .item-header-left {
+    .header-left {
         display: flex;
         align-items: center;
+        gap: 6px;
+    }
+
+    .title {
+        font-weight: 600;
+        font-size: 12px;
+        color: #4b5563;
+    }
+
+    .content {
+        display: flex;
+        flex-direction: column;
         gap: 4px;
     }
 
-    .item-title {
-        font-weight: 600;
+    .field {
+        display: flex;
+        gap: 4px;
         font-size: 11px;
-        color: #6b7280;
-    }
-
-    .item-content {
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-    }
-
-    .item-field {
-        display: flex;
-        gap: 3px;
-        font-size: 10px;
         align-items: center;
     }
 
     .field-label {
-        color: #9ca3af;
+        color: #6b7280;
         font-weight: 500;
-        min-width: 30px;
-        font-size: 10px;
+        min-width: 35px;
     }
 
     .field-value {
-        color: #374151;
+        color: #111827;
         word-break: break-word;
         flex: 1;
-        font-size: 10px;
     }
 
     .field-value.editable {
         cursor: text;
-        padding: 1px 2px;
-        border-radius: 2px;
+        padding: 1px 3px;
+        border-radius: 3px;
         transition: background-color 0.2s;
     }
 
     .field-value.editable:hover {
-        background-color: #f9fafb;
+        background-color: #f3f4f6;
     }
 
     .field-input {
-        border: 1px solid #93c5fd;
-        border-radius: 2px;
-        padding: 1px 2px;
-        font-size: 10px;
+        border: 1px solid #60a5fa;
+        border-radius: 3px;
+        padding: 1px 3px;
+        font-size: 11px;
         font-family: inherit;
-        color: #374151;
+        color: #111827;
         background: white;
         outline: none;
         width: 100%;
@@ -395,16 +420,16 @@
     }
 
     .field-input:focus {
-        box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.3);
+        box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
     }
 
     .field-select {
         border: 1px solid #e5e7eb;
-        border-radius: 2px;
-        padding: 1px 4px;
-        font-size: 10px;
+        border-radius: 3px;
+        padding: 1px 6px;
+        font-size: 11px;
         font-family: inherit;
-        color: #374151;
+        color: #111827;
         background: white;
         outline: none;
         cursor: pointer;
@@ -412,21 +437,21 @@
     }
 
     .field-select:focus {
-        border-color: #93c5fd;
-        box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.3);
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
     }
 
     .field-select:hover {
-        background-color: #f9fafb;
+        background-color: #f3f4f6;
     }
 
     .delete-button {
         background: none;
         border: none;
-        padding: 2px;
+        padding: 3px;
         cursor: pointer;
-        color: #d1d5db;
-        border-radius: 2px;
+        color: #9ca3af;
+        border-radius: 3px;
         transition: all 0.2s;
         display: flex;
         align-items: center;
@@ -434,7 +459,7 @@
     }
 
     .delete-button:hover {
-        background-color: #fef2f2;
-        color: #ef4444;
+        background-color: #fee2e2;
+        color: #dc2626;
     }
 </style>

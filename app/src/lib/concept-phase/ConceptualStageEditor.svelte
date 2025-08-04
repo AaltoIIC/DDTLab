@@ -3,8 +3,7 @@
     import type { Node, Edge, NodeTypes, EdgeTypes, Connection } from '@xyflow/svelte';
     import '@xyflow/svelte/dist/style.css';
     import PackageNode from './nodes/PackageNode.svelte';
-    import PartNode from './nodes/PartNode.svelte';
-    import ItemNode from './nodes/ItemNode.svelte';
+    import ConceptNode from './nodes/ConceptNode.svelte';
     import RemovableEdge from './edges/RemovableEdge.svelte';
     import ConnectionTypeDropdown from './ConnectionTypeDropdown.svelte';
     import { get } from 'svelte/store';
@@ -23,8 +22,8 @@
 
     const nodeTypes = {
         package: PackageNode,
-        part: PartNode,
-        item: ItemNode,
+        part: ConceptNode,
+        item: ConceptNode,
     } as {} as NodeTypes;
     
     const edgeTypes = {
@@ -51,60 +50,65 @@
               }
           };
 
-          console.log('Creating new node:', newNode);
+        //   console.log('Creating new node:', newNode);
           currentNodes.update(n => [...n, newNode]);
           addToHistory(); // Track changes for undo/redo
           currentNodes.subscribe(n => console.log('Total nodes:', n.length))();
+          console.log(JSON.stringify($currentEdges, null, 2));
+          console.log(JSON.stringify($currentNodes, null, 2));
     }
     
-    export function addPartNode(definitionName: string = '') {
-        console.log('addPartNode called');
-        const existingNodes = get(currentNodes);
-        const newNode: Node = {
-            id: `part-${Date.now()}`,
-            type: 'part',
-            position: { x: 250, y: 100 + existingNodes.length * 150 },
-            data: {
-                declaredName: `New ${definitionName} Part` ,
-                definition: definitionName,
-                comment: '',
-                id: `PRT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-                orderStatus: 'Not Ordered',
-                metadata: [],  // Initialize with empty metadata array
-                nodes: [],  // Initialize with empty nodes array
-                edges: [],   // Initialize with empty edges array
-                inputs: [],  // Initialize with no inputs
-                outputs: [] // Initialize with no outputs
-            }
-        };
 
-        console.log('Creating new part:', newNode);
-        currentNodes.update(n => [...n, newNode]);
-        addToHistory(); // Track changes for undo/redo
-    }
+    // DEPRECATED WAY OF ADDING NODES
+    // *******************************
+    // export function addPartNode(definitionName: string = '') {
+    //     console.log('addPartNode called');
+    //     const existingNodes = get(currentNodes);
+    //     const newNode: Node = {
+    //         id: `part-${Date.now()}`,
+    //         type: 'part',
+    //         position: { x: 250, y: 100 + existingNodes.length * 150 },
+    //         data: {
+    //             declaredName: `New ${definitionName} Part` ,
+    //             definition: definitionName,
+    //             comment: '',
+    //             id: `PRT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+    //             orderStatus: 'Not Ordered',
+    //             metadata: [],  // Initialize with empty metadata array
+    //             nodes: [],  // Initialize with empty nodes array
+    //             edges: [],   // Initialize with empty edges array
+    //             inputs: [],  // Initialize with no inputs
+    //             outputs: [] // Initialize with no outputs
+    //         }
+    //     };
+
+    //     console.log('Creating new part:', newNode);
+    //     currentNodes.update(n => [...n, newNode]);
+    //     addToHistory(); // Track changes for undo/redo
+    // }
     
-    export function addItemNode(name: string = 'New Item') {
-        console.log('addItemNode called');
-        const existingNodes = get(currentNodes);
-        const newNode: Node = {
-            id: `item-${Date.now()}`,
-            type: 'item',
-            position: { x: 250, y: 100 + existingNodes.length * 150 },
-            data: {
-                declaredName: name,
-                comment: '',
-                id: `ITM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-                orderStatus: 'Not Ordered',
-                metadata: [],  // Initialize with empty metadata array
-                inputs: [],  // Initialize with one default input
-                outputs: [] // Initialize with one default output
-            }
-        };
+    // export function addItemNode(name: string = 'New Item') {
+    //     console.log('addItemNode called ' + name);
+    //     const existingNodes = get(currentNodes);
+    //     const newNode: Node = {
+    //         id: `item-${Date.now()}`,
+    //         type: 'item',
+    //         position: { x: 250, y: 100 + existingNodes.length * 150 },
+    //         data: {
+    //             declaredName: name,
+    //             comment: '',
+    //             id: `ITM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+    //             orderStatus: 'Not Ordered',
+    //             metadata: [],  // Initialize with empty metadata array
+    //             inputs: [],  // Initialize with one default input
+    //             outputs: [] // Initialize with one default output
+    //         }
+    //     };
 
-        console.log('Creating new item:', newNode);
-        currentNodes.update(n => [...n, newNode]);
-        addToHistory(); // Track changes for undo/redo
-    }
+    //     console.log('Creating new item:', newNode);
+    //     currentNodes.update(n => [...n, newNode]);
+    //     addToHistory(); // Track changes for undo/redo
+    // }
     
     function findPort(node: Node | undefined, handleId: string | null | undefined): Port | undefined {
         if (!node || !handleId) return undefined;

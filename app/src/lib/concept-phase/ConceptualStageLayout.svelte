@@ -151,8 +151,6 @@
 <div class="conceptual-layout">
     <ConceptualStageSidebar 
         onAddPackage={() => conceptEditor?.addPackageNode()} 
-        onAddPart={() => conceptEditor?.addPartNode("ABA")}
-        onAddItem={() => conceptEditor?.addItemNode()}
     />
     
     <div class="main-content">

@@ -5,7 +5,10 @@
     import MetadataEditor from "./MetadataEditor.svelte";
     import { generateId, validateName } from '$lib/helpers';
     import { slide } from 'svelte/transition';
-    import { update } from 'lodash';
+    import _, { capitalize, update } from 'lodash';
+    import type { Node, Edge } from '@xyflow/svelte';
+    import type { Port } from './interfaces';
+    import { generatePortId } from './nodes/portUtils';
 
     interface Props {
         type: 'part' | 'item';
@@ -45,13 +48,109 @@
         isNameError = validateName(currentName, inputName, $currentDefs.map( p => p.name ));
     }
 
+    function createData(definition: SysMLDefinition): {nodes: Node[], edges: Edge[]} {
+
+        const inputPort: Port = {
+            id: generatePortId(),
+            name: "ref_input",
+            interfaceType: undefined
+        }
+
+        const outputPort: Port = {
+            id: generatePortId(),
+            name: "ref_output",
+            interfaceType: undefined
+        }
+
+        function defToNode(def: SysMLDefinition, initialPos: {x: number, y: number}, inputs: Port[], outputs: Port[]): Node {
+            return {
+                id: `${type}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                type: def.type,
+                position: initialPos,
+                data: {
+                    declaredName: `New "${def.name}" ${capitalize(type)}`,
+                    definition: def.name,
+                    comment: '',
+                    id: Math.random().toString(36).substring(2, 9).toUpperCase(),
+                    orderStatus: 'Not Ordered',
+                    metadata: toMetadata(def.data.attributes),
+                    nodes: [],
+                    edges: [],
+                    inputs,
+                    outputs
+                }
+            }
+        }
+
+        const mainNode = defToNode(
+            definition, 
+            {x: 0, y: 0},
+            partRefs.length ? [inputPort] : [],
+            itemRefs.length ? [outputPort] : []
+        );
+
+        const partNodes = partRefs.map( (def, index) => {
+            return defToNode(
+                def, 
+                {x: -400, y: -200 + index * 200},
+                [],
+                [outputPort]
+            );
+        });
+        const partEdges: Edge[] = partRefs.map( (_, index) => {
+            const partNode = partNodes[index];
+            return {
+                id: `${partNode.id}-${mainNode.id}-${Date.now()}`,
+                source: partNode.id,
+                target: mainNode.id,
+                sourceHandle: `${partNode.id}-output-ref_output`,
+                targetHandle: `${mainNode.id}-input-ref_input`,
+                type: 'default',
+                data: {
+                    compatibility: 'direct',
+                    connectionType: 'flow'
+                }
+            }
+        });
+
+
+        const itemNodes = itemRefs.map( (def, index) => {
+            return defToNode(
+                def, 
+                {x: 400, y: -200 + index * 200},
+                [inputPort],
+                []
+            );
+        });
+        const itemEdges: Edge[] = itemRefs.map( (_, index) => {
+            const itemNode = itemNodes[index];
+            return {
+                id: `${mainNode.id}-${itemNode.id}-${Date.now()}`,
+                source: mainNode.id,
+                target: itemNode.id,
+                sourceHandle: `${mainNode.id}-output-ref_output`,
+                targetHandle: `${itemNode.id}-input-ref_input`,
+                type: 'default',
+                data: {
+                    compatibility: 'direct',
+                    connectionType: 'flow'
+                }
+            }
+        });
+
+        const nodes = [mainNode, ...partNodes, ...itemNodes];
+        const edges = [...partEdges, ...itemEdges];
+        
+        return {nodes, edges};
+    }
+
     function handleAddDef() {
         validateNameLocal();
         if (!isNameError) {
             const baseDef = {
                 id: generateId($currentDefs.map( p => p.id )),
                 name: inputName,
-                type: type,
+                type,
                 description: description,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -64,27 +163,30 @@
                 }
             };
             
+            let newDef: SysMLDefinition 
             if (type === 'part') {
-                const newDef: PartDefinition = {
+                newDef = {
                     ...baseDef,
                     type: 'part',
                     data: {
                         ...baseDef.data,
-                        partRefs,
+                        partRefs
                     }
                 }
-                currentPartDefinitions.update(defs => [...defs, newDef]);
-                console.log(JSON.stringify(newDef));
             }
             else {
-                const newDef: ItemDefinition = {
+                newDef = {
                     ...baseDef,
                     type: 'item'
                 }
-                currentItemDefinitions.update(defs => [...defs, newDef]);
-                console.log(JSON.stringify(newDef));
             }
+            const data = createData(newDef);
+            newDef.data.nodes = data.nodes;
+            newDef.data.edges = data.edges;
 
+            currentDefs.update(defs => [...defs, newDef]);
+            console.log(JSON.stringify(newDef, null, 2));
+            
             addToHistory(); 
             handleCloseDef();
         }
@@ -101,34 +203,42 @@
                 name: inputName,
                 description: description,
                 updatedAt: new Date().toISOString(),
+                data: {
+                    ...editDef.data,
+                    attributes: attributes.map(attr => attr.key),
+                    partRefs: null,
+                    itemRefs,
+                    nodes: [],
+                    edges: [],
+                }
             };
             
+            let editedDef: SysMLDefinition
             if (type === 'part') {
-                const editedDef: PartDefinition = {
+                editedDef = {
                     ...baseDef,
                     type: 'part',
                     data: {
-                        ...editDef.data,
-                        itemRefs,
+                        ...baseDef.data,
                         partRefs
                     }
                 }
-                updatedDefs[defIndex] = editedDef;
             }
             else {
-                const editedDef: ItemDefinition = {
+                editedDef = {
                     ...baseDef,
                     type: 'item',
-                    data: {
-                        ...editDef.data,
-                        partRefs: null,
-                        itemRefs
-                    }
                 }
-                updatedDefs[defIndex] = editedDef;
             }
 
+            const data = createData(editedDef);
+            editedDef.data.nodes = data.nodes;
+            editedDef.data.edges = data.edges;
+
+            updatedDefs[defIndex] = editedDef;
+            console.log(JSON.stringify(editedDef, null, 2));            
             currentDefs.update(_ => updatedDefs)
+
             addToHistory(); 
             handleCloseDef();
         }

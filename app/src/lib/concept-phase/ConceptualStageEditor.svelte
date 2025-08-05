@@ -41,17 +41,11 @@
                   declaredName: name,
                   comment: '',
                   id: `PKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-                  orderStatus: 'Not Ordered',
-                  metadata: [],  // Initialize with empty metadata array
-                  nodes: [],  // Initialize with empty nodes array
-                  edges: [],   // Initialize with empty edges array
-                  inputs: [],  // Initialize with one input
-                  outputs: [] // Initialize with one output
               }
           };
 
         //   console.log('Creating new node:', newNode);
-          currentNodes.update(n => [...n, newNode]);
+          currentNodes.update(n => [newNode, ...n]);
           addToHistory(); // Track changes for undo/redo
           currentNodes.subscribe(n => console.log('Total nodes:', n.length))();
           console.log(JSON.stringify($currentEdges, null, 2));

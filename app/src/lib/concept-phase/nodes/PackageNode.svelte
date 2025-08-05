@@ -2,9 +2,9 @@
   import { run, stopPropagation, createBubbler } from 'svelte/legacy';
 
   const bubble = createBubbler();
-      import { Package, X } from 'lucide-svelte';
+      import { Package, X, MoveDiagonal2, Info } from 'lucide-svelte';
       import type { NodeProps } from '@xyflow/svelte';
-      import { useUpdateNodeInternals } from '@xyflow/svelte';
+      import { useUpdateNodeInternals, NodeResizeControl } from '@xyflow/svelte';
       import { navigateToPackage } from '../packageStore';
       import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
       import { type PortData } from './portUtils';
@@ -21,19 +21,15 @@
             declaredName: string;
             comment: string;
             id: string;
-            orderStatus?: 'Delivered' | 'Pending' | 'Order Placed' | 'Confirmed' | 'In Production / In-House' | 'Not Ordered';
-            metadata?: MetadataItem[];
-            nodes?: import('@xyflow/svelte').Node[];
-            edges?: import('@xyflow/svelte').Edge[];
-        } & PortData;
+        };
 
 
 
   interface Props {
     data: PackageData;
-    selected: NodeProps['selected'];
-    id: NodeProps['id'];
-    dragging: NodeProps['dragging'];
+    selected: boolean;
+    id: string;
+    dragging: boolean;
   }
 
   let {
@@ -42,18 +38,6 @@
     id,
     dragging
   }: Props = $props();
-
-    // Initialize inputs/outputs if not present
-    run(() => {
-    if (!data.inputs) data.inputs = [];
-  });
-    run(() => {
-    if (!data.outputs) data.outputs = [];
-  });
-    run(() => {
-    if (!data.metadata) data.metadata = [];
-  });
-
     
     // Update React Flow internals when data changes
     const updateNodeInternals = useUpdateNodeInternals();
@@ -67,6 +51,8 @@
     let editingComment = $state(false);
     let tempName = $state(data.declaredName);
     let tempComment = $state(data.comment);
+    let showComment = $state(false);
+    let infoClicked = $state(false);
 
     function updateNodeData(field: string, value: any) {
         currentNodes.update(nodes => {
@@ -99,21 +85,15 @@
         editingName = false;
     }
 
+    function handleMouseLeave() {
+        if (!infoClicked) {
+            showComment = false;
+        }
+    }
+
     function handleCommentEdit() {
         updateNodeData('comment', tempComment.trim());
         editingComment = false;
-    }
-
-    function handleDoubleClick(event: MouseEvent) {
-        // Check if the click was on an editable field
-        const target = event.target as HTMLElement;
-        if (target.classList.contains('editable') || target.classList.contains('field-input')) {
-            return; // Don't navigate if clicking on editable fields
-        }
-        
-        // Navigate into this package
-        console.log('Opening package:', id, data);
-        navigateToPackage(id, data.declaredName || 'Unnamed Package');
     }
 
     function handleDelete() {
@@ -123,301 +103,172 @@
         addToHistory();
     }
 
-    // Context menu handling
-    let showContextMenu = $state(false);
-    let contextMenuX = $state(0);
-    let contextMenuY = $state(0);
-    let nodeElement: HTMLDivElement | undefined = $state();
-
-    function handleContextMenu(event: MouseEvent) { //TODO: Repeating functions in multiple files, can refactor later
-        event.preventDefault();
-        event.stopPropagation();
-        
-        if (!nodeElement) return;
-
-        // Position relative to the node
-        const rect = nodeElement.getBoundingClientRect();
-        contextMenuX = event.clientX - rect.left + nodeElement.scrollLeft;
-        contextMenuY = event.clientY - rect.top + nodeElement.scrollTop;
-        
-        showContextMenu = true;
-    }
-
-    function handleDuplicate() {
-        const nodes = get(currentNodes);
-        const currentNode = nodes.find(n => n.id === id);
-        
-        if (currentNode) {
-            const newNode = {
-                ...currentNode,
-                id: `package-${Date.now()}`,
-                position: {
-                    x: currentNode.position.x + 20,
-                    y: currentNode.position.y + 20
-                },
-                data: {
-                    ...currentNode.data,
-                    id: `PKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-                    inputs: Array.isArray(currentNode.data.inputs) ? currentNode.data.inputs.map(input => ({...input})) : [],
-                    outputs: Array.isArray(currentNode.data.outputs) ? currentNode.data.outputs.map(output => ({...output})) : [],
-                    metadata: Array.isArray(currentNode.data.metadata) ? currentNode.data.metadata.map(meta => ({...meta})) : [],
-                    nodes: Array.isArray(currentNode.data.nodes) ? currentNode.data.nodes.map(node => ({...node})) : [],
-                    edges: Array.isArray(currentNode.data.edges) ? currentNode.data.edges.map(edge => ({...edge})) : []
-                },
-                selected: false
-            };
-            
-            currentNodes.update(n => [...n, newNode]);
-            addToHistory();
-        }
-        showContextMenu = false;
-    }
   </script>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
      <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="package-node" ondblclick={stopPropagation(handleDoubleClick as (event: Event) => void)} oncontextmenu={handleContextMenu} bind:this={nodeElement}>
+    <div class:selected class="package-node">
+        <div class="package-header">
+            <div class="package-header-left">
+                <Package size={22} />
+                {#if editingName}
+                    <input
+                        class="package-title"
+                        type="text"
+                        bind:value={tempName}
+                        onblur={handleNameEdit}
+                        onkeydown={(e) => {
+                            if (e.key === 'Enter') handleNameEdit();
+                            if (e.key === 'Escape') {
+                                tempName = data.declaredName;
+                                editingName = false;
+                            }
+                        }}
+                        onclick={stopPropagation(bubble('click'))}
+                        autofocus
+                    />
+                {:else}
+                    <span 
+                        class="package-title editable" 
+                        onclick={stopPropagation(() => {
+                            editingName = true;
+                            tempName = data.declaredName;
+                        })}
+                        ondblclick={stopPropagation(bubble('dblclick'))}
+                    >
+                        {`${data.declaredName} (Package)`|| 'Unnamed'}
+                    </span>
+                {/if}
+            </div>
+            <button 
+                class="delete-button" 
+                onclick={stopPropagation(handleDelete)}
+                title="Delete package"
+            >
+                <X size={20} />
+            </button>
+        </div>
 
-      <div class="package-header">
-          <div class="package-header-left">
-              <Package size={16} />
-              <span class="package-title">Package</span>
-          </div>
-          <button 
-              class="delete-button" 
-              onclick={stopPropagation(handleDelete)}
-              title="Delete package"
-          >
-              <X size={14} />
-          </button>
-      </div>
-
-      <div class="package-content">
-          <div class="package-field">
-              <span class="field-label">Name:</span>
-              {#if editingName}
-                  <input
-                      class="field-input"
-                      type="text"
-                      bind:value={tempName}
-                      onblur={handleNameEdit}
-                      onkeydown={(e) => {
-                          if (e.key === 'Enter') handleNameEdit();
-                          if (e.key === 'Escape') {
-                              tempName = data.declaredName;
-                              editingName = false;
-                          }
-                      }}
-                      onclick={stopPropagation(bubble('click'))}
-                      autofocus
-                  />
-              {:else}
-                  <span 
-                      class="field-value editable" 
-                      onclick={stopPropagation(() => {
-                          editingName = true;
-                          tempName = data.declaredName;
-                      })}
-                      ondblclick={stopPropagation(bubble('dblclick'))}
-                  >
-                      {data.declaredName || 'Unnamed'}
-                  </span>
-              {/if}
-          </div>
-
-          <div class="package-field">
-              <span class="field-label">Comment:</span>
-              {#if editingComment}
-                  <input
-                      class="field-input"
-                      type="text"
-                      bind:value={tempComment}
-                      onblur={handleCommentEdit}
-                      onkeydown={(e) => {
-                          if (e.key === 'Enter') handleCommentEdit();
-                          if (e.key === 'Escape') {
-                              tempComment = data.comment;
-                              editingComment = false;
-                          }
-                      }}
-                      onclick={stopPropagation(bubble('click'))}
-                      autofocus
-                  />
-              {:else}
-                  <span 
-                      class="field-value editable" 
-                      onclick={stopPropagation(() => {
-                          editingComment = true;
-                          tempComment = data.comment;
-                      })}
-                      ondblclick={stopPropagation(bubble('dblclick'))}
-                  >
-                      {data.comment || 'Click to add comment'}
-                  </span>
-              {/if}
-          </div>
-
-          <div class="package-field">
-              <span class="field-label">ID:</span>
-              <span class="field-value">{data.id}</span>
-          </div>
-
-          <div class="package-field">
-              <span class="field-label">Order status:</span>
-              <select 
-                  class="field-select"
-                  value={data.orderStatus || 'Not Ordered'}
-                  onchange={(e) => updateNodeData('orderStatus', (e.target as HTMLSelectElement).value)}
-                  onclick={stopPropagation(bubble('click'))}
-              >
-                  <option value="Delivered">Delivered</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Order Placed">Order Placed</option>
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="In Production / In-House">In Production / In-House</option>
-                  <option value="Not Ordered">Not Ordered</option>
-              </select>
-          </div>
-          
-          <AttributeEditor 
-              metadata={data.metadata || []}
-              onUpdate={handleMetadataUpdate}
-          />
-      </div>
-
-      
-      <ContextMenu 
-          bind:visible={showContextMenu}
-          x={contextMenuX}
-          y={contextMenuY}
-          on:duplicate={handleDuplicate}
-      />
+        <div class="package-footer">
+            <div
+                class="package-info"
+                onmouseenter={() => showComment = true}
+                onmouseleave={handleMouseLeave}
+            >
+                <Info 
+                    size={22}
+                    onclick={() => {infoClicked = !infoClicked}}
+                />
+                {#if showComment}
+                    {#if infoClicked}
+                        <input class="TODO: ADD CLASS AND COMMENT HANDLING">
+                    {:else}
+                        <span class="package-comment">{data.comment || 'Click to add comment'}</span>
+                    {/if}
+                {/if}
+            </div>
+            <span class="resize-control">
+            <NodeResizeControl minWidth={300} minHeight={100} style="background: transparent; border: none;">
+                <MoveDiagonal2 size={22} />
+            </NodeResizeControl>
+            </span>
+        </div>
   </div>
 
-    <style>
-      .package-node {
-          position: relative;
-          background: white;
-          border: 2px solid #e5e7eb;
-          border-radius: 8px;
-          padding: 12px;
-          min-width: 200px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          cursor: move;
-      }
+<style>
+    .package-node {
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        width: 100%;
+        height: 100%;
+        justify-content: space-between;
+        border: 4px dashed #c6c7c9;
+        background-color: transparent;
+        color: #8e8f91;
+        border-radius: 10px;
+        padding: 10px;
+        cursor: move;
+    }
 
-      .package-node:hover {
-          border-color: #3b82f6;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-          cursor: pointer;
-      }
+    .package-node:hover {
+        border-color: #8e8f91;
+        cursor: pointer;
+    }
 
-      .package-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 12px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #e5e7eb;
-      }
+    .package-node.selected {
+        border-color: #3b82f6;
 
-      .package-header-left {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-      }
+    }
 
-      .package-title {
-          font-weight: 600;
-          font-size: 14px;
-      }
+    .package-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+    }
 
-      .package-content {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-      }
+    .package-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
 
-      .package-field {
-          display: flex;
-          gap: 6px;
-          font-size: 12px;
-      }
+    .package-title {
+        font-weight: 600;
+        font-size: 18px;
+    }
 
-      .field-label {
-          color: #6b7280;
-          font-weight: 500;
-      }
+    .package-title.editable {
+        cursor: text;
+        padding: 1px 3px;
+        border-radius: 3px;
+        transition: background-color 0.2s;
+    }
 
-      .field-value {
-          color: #111827;
-          word-break: break-word;
-      }
+    .package-title.editable:hover {
+        background-color: #eceef0;
+    }
 
-      .field-value.editable {
-          cursor: text;
-          padding: 2px 4px;
-          border-radius: 4px;
-          transition: background-color 0.2s;
-      }
+    .package-footer {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+    }
 
-      .field-value.editable:hover {
-          background-color: #f3f4f6;
-      }
+    .package-info {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
 
-      .field-input {
-          border: 1px solid #3b82f6;
-          border-radius: 4px;
-          padding: 2px 4px;
-          font-size: 12px;
-          font-family: inherit;
-          color: #111827;
-          background: white;
-          outline: none;
-          width: 100%;
-          max-width: 150px;
-      }
+    .package-comment {
+        position: absolute;
+        left: calc(100% + 5px);
+        white-space: nowrap;
+    }
 
-      .field-input:focus {
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-      }
+    .resize-control {
+        position: relative;
+        bottom: 19px;
+        right: 19px;
+    }
+    
+    .delete-button {
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        color: #9ca3af;
+        border-radius: 4px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-      .field-select {
-          border: 1px solid #e5e7eb;
-          border-radius: 4px;
-          padding: 2px 8px;
-          font-size: 12px;
-          font-family: inherit;
-          color: #111827;
-          background: white;
-          outline: none;
-          cursor: pointer;
-          flex: 1;
-      }
-
-      .field-select:focus {
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-      }
-
-      .field-select:hover {
-          background-color: #f3f4f6;
-      }
-
-      .delete-button {
-          background: none;
-          border: none;
-          padding: 4px;
-          cursor: pointer;
-          color: #9ca3af;
-          border-radius: 4px;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-      }
-
-      .delete-button:hover {
-          background-color: #fee2e2;
-          color: #dc2626;
-      }
-  </style>
+    .delete-button:hover {
+        background-color: #fee2e2;
+        color: #dc2626;
+    }
+</style>

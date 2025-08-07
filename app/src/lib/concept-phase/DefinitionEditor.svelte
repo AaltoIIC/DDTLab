@@ -68,7 +68,7 @@
                 type: def.type,
                 position: initialPos,
                 data: {
-                    declaredName: `New "${def.name}" ${capitalize(type)}`,
+                    declaredName: `New "${def.name}" ${capitalize(def.type)}`,
                     definition: def.name,
                     comment: '',
                     id: Math.random().toString(36).substring(2, 9).toUpperCase(),
@@ -255,7 +255,10 @@
     <div class="definition-title">
         {editDef ? 'Edit' : 'New'} {type} definition
     </div>
-    <form class="definition-form">
+    <form 
+        class="definition-form"
+        autocomplete="off"
+    >
         <div class="name-field">
             <label for="nameinput" class="name-label">Name:</label>
             <input

@@ -11,12 +11,16 @@
 
     let { system }: Props = $props();
 
+    // TODO: Maybe change this in the future so that packages are included somehow in the illustration
+    let filteredNodes = $derived(system.nodes.filter(n => n.type !== 'RootSystem' && n.type !== 'package'));
+
     // get node dimensions
     let highestX = 0,
         highestY = 0,
         lowestX = Infinity,
         lowestY = Infinity;
-    system.nodes.filter(n => n.type !== 'RootSystem').forEach(node => {
+    // svelte-ignore state_referenced_locally
+    filteredNodes.forEach(node => {
         if (node.position.x > highestX) {
             highestX = node.position.x;
         }
@@ -39,7 +43,8 @@
     const [addToX, addToY] = (width > height) ? [0, (width - height) / 2] : [(height - width) / 2, 0];
 
     const elemPositions: Record<string, {x: number, y: number}> = $state({}); // node positions in percentages
-    system.nodes.filter(n => n.type !== 'RootSystem').forEach(node => {
+    // svelte-ignore state_referenced_locally
+    filteredNodes.forEach(node => {
         elemPositions[node.id] = {
             x: (node.position.x - lowestX + addToX),
             y: (node.position.y - lowestY + addToY)
@@ -61,7 +66,7 @@
     });
 </script>
 <div class="main-illustration-outer">
-    {#if system.nodes.filter(n => n.type !== 'RootSystem').length > 0}
+    {#if filteredNodes.length}
         <div class="main-illustration-inner">
             {#each Object.values(elemPositions) as {x, y}, i}
                 <div class="elem"

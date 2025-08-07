@@ -304,6 +304,13 @@
         showConnectionDropdown = false;
         pendingConnection = null;
     } 
+
+    function nodeColor(node: Node) {
+        return node.type === 'package' ? 'transparent' : 'x';
+    }
+    function nodeStrokeColor(node: Node) {
+        return node.type === 'package' ? 'gray' : '';
+    }
 </script>
 
 
@@ -322,7 +329,7 @@
           >
               <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
               <Controls />
-              <MiniMap />
+              <MiniMap {nodeColor} {nodeStrokeColor} nodeStrokeWidth={5}/>
           </SvelteFlow>
       </div>
   </div>

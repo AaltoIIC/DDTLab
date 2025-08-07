@@ -307,6 +307,7 @@
         background: #fafbfc;
         border: 1px solid #e5e7eb;
         border-radius: 6px;
+        box-shadow: 0 0 5px 1px rgba(28, 28, 28, 0.1);
     }
 
     .definition-title {

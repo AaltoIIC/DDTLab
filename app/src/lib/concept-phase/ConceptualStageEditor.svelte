@@ -352,8 +352,6 @@
           onCancel={handleConnectionCancel}
       />
   {/if}
-
-  <p>x:  {x}, y: {y}, zoom: {zoomLevel}</p>
   <style>
       .conceptual-editor {
           display: flex;

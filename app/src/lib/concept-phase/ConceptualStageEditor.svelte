@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { SvelteFlow, Background, Controls, MiniMap, BackgroundVariant } from '@xyflow/svelte';
+    import { SvelteFlow, Background, Controls, MiniMap, BackgroundVariant, useSvelteFlow } from '@xyflow/svelte';
     import type { Node, Edge, NodeTypes, EdgeTypes, Connection } from '@xyflow/svelte';
     import '@xyflow/svelte/dist/style.css';
     import PackageNode from './nodes/PackageNode.svelte';
@@ -18,6 +18,7 @@
     import { instantiateSimpleComponent } from './utils/simpleInstantiation';
     import { instantiateTemplate } from './utils/templateInstantiation';
     import { onMount } from 'svelte';
+    import { zoom } from 'd3-zoom';
     
 
     const nodeTypes = {
@@ -118,6 +119,15 @@
     }
     
     let flowContainer: HTMLDivElement | undefined = $state();
+    const { viewport } = useSvelteFlow();
+    let zoomLevel = $state(1);
+    let x = $state(0);
+    let y = $state(0);
+    viewport.subscribe((value) => {
+        zoomLevel = value.zoom;
+        x = value.x;
+        y = value.y;
+    });
     
     // Global drag over prevention
     onMount(() => {
@@ -154,8 +164,8 @@
             // Get drop position relative to the flow container
             const rect = flowContainer.getBoundingClientRect();
             const position = {
-                x: event.clientX - rect.left - 100,
-                y: event.clientY - rect.top - 50
+                x: (event.clientX - rect.x - x) / zoomLevel,
+                y: (event.clientY - rect.y - y) / zoomLevel
             };
             
             console.log('Drop position:', position);
@@ -343,6 +353,7 @@
       />
   {/if}
 
+  <p>x:  {x}, y: {y}, zoom: {zoomLevel}</p>
   <style>
       .conceptual-editor {
           display: flex;

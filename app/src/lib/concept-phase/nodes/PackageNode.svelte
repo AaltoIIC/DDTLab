@@ -1,16 +1,9 @@
   <script lang="ts">
   import { run, stopPropagation, createBubbler } from 'svelte/legacy';
 
-  const bubble = createBubbler();
       import { Package, X, MoveDiagonal2, Info } from 'lucide-svelte';
-      import type { NodeProps } from '@xyflow/svelte';
       import { useUpdateNodeInternals, NodeResizeControl } from '@xyflow/svelte';
-      import { navigateToPackage } from '../packageStore';
       import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
-      import { type PortData } from './portUtils';
-      import AttributeEditor from '../MetadataEditor.svelte';
-      import ContextMenu from '../ContextMenu.svelte';
-      import { get } from 'svelte/store';
 
         type MetadataItem = {
             key: string;
@@ -72,10 +65,6 @@
         addToHistory();
     }
     
-    function handleMetadataUpdate(metadata: Array<{ key: string; value: string | null }>) {
-        updateNodeData('metadata', metadata);
-    }
-
     function handleNameEdit() {
         if (tempName.trim()) {
             updateNodeData('declaredName', tempName.trim());
@@ -94,6 +83,9 @@
     function handleCommentEdit() {
         updateNodeData('comment', tempComment.trim());
         editingComment = false;
+        showComment = false;
+        infoClicked = false;
+        
     }
 
     function handleDelete() {
@@ -123,17 +115,15 @@
                                 editingName = false;
                             }
                         }}
-                        onclick={stopPropagation(bubble('click'))}
                         autofocus
                     />
                 {:else}
                     <span 
                         class="package-title editable" 
-                        onclick={stopPropagation(() => {
+                        onclick={() => {
                             editingName = true;
                             tempName = data.declaredName;
-                        })}
-                        ondblclick={stopPropagation(bubble('dblclick'))}
+                        }}
                     >
                         {`${data.declaredName} (Package)`|| 'Unnamed'}
                     </span>
@@ -160,7 +150,22 @@
                 />
                 {#if showComment}
                     {#if infoClicked}
-                        <input class="TODO: ADD CLASS AND COMMENT HANDLING">
+                        <input 
+                            class="package-comment"
+                            type="text"
+                            bind:value={tempComment}
+                            onblur={handleCommentEdit}
+                            onkeydown={(e) => {
+                                if (e.key === 'Enter') handleCommentEdit();
+                                if (e.key === 'Escape') {
+                                    tempComment = data.comment;
+                                    editingComment = false;
+                                    showComment = false;
+                                }
+                            }}
+                            autofocus
+                            
+                        />
                     {:else}
                         <span class="package-comment">{data.comment || 'Click to add comment'}</span>
                     {/if}

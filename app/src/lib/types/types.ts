@@ -40,6 +40,8 @@ export interface SystemType extends SystemMetaType {
     nodes: Node[];
     edges: Edge[];
     requirements: RequirementType[];
+    partDefinitions: PartDefinition[];
+    itemDefinitions: ItemDefinition[];
     parentSystemId?: string | null;
     stage?: 'concept' | 'design';
 }
@@ -65,6 +67,7 @@ export interface HistoryEntryType {
     edges: Edge[];
     requirements: RequirementType[];
     partDefinitions: PartDefinition[];
+    itemDefinitions: ItemDefinition[];
 }
 
 export interface SubsystemDataType extends ElementDataType {

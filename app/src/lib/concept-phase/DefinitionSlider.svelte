@@ -28,6 +28,16 @@
     
     let searchTerm = $state('');
 
+    let filteredDefs = $derived.by(() => {
+        const sanitized = searchTerm.trim().toLowerCase();
+        if (sanitized) {
+            return $currentDefs.filter(o => o.name.toLowerCase().includes(sanitized));
+        }
+        else {
+            return $currentDefs;
+        }
+    });
+
     let currentEditId: string | null = $state(null);
     let editDefMenuOpen: boolean = $derived(currentEditId ? true : false);
 
@@ -118,7 +128,8 @@
                             />
                         </div>
                         {#if $currentDefs.length}
-                                {#each $currentDefs as definition}
+                            {#if filteredDefs.length}
+                                {#each filteredDefs as definition}
                                     {#if currentEditId === definition.id}
                                         <DefinitionEditor
                                             {type}
@@ -188,6 +199,9 @@
                                         </div>
                                     {/if}
                                 {/each}
+                            {:else}
+                                <p class="placeholder-text">No {type} definitions match your search... Try again.</p>
+                            {/if}
                         {:else}
                             <p class="placeholder-text">No {type} definitions yet. Create a {type} definition to get started.</p>
                         {/if}

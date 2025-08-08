@@ -47,7 +47,6 @@ export const systems = persistentStore<SystemType[]>('systems', []);
 
 export const templates = persistentStore<ConceptTemplate[]>('concepTemplates', []);
 
-
 export const currentPartDefinitions = persistentStore<PartDefinition[]>('partDefinitions', []);
 export const currentItemDefinitions = persistentStore<ItemDefinition[]>('itemDefinitions', []);
 
@@ -73,6 +72,8 @@ export const saveCurrentSystem = () => {
         nodes: get(currentNodes),
         edges: get(currentEdges),
         requirements: get(currentReqs),
+        partDefinitions: get(currentPartDefinitions),
+        itemDefinitions: get(currentItemDefinitions),
         parentSystemId: currentSystem?.parentSystemId || null,
         stage: currentSystem?.stage || 'design',
     });
@@ -102,6 +103,8 @@ export const setCurrentSystem = (id: string) => {
         currentNodes.set(system.nodes);
         currentEdges.set(system.edges);
         currentReqs.set(system.requirements || []);
+        currentPartDefinitions.set(system.partDefinitions);
+        currentItemDefinitions.set(system.itemDefinitions)
     }
 }
 
@@ -151,7 +154,8 @@ export const addToHistory = () => {
             nodes: get(currentNodes),
             edges: get(currentEdges),
             requirements: get(currentReqs),
-            partDefinitions: get(currentPartDefinitions)
+            partDefinitions: get(currentPartDefinitions),
+            itemDefinitions: get(currentItemDefinitions)
         });
         h.data.push(entry);
         h.currentIndex = -1;
@@ -167,7 +171,8 @@ const setHistoryEntry = (entry: HistoryEntryType) => {
     currentNodes.set(entry.nodes);
     currentEdges.set(entry.edges);
     currentReqs.set(entry.requirements);
-    currentPartDefinitions.set(entry.partDefinitions)
+    currentPartDefinitions.set(entry.partDefinitions);
+    currentItemDefinitions.set(entry.itemDefinitions);
 }
 
 export const handleUndo = () => {

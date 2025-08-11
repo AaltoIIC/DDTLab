@@ -2,11 +2,12 @@
     import { type Writable } from 'svelte/store';
     import { type ItemDefinition, type PartDefinition, type SysMLDefinition } from '$lib/types/types'
     import { currentPartDefinitions, currentItemDefinitions, addToHistory } from '$lib/stores/stores.svelte'
-    import { formatDate } from '$lib/helpers';
+    import { formatDate, generateId } from '$lib/helpers';
     import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, Search, CirclePlus, SquarePen, defaultAttributes, Grid2x2, Squircle } from 'lucide-svelte';
     import { slide, fade } from 'svelte/transition';
     import { capitalize } from 'lodash';
     import DefinitionEditor from './DefinitionEditor.svelte';
+    import { createData } from './utils/templateInstantiation';
 
     interface Props {
         type: 'part' | 'item';
@@ -47,7 +48,27 @@
         }
     });
 
-    function handleEdit() {}
+    function handleDuplicate(id: string) {
+        const original = $currentDefs.find( d => d.id === id );
+
+        if (!original) return null;
+
+        const duplicate: SysMLDefinition = {
+            ...original,
+            id: generateId($currentDefs.map( p => p.id )),
+            name: `${original.name} (Copy)`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+
+        const data = createData(duplicate);
+        duplicate.data.nodes = data.nodes;
+        duplicate.data.edges = data.edges;
+        
+        currentDefs.update( defs => [...defs, duplicate]);
+
+        addToHistory();
+    }
 
     function handleDragStart(event: DragEvent, definition: SysMLDefinition) {
         console.log(definition.data.nodes)
@@ -68,6 +89,7 @@
     function handleDelete(definition: PartDefinition | ItemDefinition) {
         if (confirm(`Are you sure you want to delete ${definition.type} definition "${definition.name}"?`)) {
                 currentDefs.update(defs => defs.filter(d => d.id !== definition.id));
+                addToHistory();
             }
         }
 
@@ -131,12 +153,14 @@
                             {#if filteredDefs.length}
                                 {#each filteredDefs as definition}
                                     {#if currentEditId === definition.id}
-                                        <DefinitionEditor
-                                            {type}
-                                            {currentDefs}
-                                            bind:isOpen={editDefMenuOpen}
-                                            editDef={definition}
-                                        />
+                                        <div class="card-editor">
+                                            <DefinitionEditor
+                                                {type}
+                                                {currentDefs}
+                                                bind:isOpen={editDefMenuOpen}
+                                                editDef={definition}
+                                            />
+                                        </div>
                                     {:else}
                                         <div
                                             class="template-card"
@@ -175,7 +199,7 @@
                                                 <div class="template-actions">
                                                     <button 
                                                         class="action-button" 
-                                                        onclick={() => alert("Duplication will be added soon!")}
+                                                        onclick={() => handleDuplicate(definition.id)}
                                                         title="Duplicate"
                                                     >
                                                         <Copy size={14} />
@@ -371,6 +395,9 @@
         transform: rotate(90deg);
     }
 
+    .card-editor {
+        margin-bottom: 8px;
+    }
     /* Copied from ConceptTemplateSlider.svelte for now, TODO: refactor later so CSS is not repeating
      I could probably refactor the whole TemplateCard into its own component too. */
     .template-card {

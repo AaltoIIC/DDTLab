@@ -212,7 +212,7 @@
                     `<p>This is where the magic happens - the <strong>stage editor</strong> is where your system's concept design comes to life.</p>
                     <p>Part and item usages live here. You can:
                         <ul> 
-                            <li>Link parts structurally through <strong>Containment</strong> (nest other parts/items) by double-clicking a usage.</li> 
+                            <li>Link parts and items structurally through <strong>Containment</strong> (nest other parts/items) by double-clicking a usage.</li> 
                             <li>Use <strong>ports</strong> to connect parts and items together.</li> 
                             <li>Create <strong>Flow Connections</strong> to transfer items (like fuel) between parts.</li> 
                             <li>Use a <strong>Binding Connection</strong> to show that two usages represent the same instance.</li> 

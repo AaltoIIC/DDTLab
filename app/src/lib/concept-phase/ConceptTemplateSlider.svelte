@@ -1,7 +1,7 @@
 <script lang="ts">
     import { formatDate } from '$lib/helpers';
-    import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy } from 'lucide-svelte';
-    import { slide } from 'svelte/transition';
+    import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy } from '@lucide/svelte';
+    import { fade, slide } from 'svelte/transition';
     import { templates, deleteTemplate, duplicateTemplate, exportTemplate, importTemplate } from '$lib/stores/stores.svelte';
     import type { ConceptTemplate } from '$lib/types/types';
     
@@ -91,10 +91,10 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 {#if isOpen}
-    <div 
+    <div
         class="slider-overlay {isDragging ? 'dragging' : ''}" 
         onclick={onClose} 
-        transition:slide={{ duration: 300, axis: 'x' }}
+        transition:fade={{ duration: 300 }}
     ></div>
     <div class="slider-panel" transition:slide={{ duration: 300, axis: 'x' }}>
         <div class="slider-header">

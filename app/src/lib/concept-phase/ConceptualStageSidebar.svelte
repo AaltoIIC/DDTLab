@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import Tooltip from '$lib/Tooltip.svelte';
-    import { Component, Box, Library, FileText, Package, Grid2X2, Squircle } from "lucide-svelte";
+    import { Component, Box, Library, FileText, Package, Grid2X2, Squircle } from '@lucide/svelte';
     import { currentPackageView, navigateToRoot } from './packageStore';
     import { currentNodes } from '$lib/stores/stores.svelte';
     import { get } from 'svelte/store';
@@ -12,11 +12,12 @@
 
     interface Props {
         onAddPackage: () => void;
-        onAddPart?: () => void;
-        onAddItem?: () => void;
+
     }
 
-    let { onAddPackage, onAddPart = () => {}, onAddItem = () => {} }: Props = $props();
+    let { 
+        onAddPackage,
+    }: Props = $props();
     
     let isPartDefOpen = $state(false);
     let isItemDefOpen = $state(false);
@@ -54,7 +55,7 @@
     }
 </script>
 
-<div class="sidebar">
+<div id="sidebar" class="sidebar">
     <div class="top-buttons">
         <Tooltip text="Home" position="right">
             <button class="menu-option-logo" onclick={handleHomeClick}>
@@ -66,19 +67,33 @@
 
 
         <Tooltip text="Add Package" position="right">
-            <button class="menu-option" onclick={onAddPackage}>
+            <button
+                id="pkgBtn"
+                class="menu-option" 
+                onclick={onAddPackage} 
+            >
                 <Package class="option-icon" />
             </button>
         </Tooltip>
 
         <Tooltip text="Add Part" position="right">
-            <button class="menu-option" class:active={isPartDefOpen} onclick={togglePartDefSlider}>
+            <button 
+                id="partBtn"
+                class="menu-option" 
+                class:active={isPartDefOpen} 
+                onclick={togglePartDefSlider}
+            >
                 <Grid2X2 class="option-icon" />
             </button>
         </Tooltip>
 
         <Tooltip text="Add Item" position="right">
-            <button class="menu-option" class:active={isItemDefOpen} onclick={toggleItemDefSlider}>
+            <button 
+                id="itemBtn"
+                class="menu-option" 
+                class:active={isItemDefOpen} 
+                onclick={toggleItemDefSlider}
+            >
                 <Squircle class="option-icon" />
             </button>
         </Tooltip>
@@ -87,13 +102,23 @@
         <div class="separator"></div>
 
         <Tooltip text="Concept Library" position="right">
-            <button class="menu-option" class:active={isLibraryOpen} onclick={toggleLibrary}>
+            <button 
+                id="conLibBtn"
+                class="menu-option" 
+                class:active={isLibraryOpen} 
+                onclick={toggleLibrary}
+            >
                 <Library class="option-icon" />
             </button>
         </Tooltip>
 
         <Tooltip text="Saved Templates" position="right">
-            <button class="menu-option" class:active={isTemplateSliderOpen} onclick={toggleTemplateSlider}>
+            <button
+                id="templateBtn"
+                class="menu-option" 
+                class:active={isTemplateSliderOpen} 
+                onclick={toggleTemplateSlider}
+            >
                 <FileText class="option-icon" />
             </button>
         </Tooltip>
@@ -104,7 +129,7 @@
 
 <DefinitionSlider type='part' isOpen={isPartDefOpen} onClose={closeAllSliders} />
 <DefinitionSlider type='item' isOpen={isItemDefOpen} onClose={closeAllSliders} />
-<ConceptLibrarySlider isOpen={isLibraryOpen} onClose={closeAllSliders} />
+<ConceptLibrarySlider isOpen={(isLibraryOpen)} onClose={closeAllSliders} />
 <ConceptTemplateSlider isOpen={isTemplateSliderOpen} onClose={closeAllSliders} />
 
   <style>
@@ -197,7 +222,7 @@
       .option-icon {
           width: 20px;
           height: 20px;
-          color: #6b7280;
+          color: #3d1704;
       }
       
       .menu-option:hover .option-icon {

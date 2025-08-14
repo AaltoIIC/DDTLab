@@ -325,7 +325,7 @@
 
 
 
-  <div class="conceptual-editor" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
+  <div id="conceptual-editor" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
       <div class="flow-container" bind:this={flowContainer}>
           <SvelteFlow
               nodes={currentNodes}
@@ -338,7 +338,7 @@
               onconnect={onConnect}
           >
               <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
-              <Controls />
+              <Controls position="top-right"/>
               <MiniMap {nodeColor} {nodeStrokeColor} nodeStrokeWidth={5}/>
           </SvelteFlow>
       </div>
@@ -353,32 +353,12 @@
       />
   {/if}
   <style>
-      .conceptual-editor {
+      #conceptual-editor {
           display: flex;
           flex-direction: column;
           height: 100%;
           width: 100%;
           background-color: #f9fafb;
-      }
-
-      .conceptual-header {
-          padding: 24px;
-          background-color: white;
-          border-bottom: 1px solid #e5e7eb;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-      }
-
-      .conceptual-header h2 {
-          margin: 0;
-          font-size: 24px;
-          font-weight: 600;
-          color: #111827;
-      }
-
-      .conceptual-header p {
-          margin: 4px 0 0 0;
-          color: #6b7280;
-          font-size: 14px;
       }
 
       .flow-container {

@@ -1,7 +1,7 @@
   <script lang="ts">
   import { run, stopPropagation, createBubbler } from 'svelte/legacy';
 
-      import { Package, X, MoveDiagonal2, Info } from 'lucide-svelte';
+      import { Package, X, MoveDiagonal2, Info } from '@lucide/svelte';
       import { useUpdateNodeInternals, NodeResizeControl } from '@xyflow/svelte';
       import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
 

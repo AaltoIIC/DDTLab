@@ -2,7 +2,7 @@
     import { stopPropagation, createBubbler } from 'svelte/legacy';
 
     const bubble = createBubbler();
-    import { Plus, X } from 'lucide-svelte';
+    import { Plus, X } from '@lucide/svelte';
     import { capitalize, zip } from 'lodash';
     import DefinitionDropdown from './DefinitionDropdown.svelte';
     import DefinitionEditor from './DefinitionEditor.svelte';

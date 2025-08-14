@@ -10,14 +10,234 @@
     import type { PackageView } from './packageStore';
     import { onMount, onDestroy } from 'svelte';
     import { get } from 'svelte/store';
-    import { Save } from 'lucide-svelte';
+    import { Save, CircleQuestionMark } from '@lucide/svelte';
     import { saveTemplate } from '$lib/stores/stores.svelte';
+    import Tour from '$lib/Tour.svelte';
+    import { type Driver, type DriveStep } from "driver.js";
+    import _ from 'lodash';
     
     let conceptEditor: ConceptualStageEditor | undefined = $state();
     let showSaveDialog = $state(false);
     let templateName = $state('');
     let templateDescription = $state('');
     let previousViewStack: PackageView[] = [];
+
+    let driver: Driver | undefined = $state();
+    let startTour = $state(false);
+    
+    let firstTimeOpen = $state(false);
+
+    const tourSteps: DriveStep[] = [
+        { 
+            popover: { 
+                title: 'Welcome to the Concept Stage tour!', 
+                description: 
+                    `<p>The <strong>concept stage</strong> is where the <em>initial, rough design</em> of a system takes shape. Our Concept Stage Editor is built on the <strong>SysML v2</strong> modeling language standard. </p>
+                    <p>In this tour, you’ll learn the essentials of SysML modeling and discover how to use our interface to create your own system concept.</p>`, 
+                side: "right", 
+                align: 'center' 
+            }
+        },
+        { 
+            element: '#pkgBtn', 
+            popover: { 
+                title: 'Packages', 
+                description: 
+                    `<p>The <strong>sidebar</strong> is home to all your key system design elements, starting with <strong>packages</strong>.</p>
+                    <p>Click this button to add a package node to the editor. Think of a package as a <em>folder</em> or <em>directory</em> used purely to organize your model elements, like keeping all your mechanical drawings separate from your electrical schematics.</p>
+                    <p>Once added to the editing stage, packages can be resized and dragged to neatly wrap around other components.</p>`, 
+                side: "right", 
+                align:  "start"
+            }
+        },
+        { 
+            element: '#partBtn', 
+            popover: { 
+                title: 'Part Definitions', 
+                description: 
+                    `<p>Click this button to access the <strong>part definitions</strong> menu.</p>
+                    <p>A <strong>part</strong> is the active, functional building block of your system, like a pump, circuit board, or software module. Parts are the components that <em>perform actions</em>.</p>`, 
+                side: "right", 
+
+                onNextClick: () => {
+                    (document.querySelector('#partBtn') as HTMLElement).click();
+                    setTimeout(() => driver?.moveNext(), 300);
+                }
+            }
+        },
+        { 
+            element: '#defBtn', 
+            popover: { 
+                title: 'Creating a Part Definition', 
+                description: 
+                    `<p>Once inside the menu, you will see this button - click it to create a new part <strong>definition.</strong></p>
+                    <p>In SysML, a <em>definition</em> is like a reusable blueprint for an element (e.g., the general design for a pump).</p>
+                    <p>Later, you can create <em>usages</em> from that definition - these are specific applications in context (e.g., the <code>main_coolant_pump</code> in your cooling system).</p>`, 
+                side: "right", 
+                align: "start",
+                onPrevClick: () => {
+                    (document.querySelector('#closeDefSliderBtn') as HTMLElement)?.click();
+                    driver?.movePrevious();
+                },
+                onNextClick: () => {
+                    (document.querySelector('#defBtn') as HTMLElement)?.click();
+                    setTimeout(() => driver?.moveNext(), 10);
+                }
+            }
+        },
+        { 
+            element: '#def-editor', 
+            popover: { 
+                title: 'Definition Editor', 
+                description: 
+                    `<p>We are now in the <strong>definition editor</strong> - here you can specify a unique <em>name</em>, <em>description</em>, and <em>attributes</em> pertaining to your definition (mass, length etc...).</p> 
+                    <p>You can also add <em>references</em> to other existing part or item definitions, which will show up in the stage editor as <strong>usages</strong> connected to the original part through a <em>Flow connection</em>.</p>`, 
+                side: "right", 
+                align: "start",
+                onPrevClick: () => {
+                    (document.querySelector('#cancelDefEditBtn') as HTMLElement)?.click();
+                    setTimeout(() => driver?.movePrevious(), 10);
+                },
+                onNextClick: () => {
+                    (document.querySelector('#allDefsBtn') as HTMLElement)?.click();
+                    setTimeout(() => driver?.moveNext(), 10);
+                }
+            }
+        },
+        { 
+            element: '#allDefsSection', 
+            popover: { 
+                title: 'Definition List', 
+                description: 
+                    `<p>Once you add a new part definition, it appears in this list, alongside all other part definitions defined in this system.</p>
+                    <p>You can then create <strong>usages</strong> by dragging a definition into the stage editor.</p>`, 
+                side: "right", 
+                align: "center",
+                onPrevClick: () => {
+                    (document.querySelector('#allDefsBtn') as HTMLElement)?.click();
+                    driver?.movePrevious();
+                },
+                onNextClick: () => {
+                    (document.querySelector('#closeDefSliderBtn') as HTMLElement)?.click();
+                    driver?.moveNext();
+                }
+            }
+        },
+        { 
+            element: '#itemBtn', 
+            popover: { 
+                title: 'Item Definitions', 
+                description: 
+                    `<p>Click this button to access the <strong>item definitions</strong> menu.</p>
+                    <p>An <strong>item</strong> is a passive entity that is acted upon, flows through, or is stored by your system, such as fuel, data packets, or electrical signals.</p>`, 
+                side: "right", 
+                align: "center",
+                onPrevClick: () => {
+                    (document.querySelector('#partBtn') as HTMLElement)?.click();
+                    setTimeout(() => {
+                        (document.querySelector('#defBtn') as HTMLElement)?.click();
+                        (document.querySelector('#allDefsBtn') as HTMLElement)?.click();
+                        driver?.movePrevious();
+                    }, 300);
+                },
+                onNextClick: () => {
+                    (document.querySelector('#itemBtn') as HTMLElement)?.click();
+                    setTimeout(() => {
+                        (document.querySelector('#defBtn') as HTMLElement)?.click();
+                        driver?.moveNext();
+                    }, 300);
+                }
+            }
+        },
+        { 
+            element: '#def-slider', 
+            popover: { 
+                title: 'Item Definition Editor', 
+                description: 
+                    `<p>The item definitions menu (and editor) looks pretty much the same as the part definitions menu.</p> 
+                    <p>The only difference is that item definitions <strong>cannot</strong> contain part references - only other item references.</p>`, 
+                side: "right", 
+                align: "center",
+                onPrevClick: () => {
+                    (document.querySelector('#closeDefSliderBtn') as HTMLElement)?.click();
+                    driver?.movePrevious();
+                },
+                onNextClick: () => {
+                    (document.querySelector('#closeDefSliderBtn') as HTMLElement)?.click();
+                    driver?.moveNext();                    
+                }
+            }
+        },
+        { 
+            element: '#conLibBtn', 
+            popover: { 
+                title: 'Concept Library', 
+                description: `<em>(This section is being reworked — more details coming soon!)</em>`, 
+                side: "right", 
+                align: "center",
+                onPrevClick: () => {
+                    (document.querySelector('#itemBtn') as HTMLElement)?.click();
+                    setTimeout(() => {
+                        (document.querySelector('#defBtn') as HTMLElement)?.click();
+                        driver?.movePrevious();
+                    }, 300);
+                }
+            }
+        },
+        { 
+            element: '#templateBtn', 
+            popover: { 
+                title: 'Templates', 
+                description: 
+                    `<p>Click this button to open your <strong>templates</strong> list.</p>
+                    <p>Templates are saved system designs you’ve created before. You can drag them straight into the stage editor - just like part and item definitions - to reuse and build on your past work.</p>`, 
+                side: "right", 
+                align: "center",
+            }
+        },
+        { 
+            element: '#save-template-btn', 
+            popover: { 
+                title: 'Save template button', 
+                description: `<p>Click here to save your current stage editor state as a <strong>template</strong>.</p>`, 
+                side: "bottom", 
+                align: "center",
+            }
+        },
+        { 
+            element: '#conceptual-editor', 
+            popover: { 
+                title: 'Stage Editor', 
+                description: 
+                    `<p>This is where the magic happens - the <strong>stage editor</strong> is where your system's concept design comes to life.</p>
+                    <p>Part and item usages live here. You can:
+                        <ul> 
+                            <li>Link parts structurally through <strong>Containment</strong> (nest other parts/items) by double-clicking a usage.</li> 
+                            <li>Use <strong>ports</strong> to connect parts and items together.</li> 
+                            <li>Create <strong>Flow Connections</strong> to transfer items (like fuel) between parts.</li> 
+                            <li>Use a <strong>Binding Connection</strong> to show that two usages represent the same instance.</li> 
+                        </ul>
+                    </p> `, 
+                side: "over", 
+                align: "center",
+            }
+        },
+        { 
+            element: '#help-btn', 
+            popover: { 
+                title: 'Help button', 
+                description: 
+                    `<p><em>Congratulations</em> - you've reached the end of the tour! 🎉</p>
+                    <p>If you need a refresher, just click this button and watch the tour again.</p>`, 
+                side: "bottom", 
+                align: "center",
+                onNextClick: () => {
+                    stopAutoTour();
+                    driver?.destroy();
+                }
+            }
+        }
+    ];
     
     // Notification system
     let notification = $state({
@@ -40,6 +260,11 @@
             navigateToRoot();
         }
         packageViewStack.set([]);
+
+        // Start the tour if it is the first time opening the concept stage
+        if (localStorage.getItem("showedFirstTour") !== "true") {
+            startTour = firstTimeOpen = true;
+        }
     });
     
     // Clean up when leaving the editor
@@ -51,6 +276,13 @@
             navigateToRoot();
         }
     });
+
+    const stopAutoTour = () => {
+        if (firstTimeOpen) {
+            localStorage.setItem("showedFirstTour", "true");
+            firstTimeOpen = false;
+        }
+    }
     
     function handleSaveAsTemplate() {
         // Store current view stack before navigating to root
@@ -150,14 +382,15 @@
 
 <div class="conceptual-layout">
     <ConceptualStageSidebar 
-        onAddPackage={() => conceptEditor?.addPackageNode()} 
+        onAddPackage={() => conceptEditor?.addPackageNode()}
+
     />
     
     <div class="main-content">
         <div class="top-bar">
             <div class="left-section">
                 <span class="system-name">{$currentSystemMeta.name}</span>
-                <button class="save-template-btn" onclick={handleSaveAsTemplate}>
+                <button id="save-template-btn" onclick={handleSaveAsTemplate}>
                     <Save size={16} />
                     Save as Template
                 </button>
@@ -167,6 +400,13 @@
                         - {$currentPackageView.packageName}
                     {/if}
                 </div>
+                <button 
+                    id="help-btn" 
+                    title="Start tutorial tour" 
+                    onclick={() => {startTour = true}}
+                >
+                    <CircleQuestionMark size={16} />
+                </button>
             </div>
         </div>
         
@@ -176,6 +416,8 @@
     </div>
 </div>
 
+<!-- svelte-ignore a11y_click_events_have_key_events-->
+<!-- svelte-ignore a11y_no_static_element_interactions-->
 {#if showSaveDialog}
     <div class="dialog-overlay" onclick={cancelSaveTemplate}>
         <div class="dialog" onclick={stopPropagation(bubble('click'))}>
@@ -212,6 +454,13 @@
         {notification.message}
     </div>
 {/if}
+
+<Tour
+    bind:driverObj={driver}
+    bind:start={startTour}
+    steps={tourSteps}
+    disableCancel={firstTimeOpen}
+/>
 
 <style>
     .conceptual-layout {
@@ -260,7 +509,7 @@
         font-weight: 500;
     }
     
-    .save-template-btn {
+    #save-template-btn {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -275,12 +524,30 @@
         transition: all 0.2s;
     }
     
-    .save-template-btn:hover {
+    #save-template-btn:hover {
         background: #374151;
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
+    #help-btn {
+        border: none;
+        background: none;
+        cursor: pointer;
+        border-radius: 15px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.2s;
+        width: 25px;
+        height: 25px;
+    }
+
+    #help-btn:hover {
+        background-color: #e5edfc;
+        transform: translateY(-1px);
+    }
+
     .dialog-overlay {
         position: fixed;
         top: 0;

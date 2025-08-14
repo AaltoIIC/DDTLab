@@ -3,7 +3,7 @@ import {
     Zap, Anchor, Cpu, Settings, 
     Power, Plug, Battery, Cable,
     Activity, Gauge, ToggleLeft, AlertCircle
-} from 'lucide-svelte';
+} from '@lucide/svelte';
 
 // Import existing components to maintain compatibility
 import { 

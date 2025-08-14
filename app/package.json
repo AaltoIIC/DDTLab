@@ -18,7 +18,6 @@
 		"bits-ui": "^0.21.16",
 		"clsx": "^2.1.1",
 		"cmdk-sv": "^0.0.18",
-		"lucide-svelte": "^0.468.0",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.0.0",
 		"tailwind-merge": "^2.5.5",
@@ -28,8 +27,10 @@
 		"vite": "^6.0.0"
 	},
 	"dependencies": {
+		"@lucide/svelte": "^0.539.0",
 		"@sveltejs/adapter-static": "^3.0.6",
 		"@xyflow/svelte": "^0.1.25",
+		"driver.js": "^1.3.6",
 		"lodash": "^4.17.21",
 		"svelte-portal": "^2.2.1"
 	}

@@ -146,7 +146,7 @@
     }
 </script>
 
-<div class="library-content" transition:slide={{ duration: 200}}>
+<div id="def-editor" class="library-content" transition:slide={{ duration: 200}}>
     <div class="definition-title">
         {editDef ? 'Edit' : 'New'} {type} definition
     </div>
@@ -185,7 +185,7 @@
             type='item'
             />
         <div class="action-buttons">
-            <button type="button" class="action-button" onclick={handleCloseDef}>Cancel</button>
+            <button id="cancelDefEditBtn" type="button" class="action-button" onclick={handleCloseDef}>Cancel</button>
             {#if editDef}
                 <button type="button" class="action-button" onclick={handleEditDef}>Accept</button>
             {:else}

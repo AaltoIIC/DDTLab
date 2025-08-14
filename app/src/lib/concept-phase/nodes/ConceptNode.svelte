@@ -2,7 +2,7 @@
     import { run, stopPropagation, createBubbler } from 'svelte/legacy';
 
     const bubble = createBubbler();
-    import { Grid2X2, Squircle, X } from 'lucide-svelte';
+    import { Grid2X2, Squircle, X } from '@lucide/svelte';
     import { useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { navigateToPackage } from '../packageStore';

@@ -3,7 +3,7 @@
     import { type ItemDefinition, type PartDefinition, type SysMLDefinition } from '$lib/types/types'
     import { currentPartDefinitions, currentItemDefinitions, addToHistory } from '$lib/stores/stores.svelte'
     import { formatDate, generateId } from '$lib/helpers';
-    import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, Search, CirclePlus, SquarePen, defaultAttributes, Grid2x2, Squircle } from 'lucide-svelte';
+    import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, Search, CirclePlus, SquarePen, defaultAttributes, Grid2x2, Squircle } from '@lucide/svelte';
     import { slide, fade } from 'svelte/transition';
     import { capitalize } from 'lodash';
     import DefinitionEditor from './DefinitionEditor.svelte';
@@ -12,6 +12,7 @@
     interface Props {
         type: 'part' | 'item';
         isOpen?: boolean;
+        // defBtnRef?: HTMLElement | undefined;
         onClose: () => void;
     }
 
@@ -86,6 +87,11 @@
 
     function handleImport() {alert("Coming soon!")} // TODO: Implement eventually
 
+    function handleClose() {
+        newDefMenuOpen = defsExpanded = false;
+        onClose();
+    }
+
     function handleDelete(definition: PartDefinition | ItemDefinition) {
         if (confirm(`Are you sure you want to delete ${definition.type} definition "${definition.name}"?`)) {
                 currentDefs.update(defs => defs.filter(d => d.id !== definition.id));
@@ -100,17 +106,17 @@
 {#if isOpen}
     <div
         class="slider-overlay {isDragging ? 'dragging' : ''}"
-        onclick={() => {newDefMenuOpen = false; onClose()}}
+        onclick={handleClose}
         transition:fade={{ duration:200 }}
     ></div>
-    <div class="slider-panel" transition:slide={{ duration: 300, axis: 'x' }}>
+    <div id="def-slider" class="slider-panel" transition:slide={{ duration: 300, axis: 'x' }}>
         <div class="slider-header">
             <h2 class="slider-title">{capitalize(type)} Definitions</h2>
             <div class="header-actions">
                 <button class="icon-button" onclick={handleImport} title="Import template">
                     <Upload size={18} />
                 </button>
-                <button class="close-button" onclick={onClose}>
+                <button id="closeDefSliderBtn" class="close-button" onclick={handleClose}>
                     <X size={20} />
                 </button>
             </div>
@@ -119,7 +125,11 @@
         <div class="slider-content">
             <div class="new-definition">
                 {#if !newDefMenuOpen}
-                    <button class="library-header" onclick={() => newDefMenuOpen = !newDefMenuOpen}>
+                    <button
+                        id="defBtn"
+                        class="library-header" 
+                        onclick={() => newDefMenuOpen = !newDefMenuOpen}
+                    >
                         <span>
                             <CirclePlus size={18} />
                         </span>
@@ -129,8 +139,8 @@
                     <DefinitionEditor {currentDefs} {type} bind:isOpen={newDefMenuOpen}/>
                 {/if}
             </div>
-            <div class="library-section">
-                <button class="library-header" onclick={() => defsExpanded = !defsExpanded}>
+            <div id="allDefsSection" class="library-section">
+                <button id="allDefsBtn" class="library-header" onclick={() => defsExpanded = !defsExpanded}>
                     <span class="chevron {defsExpanded ? 'expanded' : ''}">
                         <ChevronRight size={16} />
                     </span>

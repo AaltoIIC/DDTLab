@@ -1,6 +1,6 @@
 <script lang="ts">
     import Input from '$lib/components/ui/input/input.svelte';
-    import type { Keyboard } from 'lucide-svelte';
+    import type { Keyboard } from '@lucide/svelte';
     import { onMount } from 'svelte';
 
     interface Props {

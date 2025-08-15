@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ChevronRight, X, Search, Package, Folder, FolderOpen, Ship, Anchor, Fuel, Zap, Wind } from 'lucide-svelte';
+    import { ChevronRight, X, Search, Package, Folder, FolderOpen, Ship, Anchor, Fuel, Zap, Wind } from '@lucide/svelte';
     import { slide } from 'svelte/transition';
     import { componentCategories, searchComponents } from './data/hierarchicalComponentLibrary';
     import type { ComponentCategory, LibraryComponent } from './types/componentLibrary';

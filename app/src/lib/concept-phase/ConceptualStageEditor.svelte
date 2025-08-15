@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { SvelteFlow, Background, Controls, MiniMap, BackgroundVariant } from '@xyflow/svelte';
+    import { SvelteFlow, Background, Controls, MiniMap, BackgroundVariant, useSvelteFlow } from '@xyflow/svelte';
     import type { Node, Edge, NodeTypes, EdgeTypes, Connection } from '@xyflow/svelte';
     import '@xyflow/svelte/dist/style.css';
     import PackageNode from './nodes/PackageNode.svelte';
@@ -18,6 +18,7 @@
     import { instantiateSimpleComponent } from './utils/simpleInstantiation';
     import { instantiateTemplate } from './utils/templateInstantiation';
     import { onMount } from 'svelte';
+    import { zoom } from 'd3-zoom';
     
 
     const nodeTypes = {
@@ -118,6 +119,15 @@
     }
     
     let flowContainer: HTMLDivElement | undefined = $state();
+    const { viewport } = useSvelteFlow();
+    let zoomLevel = $state(1);
+    let x = $state(0);
+    let y = $state(0);
+    viewport.subscribe((value) => {
+        zoomLevel = value.zoom;
+        x = value.x;
+        y = value.y;
+    });
     
     // Global drag over prevention
     onMount(() => {
@@ -154,8 +164,8 @@
             // Get drop position relative to the flow container
             const rect = flowContainer.getBoundingClientRect();
             const position = {
-                x: event.clientX - rect.left - 100,
-                y: event.clientY - rect.top - 50
+                x: (event.clientX - rect.x - x) / zoomLevel,
+                y: (event.clientY - rect.y - y) / zoomLevel
             };
             
             console.log('Drop position:', position);
@@ -304,11 +314,18 @@
         showConnectionDropdown = false;
         pendingConnection = null;
     } 
+
+    function nodeColor(node: Node) {
+        return node.type === 'package' ? 'transparent' : 'x';
+    }
+    function nodeStrokeColor(node: Node) {
+        return node.type === 'package' ? 'gray' : '';
+    }
 </script>
 
 
 
-  <div class="conceptual-editor" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
+  <div id="conceptual-editor" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
       <div class="flow-container" bind:this={flowContainer}>
           <SvelteFlow
               nodes={currentNodes}
@@ -321,8 +338,8 @@
               onconnect={onConnect}
           >
               <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
-              <Controls />
-              <MiniMap />
+              <Controls position="top-right"/>
+              <MiniMap {nodeColor} {nodeStrokeColor} nodeStrokeWidth={5}/>
           </SvelteFlow>
       </div>
   </div>
@@ -335,34 +352,13 @@
           onCancel={handleConnectionCancel}
       />
   {/if}
-
   <style>
-      .conceptual-editor {
+      #conceptual-editor {
           display: flex;
           flex-direction: column;
           height: 100%;
           width: 100%;
           background-color: #f9fafb;
-      }
-
-      .conceptual-header {
-          padding: 24px;
-          background-color: white;
-          border-bottom: 1px solid #e5e7eb;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-      }
-
-      .conceptual-header h2 {
-          margin: 0;
-          font-size: 24px;
-          font-weight: 600;
-          color: #111827;
-      }
-
-      .conceptual-header p {
-          margin: 4px 0 0 0;
-          color: #6b7280;
-          font-size: 14px;
       }
 
       .flow-container {

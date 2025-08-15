@@ -6,9 +6,7 @@
     import { generateId, validateName } from '$lib/helpers';
     import { slide } from 'svelte/transition';
     import _, { capitalize, update } from 'lodash';
-    import type { Node, Edge } from '@xyflow/svelte';
-    import type { Port } from './interfaces';
-    import { generatePortId } from './nodes/portUtils';
+    import { toMetadata, createData } from './utils/templateInstantiation';
 
     interface Props {
         type: 'part' | 'item';
@@ -25,13 +23,6 @@
     let inputName = $state(currentName);
     let isNameError = $state(false);
 
-     const toMetadata = (data: SysMLDefinition[] | string[] | undefined) => {
-        return data?.map( n => {
-            const key = typeof n === 'string' ? n : ('name' in n ? n.name : '');
-            return { key, value: null};
-        }) ?? [];
-    };
-
     let attributes: Array<{key: string, value: null}> = $state(toMetadata(editDef?.data.attributes));
 
     let partMetadata: Array<{key: string, value: null}> = $state(toMetadata(editDef?.data.partRefs ?? [])); 
@@ -46,102 +37,6 @@
 
     const validateNameLocal = () => {
         isNameError = validateName(currentName, inputName, $currentDefs.map( p => p.name ));
-    }
-
-    function createData(definition: SysMLDefinition): {nodes: Node[], edges: Edge[]} {
-
-        const inputPort: Port = {
-            id: generatePortId(),
-            name: "ref_input",
-            interfaceType: undefined
-        }
-
-        const outputPort: Port = {
-            id: generatePortId(),
-            name: "ref_output",
-            interfaceType: undefined
-        }
-
-        function defToNode(def: SysMLDefinition, initialPos: {x: number, y: number}, inputs: Port[], outputs: Port[]): Node {
-            return {
-                id: `${type}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-                type: def.type,
-                position: initialPos,
-                data: {
-                    declaredName: `New "${def.name}" ${capitalize(type)}`,
-                    definition: def.name,
-                    comment: '',
-                    id: Math.random().toString(36).substring(2, 9).toUpperCase(),
-                    orderStatus: 'Not Ordered',
-                    metadata: toMetadata(def.data.attributes),
-                    nodes: [],
-                    edges: [],
-                    inputs,
-                    outputs
-                }
-            }
-        }
-
-        const mainNode = defToNode(
-            definition, 
-            {x: 0, y: 0},
-            partRefs.length ? [inputPort] : [],
-            itemRefs.length ? [outputPort] : []
-        );
-
-        const partNodes = partRefs.map( (def, index) => {
-            return defToNode(
-                def, 
-                {x: -400, y: -200 + index * 200},
-                [],
-                [outputPort]
-            );
-        });
-        const partEdges: Edge[] = partRefs.map( (_, index) => {
-            const partNode = partNodes[index];
-            return {
-                id: `${partNode.id}-${mainNode.id}-${Date.now()}`,
-                source: partNode.id,
-                target: mainNode.id,
-                sourceHandle: `${partNode.id}-output-ref_output`,
-                targetHandle: `${mainNode.id}-input-ref_input`,
-                type: 'default',
-                data: {
-                    compatibility: 'direct',
-                    connectionType: 'flow'
-                }
-            }
-        });
-
-
-        const itemNodes = itemRefs.map( (def, index) => {
-            return defToNode(
-                def, 
-                {x: 400, y: -200 + index * 200},
-                [inputPort],
-                []
-            );
-        });
-        const itemEdges: Edge[] = itemRefs.map( (_, index) => {
-            const itemNode = itemNodes[index];
-            return {
-                id: `${mainNode.id}-${itemNode.id}-${Date.now()}`,
-                source: mainNode.id,
-                target: itemNode.id,
-                sourceHandle: `${mainNode.id}-output-ref_output`,
-                targetHandle: `${itemNode.id}-input-ref_input`,
-                type: 'default',
-                data: {
-                    compatibility: 'direct',
-                    connectionType: 'flow'
-                }
-            }
-        });
-
-        const nodes = [mainNode, ...partNodes, ...itemNodes];
-        const edges = [...partEdges, ...itemEdges];
-        
-        return {nodes, edges};
     }
 
     function handleAddDef() {
@@ -251,11 +146,14 @@
     }
 </script>
 
-<div class="library-content" transition:slide={{ duration: 200}}>
+<div id="def-editor" class="library-content" transition:slide={{ duration: 200}}>
     <div class="definition-title">
         {editDef ? 'Edit' : 'New'} {type} definition
     </div>
-    <form class="definition-form">
+    <form 
+        class="definition-form"
+        autocomplete="off"
+    >
         <div class="name-field">
             <label for="nameinput" class="name-label">Name:</label>
             <input
@@ -287,7 +185,7 @@
             type='item'
             />
         <div class="action-buttons">
-            <button type="button" class="action-button" onclick={handleCloseDef}>Cancel</button>
+            <button id="cancelDefEditBtn" type="button" class="action-button" onclick={handleCloseDef}>Cancel</button>
             {#if editDef}
                 <button type="button" class="action-button" onclick={handleEditDef}>Accept</button>
             {:else}
@@ -304,6 +202,7 @@
         background: #fafbfc;
         border: 1px solid #e5e7eb;
         border-radius: 6px;
+        box-shadow: 0 0 5px 1px rgba(28, 28, 28, 0.1);
     }
 
     .definition-title {

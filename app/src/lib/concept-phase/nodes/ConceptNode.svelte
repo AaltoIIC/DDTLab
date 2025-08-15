@@ -2,7 +2,7 @@
     import { run, stopPropagation, createBubbler } from 'svelte/legacy';
 
     const bubble = createBubbler();
-    import { Grid2X2, Squircle, X } from 'lucide-svelte';
+    import { Grid2X2, Squircle, X } from '@lucide/svelte';
     import { useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { navigateToPackage } from '../packageStore';
@@ -120,18 +120,15 @@
     }
 
     function handleDoubleClick(event: MouseEvent) {
-        // Only navigate inside if the node is a part node.
-        if (type === 'part') {
-            // Check if the click was on an editable field
-            const target = event.target as HTMLElement;
-            if (target.classList.contains('editable') || target.classList.contains('field-input')) {
-                return; // Don't navigate if clicking on editable fields
-            }
-            
-            // Navigate into this part
-            console.log('Opening part:', id, data);
-            navigateToPackage(id, data.declaredName || 'Unnamed Part');            
+        // Check if the click was on an editable field
+        const target = event.target as HTMLElement;
+        if (target.classList.contains('editable') || target.classList.contains('field-input')) {
+            return; // Don't navigate if clicking on editable fields
         }
+        
+        // Navigate into this part
+        console.log('Opening part:', id, data);
+        navigateToPackage(id, data.declaredName || 'Unnamed Part');            
     }
 
     // Context menu handling

@@ -286,7 +286,7 @@
         z-index: 150;
         display: flex;
         flex-direction: column;
-        transform: translateX(100%);
+        transform: translateX(120%);
         transition: transform 0.3s;
     }
     
@@ -321,7 +321,7 @@
     }
     
     .fmi-header {
-        padding: 20px;
+        padding: 30px;
         border-bottom: var(--main-border);
         display: flex;
         justify-content: space-between;

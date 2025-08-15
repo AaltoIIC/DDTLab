@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ChevronRight, Home } from 'lucide-svelte';
+    import { ChevronRight, Home } from '@lucide/svelte';
     import { packageViewStack, navigateToRoot, navigateToLevel } from './packageStore';
 
     function navigateToIndex(index: number) {

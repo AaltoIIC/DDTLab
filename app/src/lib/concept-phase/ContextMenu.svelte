@@ -3,7 +3,7 @@
 
     const bubble = createBubbler();
     import { createEventDispatcher } from 'svelte';
-    import { Copy } from 'lucide-svelte';
+    import { Copy } from '@lucide/svelte';
     
     interface Props {
         x?: number;

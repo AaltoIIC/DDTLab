@@ -21,7 +21,13 @@
         resetNavigation,
         navigationContext,
 
-        saveSystem
+        saveSystem,
+
+        currentItemDefinitions,
+
+        currentPartDefinitions
+
+
 
     } from "$lib/stores/stores.svelte.js";
     import Breadcrumb from "$lib/editor/Breadcrumb.svelte";
@@ -48,6 +54,8 @@
             currentNodes.set(sys.nodes);
             currentEdges.set(sys.edges);
             currentReqs.set(sys.requirements);
+            currentPartDefinitions.set(sys.partDefinitions);
+            currentItemDefinitions.set(sys.itemDefinitions);
             
             // If system has a different stage than URL, redirect to correct stage
             if (sys.stage && sys.stage !== data.stage) {
@@ -76,12 +84,16 @@
             currentNodes.set([]);
             currentEdges.set([]);
             currentReqs.set([]);
+            currentPartDefinitions.set([]);
+            currentItemDefinitions.set([]);
             
             saveSystem({
                 ...newSys,
                 nodes: [],
                 edges: [],
                 requirements: [],
+                partDefinitions: [],
+                itemDefinitions: [],
                 parentSystemId: null,
                 stage: 'concept'
             });
@@ -129,6 +141,12 @@
     currentReqs.subscribe(() => {
         saveCurrentSystem();
     });
+    currentPartDefinitions.subscribe(() => {
+        saveCurrentSystem();
+    });
+    currentItemDefinitions.subscribe(() => {
+        saveCurrentSystem();
+    })
 
 
     // handle different screen sizes

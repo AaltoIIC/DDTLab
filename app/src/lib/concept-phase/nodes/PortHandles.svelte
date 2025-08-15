@@ -3,7 +3,7 @@
 
     const bubble = createBubbler();
     import { Handle, Position } from '@xyflow/svelte';
-    import { Plus, Minus, Plug } from 'lucide-svelte';
+    import { Plus, Minus, Plug } from '@lucide/svelte';
     import { onMount, tick } from 'svelte';
     import type { InterfaceCategory, Port } from '../interfaces';
     import { standardInterfaces, getInterfacesByCategory } from '../interfaces';
@@ -43,7 +43,7 @@
     let showInterfaceSelector: number | null = $state(null);
     let selectedCategory: TabCategory = $state('all');
     let searchQuery: string = $state('');
-    let searchInputRef: HTMLInputElement | null = null;
+    let searchInputRef: HTMLInputElement | null = $state(null);
     
     function selectInterface(index: number, interfaceId: string | undefined) {
         onUpdateInterface(index, interfaceId);

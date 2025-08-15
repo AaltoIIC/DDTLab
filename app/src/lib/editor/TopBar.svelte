@@ -11,8 +11,13 @@
     import { isNameValid } from "$lib/helpers";
     import { goto } from "$app/navigation";
 
-    let currentName = $derived($currentSystemMeta.name);
+    let currentName = $state($currentSystemMeta.name);
     let isNameError = $state(false);
+
+
+    $effect(() => {
+        currentName = $currentSystemMeta.name;
+    });
 
     const checkAndUpdateName = () => {
         const isNameTaken = $systems.filter(s => s.id !== $currentSystemMeta.id)

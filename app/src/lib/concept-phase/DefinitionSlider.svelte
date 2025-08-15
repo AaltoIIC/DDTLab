@@ -29,7 +29,12 @@
     let searchTerm = $state('');
 
     let currentEditId: string | null = $state(null);
-    let editDefMenuOpen: boolean = $derived(currentEditId ? true : false);
+    let editDefMenuOpen: boolean = $state(false);
+
+
+    $effect(() => {
+        editDefMenuOpen = currentEditId ? true : false;
+    });
 
     $effect(() => {
         if (!editDefMenuOpen) {

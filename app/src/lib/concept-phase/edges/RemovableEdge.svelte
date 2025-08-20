@@ -85,7 +85,7 @@
 
 <EdgeLabelRenderer>
     <div
-        style="position: absolute; transform: translate(-50%, -50%); transform: translate({centerX}px, {centerY}px)"
+        style="position: absolute; transform: translate(-50%, -50%); transform: translate({centerX}px, {centerY}px); z-index: 1001"
         class="nodrag nopan edge-label-group"
     >
         {#if isHovered}
@@ -114,6 +114,9 @@
 </EdgeLabelRenderer>
 
 <style>
+    :global(.svelte-flow__edgelabel-renderer) {
+        z-index: 1001 !important;
+    }
     .edge-label-group {
         pointer-events: all;
         display: flex;

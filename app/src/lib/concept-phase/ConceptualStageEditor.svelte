@@ -37,6 +37,8 @@
             const newNode: Node = {
               id: `package-${Date.now()}`,
               type: 'package',
+              selectable: false, 
+              dragHandle: '.drag-handle',
               position: { x: 250, y: 100 + existingNodes.length * 150 },
               data: {
                   declaredName: name,
@@ -46,7 +48,7 @@
           };
 
         //   console.log('Creating new node:', newNode);
-          currentNodes.update(n => [newNode, ...n]);
+          currentNodes.update(n => [newNode, ...n]); // Put it first in the node array so it is behind all the other nodes.
           addToHistory(); // Track changes for undo/redo
           currentNodes.subscribe(n => console.log('Total nodes:', n.length))();
           console.log(JSON.stringify($currentEdges, null, 2));
@@ -334,6 +336,7 @@
               {edgeTypes}
               defaultEdgeOptions={{
                   type: 'default',
+                  zIndex: 1000,
               }}
               onconnect={onConnect}
           >

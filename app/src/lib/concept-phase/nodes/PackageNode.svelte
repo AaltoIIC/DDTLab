@@ -27,9 +27,7 @@
 
   let {
     data = $bindable(),
-    selected,
     id,
-    dragging
   }: Props = $props();
     
     // Update React Flow internals when data changes
@@ -98,7 +96,25 @@
   </script>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
      <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class:selected class="package-node">
+    <div
+    class="package-node"
+        onpointerdown={(e) => {
+
+            const target = e.target as HTMLElement;
+            const notInteractable = (targets: string[]) => {
+                return targets.every(selector => !target.closest(selector));
+            };
+
+            if (notInteractable(['.drag-handle', '.package-header-left', '.package-info', '.resize-control'])) {
+                e.stopPropagation();
+                document.querySelector('.svelte-flow__pane')?.dispatchEvent(new MouseEvent('mousedown', e));
+            }
+        }}
+    >
+        <div class="drag-handle top"></div>
+        <div class="drag-handle bottom"></div>
+        <div class="drag-handle right"></div>
+        <div class="drag-handle left"></div>
         <div class="package-header">
             <div class="package-header-left">
                 <Package size={22} />
@@ -192,18 +208,26 @@
         color: #8e8f91;
         border-radius: 10px;
         padding: 10px;
-        cursor: move;
     }
 
-    .package-node:hover {
+
+
+    .package-node:has(.drag-handle:hover) {
         border-color: #8e8f91;
         cursor: pointer;
     }
 
-    .package-node.selected {
-        border-color: #3b82f6;
-
+    .drag-handle {
+        position: absolute;
+        background: transparent;
+        z-index: 10;
+        cursor: pointer;
     }
+
+    .drag-handle.top {top: -7px; left: -4px; height: 10px; width: calc(100% + 8px);}
+    .drag-handle.bottom {bottom: -7px; left: -4px; height: 10px; width: calc(100% + 8px);}
+    .drag-handle.right {top: 0; right: -7px; width: 10px; height: 100%;}
+    .drag-handle.left {top: 0; left: -7px; width: 10px; height: 100%;}
 
     .package-header {
         display: flex;

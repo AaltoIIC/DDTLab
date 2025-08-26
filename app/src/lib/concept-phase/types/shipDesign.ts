@@ -1,5 +1,5 @@
 import type { Node, Edge } from '@xyflow/svelte';
-import type { LucideIcon } from '@lucide/svelte'; // TODO: This doesn't exist, likely hallucinated by AI, fix later
+import type { Icon as LucideIcon } from '@lucide/svelte';
 
 // Ship powertrain types
 export type ShipPowertrainType = 

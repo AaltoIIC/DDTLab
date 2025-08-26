@@ -9,16 +9,8 @@
     import ConceptTemplateSlider from './ConceptTemplateSlider.svelte';
     import { overSome } from 'lodash';
     import DefinitionSlider from './DefinitionSlider.svelte';
-
-    interface Props {
-        onAddPackage: () => void;
-
-    }
-
-    let { 
-        onAddPackage,
-    }: Props = $props();
     
+    let isPackageOpen = $state(false);
     let isPartDefOpen = $state(false);
     let isItemDefOpen = $state(false);
     let isLibraryOpen = $state(false);
@@ -31,7 +23,12 @@
     }
     
     function closeAllSliders() {
-        isItemDefOpen = isPartDefOpen = isLibraryOpen = isTemplateSliderOpen = false;
+        isPackageOpen = isItemDefOpen = isPartDefOpen = isLibraryOpen = isTemplateSliderOpen = false;
+    }
+
+    function togglePackageSlider() {
+        closeAllSliders();
+        isPackageOpen = true;
     }
 
     function togglePartDefSlider() {
@@ -70,7 +67,7 @@
             <button
                 id="pkgBtn"
                 class="menu-option" 
-                onclick={onAddPackage} 
+                onclick={togglePackageSlider} 
             >
                 <Package class="option-icon" />
             </button>
@@ -125,11 +122,10 @@
     </div>
 </div>
 
-<!-- DISABLE FOR NOW AS CONCEPT STAGE IS BEING REFACTORED-->
-
+<ConceptTemplateSlider isPackage={true} isOpen={isPackageOpen} onClose={closeAllSliders}/>
 <DefinitionSlider type='part' isOpen={isPartDefOpen} onClose={closeAllSliders} />
 <DefinitionSlider type='item' isOpen={isItemDefOpen} onClose={closeAllSliders} />
-<ConceptLibrarySlider isOpen={(isLibraryOpen)} onClose={closeAllSliders} />
+<ConceptLibrarySlider isOpen={isLibraryOpen} onClose={closeAllSliders} />
 <ConceptTemplateSlider isOpen={isTemplateSliderOpen} onClose={closeAllSliders} />
 
   <style>

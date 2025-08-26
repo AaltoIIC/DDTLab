@@ -42,6 +42,7 @@ export interface SystemType extends SystemMetaType {
     requirements: RequirementType[];
     partDefinitions: PartDefinition[];
     itemDefinitions: ItemDefinition[];
+    packages: PackageTemplate[];
     parentSystemId?: string | null;
     stage?: 'concept' | 'design';
 }
@@ -68,6 +69,7 @@ export interface HistoryEntryType {
     requirements: RequirementType[];
     partDefinitions: PartDefinition[];
     itemDefinitions: ItemDefinition[];
+    packages: PackageTemplate[];
 }
 
 export interface SubsystemDataType extends ElementDataType {
@@ -116,6 +118,7 @@ export interface FMILibraryType {
 export interface ConceptTemplate {
     id: string;
     name: string;
+    type?: string;
     description: string;
     createdAt: string;
     updatedAt: string;
@@ -128,6 +131,10 @@ export interface ConceptTemplate {
         metadata?: Record<string, any>;
     };
 }
+
+export interface PackageTemplate extends ConceptTemplate {
+    type?: 'package';
+};
 
 interface PartData {
     attributes: string[];

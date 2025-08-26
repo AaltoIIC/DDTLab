@@ -11,8 +11,7 @@
 
     interface Props {
         type: 'part' | 'item';
-        isOpen?: boolean;
-        // defBtnRef?: HTMLElement | undefined;
+        isOpen: boolean;
         onClose: () => void;
     }
 

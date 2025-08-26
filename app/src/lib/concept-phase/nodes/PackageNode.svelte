@@ -1,14 +1,11 @@
-  <script lang="ts">
-  import { run, stopPropagation, createBubbler } from 'svelte/legacy';
+<script lang="ts">
+    import { run } from 'svelte/legacy';
 
-      import { Package, X, MoveDiagonal2, Info } from '@lucide/svelte';
-      import { useUpdateNodeInternals, NodeResizeControl } from '@xyflow/svelte';
-      import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
-
-        type MetadataItem = {
-            key: string;
-            value: string;
-        };
+        import { Package, X, MoveDiagonal2, Info, Save } from '@lucide/svelte';
+        import { useUpdateNodeInternals, NodeResizeControl, type Node } from '@xyflow/svelte';
+        import { currentNodes, currentEdges, addToHistory, currentPackages } from '$lib/stores/stores.svelte';
+    import type { PackageTemplate } from '$lib/types/types';
+    import { generateName } from '$lib/helpers';
 
         type PackageData = {
             declaredName: string;
@@ -18,25 +15,26 @@
 
 
 
-  interface Props {
-    data: PackageData;
-    selected: boolean;
-    id: string;
-    dragging: boolean;
-  }
+    interface Props {
+        data: PackageData;
+        selected: boolean;
+        id: string;
 
-  let {
-    data = $bindable(),
-    id,
-  }: Props = $props();
-    
+    }
+
+    let {
+        data = $bindable(),
+        selected,
+        id,
+    }: Props = $props();
+
     // Update React Flow internals when data changes
     const updateNodeInternals = useUpdateNodeInternals();
     run(() => {
-    if (data) {
-          updateNodeInternals(id);
-      }
-  });
+        if (data) {
+                updateNodeInternals(id);
+            }
+    });
 
     let editingName = $state(false);
     let editingComment = $state(false);
@@ -44,6 +42,49 @@
     let tempComment = $state(data.comment);
     let showComment = $state(false);
     let infoClicked = $state(false);
+
+    // Returns an array of nodes and edges connecting those nodes together contained within the bounds of this package node
+    function getInsideData() {
+        const allNodes = $currentNodes;
+        const thisNode = allNodes.find( n => n.id === id );
+        if (!thisNode) return {inNodes: [], inEdges: []};
+        const {position, width, height} = thisNode;
+        if (!width || !height) return {inNodes: [], inEdges: []};
+
+        const inNodes = allNodes.filter( node => {
+            const {position: childPos, width: childW, height: childH} = node;
+            return  childPos.x >= position.x && 
+                    childPos.y >= position.y &&
+                    childPos.x + (childW ?? 0) <= position.x + width &&
+                    childPos.y + (childH ?? 0) <= position.y + height;
+        });
+
+        const inNodeIds = new Set(inNodes.map(n => n.id));
+
+        const inEdges = $currentEdges.filter(edge => 
+            inNodeIds.has(edge.source) && inNodeIds.has(edge.target)
+        );
+
+        return {inNodes, inEdges};
+    }
+
+    function selectInsideNodes() {
+        const { inNodes } = getInsideData();
+
+        currentNodes.update(nodes => {
+            let changed = false;
+            const updated = nodes.map( n => {
+                const inside = inNodes.includes(n);
+                if (n.selected !== inside) {
+                    changed = true;
+                    return {...n, selected: inside};
+                }
+                return n;
+            });
+
+            return changed ? updated : nodes;
+        });
+    }
 
     function updateNodeData(field: string, value: any) {
         currentNodes.update(nodes => {
@@ -62,7 +103,26 @@
         });
         addToHistory();
     }
-    
+
+    function handleSavePackage() {
+        const {inNodes: nodes, inEdges: edges} = getInsideData();
+
+        const savedPackage: PackageTemplate = {
+            id: `${id}-${Math.random().toString(36).substring(2, 9)}`,
+            name: generateName(data.declaredName, $currentPackages.map( p => p.name )),
+            type: 'package',
+            description: data.comment,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            data: { nodes, edges }
+        }
+
+
+        console.log(JSON.stringify(savedPackage, null, 2));
+        currentPackages.update(pkgs => [...pkgs, savedPackage]);
+        addToHistory();
+    }
+
     function handleNameEdit() {
         if (tempName.trim()) {
             updateNodeData('declaredName', tempName.trim());
@@ -83,7 +143,7 @@
         editingComment = false;
         showComment = false;
         infoClicked = false;
-        
+
     }
 
     function handleDelete() {
@@ -93,109 +153,127 @@
         addToHistory();
     }
 
-  </script>
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-     <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div
+    function getUnderlyingElement(e: PointerEvent, current: HTMLElement) {
+        current.style.pointerEvents = "none";
+        const element = document.elementFromPoint(e.clientX, e.clientY);
+        current.style.pointerEvents = "auto";
+        return element;
+    }
+</script>
+
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div
     class="package-node"
-        onpointerdown={(e) => {
-
-            const target = e.target as HTMLElement;
-            const notInteractable = (targets: string[]) => {
-                return targets.every(selector => !target.closest(selector));
-            };
-
-            if (notInteractable(['.drag-handle', '.package-header-left', '.package-info', '.resize-control'])) {
-                e.stopPropagation();
-                document.querySelector('.svelte-flow__pane')?.dispatchEvent(new MouseEvent('mousedown', e));
-            }
-        }}
-    >
-        <div class="drag-handle top"></div>
-        <div class="drag-handle bottom"></div>
-        <div class="drag-handle right"></div>
-        <div class="drag-handle left"></div>
-        <div class="package-header">
-            <div class="package-header-left">
-                <Package size={22} />
-                {#if editingName}
-                    <input
-                        class="package-title"
-                        type="text"
-                        bind:value={tempName}
-                        onblur={handleNameEdit}
-                        onkeydown={(e) => {
-                            if (e.key === 'Enter') handleNameEdit();
-                            if (e.key === 'Escape') {
-                                tempName = data.declaredName;
-                                editingName = false;
-                            }
-                        }}
-                        autofocus
-                    />
-                {:else}
-                    <span 
-                        class="package-title editable" 
-                        onclick={() => {
-                            editingName = true;
+    class:selected={selected}
+    onpointerdown={() => selectInsideNodes()}
+>
+    <div class="drag-handle top"></div>
+    <div class="drag-handle bottom"></div>
+    <div class="drag-handle right"></div>
+    <div class="drag-handle left"></div>
+    <div class="package-header">
+        <div class="package-header-left">
+            <Package size={22} />
+            {#if editingName}
+                <input
+                    class="package-title"
+                    type="text"
+                    bind:value={tempName}
+                    onblur={handleNameEdit}
+                    onkeydown={(e) => {
+                        if (e.key === 'Enter') handleNameEdit();
+                        if (e.key === 'Escape') {
                             tempName = data.declaredName;
-                        }}
-                    >
-                        {`${data.declaredName} (Package)`|| 'Unnamed'}
-                    </span>
-                {/if}
-            </div>
-            <button 
-                class="delete-button" 
-                onclick={stopPropagation(handleDelete)}
+                            editingName = false;
+                        }
+                    }}
+                    autofocus
+                />
+            {:else}
+                <span
+                    class="package-title editable"
+                    onclick={() => {
+                        editingName = true;
+                        tempName = data.declaredName;
+                    }}
+                >
+                    {`${data.declaredName} (Package)`|| 'Unnamed'}
+                </span>
+            {/if}
+        </div>
+        <div class="package-header-right">
+            <button
+                class="package-button save-color"
+                onclick={handleSavePackage}
+                title="Save package"
+            >
+                <Save size={18} strokeWidth={2.5}/>
+            </button>
+            <button
+                class="package-button delete-color"
+                onclick={handleDelete}
                 title="Delete package"
             >
                 <X size={20} />
             </button>
         </div>
+    </div>
 
-        <div class="package-footer">
-            <div
-                class="package-info"
-                onmouseenter={() => showComment = true}
-                onmouseleave={handleMouseLeave}
-            >
-                <Info 
-                    size={22}
-                    onclick={() => {infoClicked = !infoClicked}}
-                />
-                {#if showComment}
-                    {#if infoClicked}
-                        <input 
-                            class="package-comment"
-                            type="text"
-                            bind:value={tempComment}
-                            onblur={handleCommentEdit}
-                            onkeydown={(e) => {
-                                if (e.key === 'Enter') handleCommentEdit();
-                                if (e.key === 'Escape') {
-                                    tempComment = data.comment;
-                                    editingComment = false;
-                                    showComment = false;
-                                }
-                            }}
-                            autofocus
-                            
-                        />
-                    {:else}
-                        <span class="package-comment">{data.comment || 'Click to add comment'}</span>
-                    {/if}
+    <div class="package-footer">
+        <div
+            class="package-info"
+            onmouseenter={() => showComment = true}
+            onmouseleave={handleMouseLeave}
+        >
+            <Info
+                size={22}
+                onclick={() => {infoClicked = !infoClicked}}
+            />
+            {#if showComment}
+                {#if infoClicked}
+                    <input
+                        class="package-comment"
+                        type="text"
+                        bind:value={tempComment}
+                        onblur={handleCommentEdit}
+                        onkeydown={(e) => {
+                            if (e.key === 'Enter') handleCommentEdit();
+                            if (e.key === 'Escape') {
+                                tempComment = data.comment;
+                                editingComment = false;
+                                showComment = false;
+                            }
+                        }}
+                        autofocus
+
+                    />
+                {:else}
+                    <span class="package-comment">{data.comment || 'Click to add comment'}</span>
                 {/if}
-            </div>
-            <span class="resize-control">
-            <NodeResizeControl minWidth={300} minHeight={100} style="background: transparent; border: none;">
+            {/if}
+        </div>
+        <span class="resize-control">
+            <NodeResizeControl minWidth={350} minHeight={150} style="background: transparent; border: none;">
                 <MoveDiagonal2 size={22} />
             </NodeResizeControl>
-            </span>
-        </div>
-  </div>
+        </span>
+    </div>
+</div>
 
 <style>
+    :global(.svelte-flow__node:has(.package-node)) {
+        pointer-events: none;
+    }
+
+    :global(.svelte-flow__node:has(.package-node) .drag-handle),
+    :global(.svelte-flow__node:has(.package-node) .package-header-left),
+    :global(.svelte-flow__node:has(.package-node) .package-header-right),
+    :global(.svelte-flow__node:has(.package-node) .package-info),
+    :global(.svelte-flow__node:has(.package-node) .resize-control) {
+        pointer-events: auto;
+    }
+
     .package-node {
         display: flex;
         flex-direction: column;
@@ -210,11 +288,13 @@
         padding: 10px;
     }
 
-
-
-    .package-node:has(.drag-handle:hover) {
+    .package-node:hover {
         border-color: #8e8f91;
         cursor: pointer;
+    }
+
+    .package-node.selected {
+        border-color: #0055ff; 
     }
 
     .drag-handle {
@@ -241,6 +321,11 @@
         display: flex;
         align-items: center;
         gap: 8px;
+    }
+
+    .package-header-right {
+        display: flex;
+        align-items: center;
     }
 
     .package-title {
@@ -282,9 +367,11 @@
         bottom: 19px;
         right: 19px;
     }
-    
-    .delete-button {
+
+    .package-button {
         background: none;
+        width: 30px;
+        height: 30px;
         border: none;
         padding: 4px;
         cursor: pointer;
@@ -296,7 +383,12 @@
         justify-content: center;
     }
 
-    .delete-button:hover {
+    .save-color:hover {
+        background-color: #e2e9fe;
+        color: #2675dc;
+    }
+
+    .delete-color:hover {
         background-color: #fee2e2;
         color: #dc2626;
     }

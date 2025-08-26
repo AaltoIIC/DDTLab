@@ -11,6 +11,7 @@ import {
     type ConceptTemplate,
     type PartDefinition,
     type ItemDefinition,
+    type PackageTemplate,
 } from '../types/types';
 import {    
     type Node,
@@ -23,6 +24,7 @@ import {
 import { writable, get, derived } from 'svelte/store';
 import persistentStore from './persistentStore';
 import _ from 'lodash';
+import ConceptTemplateSlider from '$lib/concept-phase/ConceptTemplateSlider.svelte';
 
 export const notification = writable<NotificationType | null>(null);
 export const isAddingRequirement = writable<boolean>(false);
@@ -45,10 +47,11 @@ export const currentReqs = persistentStore<RequirementType[]>('currentReqs', [])
 
 export const systems = persistentStore<SystemType[]>('systems', []);
 
-export const templates = persistentStore<ConceptTemplate[]>('concepTemplates', []);
+export const templates = persistentStore<ConceptTemplate[]>('conceptTemplates', []);
 
 export const currentPartDefinitions = persistentStore<PartDefinition[]>('partDefinitions', []);
 export const currentItemDefinitions = persistentStore<ItemDefinition[]>('itemDefinitions', []);
+export const currentPackages = persistentStore<PackageTemplate[]>('packages', []);
 
 export const saveSystem = (system: SystemType) => {
     systems.update((systems) => {
@@ -74,6 +77,7 @@ export const saveCurrentSystem = () => {
         requirements: get(currentReqs),
         partDefinitions: get(currentPartDefinitions),
         itemDefinitions: get(currentItemDefinitions),
+        packages: get(currentPackages),
         parentSystemId: currentSystem?.parentSystemId || null,
         stage: currentSystem?.stage || 'design',
     });
@@ -104,7 +108,8 @@ export const setCurrentSystem = (id: string) => {
         currentEdges.set(system.edges);
         currentReqs.set(system.requirements || []);
         currentPartDefinitions.set(system.partDefinitions);
-        currentItemDefinitions.set(system.itemDefinitions)
+        currentItemDefinitions.set(system.itemDefinitions);
+        currentPackages.set(system.packages);
     }
 }
 
@@ -155,7 +160,8 @@ export const addToHistory = () => {
             edges: get(currentEdges),
             requirements: get(currentReqs),
             partDefinitions: get(currentPartDefinitions),
-            itemDefinitions: get(currentItemDefinitions)
+            itemDefinitions: get(currentItemDefinitions),
+            packages: get(currentPackages)
         });
         h.data.push(entry);
         h.currentIndex = -1;
@@ -173,6 +179,7 @@ const setHistoryEntry = (entry: HistoryEntryType) => {
     currentReqs.set(entry.requirements);
     currentPartDefinitions.set(entry.partDefinitions);
     currentItemDefinitions.set(entry.itemDefinitions);
+    currentPackages.set(entry.packages);
 }
 
 export const handleUndo = () => {
@@ -336,7 +343,7 @@ export const templatesByCategory = derived(templates, $templates => {
 export function saveTemplate(template: Omit<ConceptTemplate, 'id' | 'createdAt' | 'updatedAt'>): ConceptTemplate {
   const newTemplate: ConceptTemplate = {
     ...template,
-    id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `template-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -355,11 +362,17 @@ export function updateTemplate(id: string, updates: Partial<ConceptTemplate>) {
   );
 }
 
-export function deleteTemplate(id: string) {
-  templates.update(temps => temps.filter(t => t.id !== id));
+export function deleteTemplate(template: ConceptTemplate | PackageTemplate) {
+    console.log(template.type)
+    if (template.type === 'package') {
+        currentPackages.update(pkgs => pkgs.filter(p => p.id !== template.id));
+    }
+    else {
+        templates.update(temps => temps.filter(t => t.id !== template.id));
+    }
 }
 
-export function duplicateTemplate(id: string): ConceptTemplate | null {
+export function duplicateTemplate(id: string): ConceptTemplate | PackageTemplate | null {
   const original = get(templates).find(t => t.id === id);
   
   if (!original) return null;

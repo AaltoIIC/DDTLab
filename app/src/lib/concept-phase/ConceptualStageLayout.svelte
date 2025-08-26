@@ -381,10 +381,7 @@
 </script>
 
 <div class="conceptual-layout">
-    <ConceptualStageSidebar 
-        onAddPackage={() => conceptEditor?.addPackageNode()}
-
-    />
+    <ConceptualStageSidebar />
     
     <div class="main-content">
         <div class="top-bar">
@@ -439,7 +436,7 @@
                     bind:value={templateDescription} 
                     placeholder="Enter template description"
                     rows="3"
-></textarea>
+                ></textarea>
             </div>
             <div class="dialog-buttons">
                 <button class="cancel-btn" onclick={cancelSaveTemplate}>Cancel</button>

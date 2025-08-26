@@ -1,9 +1,9 @@
 <script lang="ts">
-    import { run, stopPropagation, createBubbler } from 'svelte/legacy';
+    import { stopPropagation, createBubbler } from 'svelte/legacy';
 
     const bubble = createBubbler();
     import { Grid2X2, Squircle, X } from '@lucide/svelte';
-    import { useUpdateNodeInternals } from '@xyflow/svelte';
+    import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { navigateToPackage } from '../packageStore';
     import { createPortHandlers, type PortData } from './portUtils';
@@ -12,6 +12,7 @@
     import ContextMenu from '../ContextMenu.svelte';
     import { get } from 'svelte/store';
     import { capitalize } from 'lodash';
+    import { onMount } from 'svelte';
 
     type MetadataItem = {
         key: string;
@@ -22,7 +23,6 @@
         declaredName: string;
         definition: string;
         comment: string;
-        id: string;
         orderStatus?: 'Delivered' | 'Pending' | 'Order Placed' | 'Confirmed' | 'In Production / In-House' | 'Not Ordered';
         metadata?: MetadataItem[];
         nodes?: import('@xyflow/svelte').Node[];
@@ -32,6 +32,8 @@
     interface Props {
         data: NodeData;
         type: 'part' | 'item';
+        width: number,
+        height: number,
         selected?: boolean;
         id: string;
         dragging?: boolean;
@@ -46,15 +48,9 @@
     }: Props = $props();
 
     // Initialize inputs/outputs if not present
-    run(() => {
-        if (!data.inputs) data.inputs = [];
-    });
-    run(() => {
-        if (!data.outputs) data.outputs = [];
-    });
-    run(() => {
-        if (!data.metadata) data.metadata = [];
-    });
+    if (!data.inputs) data.inputs = [];
+    if (!data.outputs) data.outputs = [];
+    if (!data.metadata) data.metadata = [];
 
     // Create port handlers
     const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<NodeData>(id);
@@ -69,10 +65,25 @@
     
     // Update React Flow internals when data changes
     const updateNodeInternals = useUpdateNodeInternals();
-    run(() => {
+    $effect(() => {
         if (data) {
             updateNodeInternals(id);
         }
+    });
+
+    const { viewport } = useSvelteFlow();
+    let zoomLevel = $state(1);
+    viewport.subscribe((value) => {
+        zoomLevel = value.zoom;
+    });
+
+    // Measure and save the nodes width and height into the store
+    let nodeElement: HTMLDivElement | undefined = $state();
+    onMount(() => {
+        const rect = nodeElement!.getBoundingClientRect();
+        currentNodes.update(nodes =>
+            nodes.map(n => n.id === id ? { ...n, width: rect.width / zoomLevel, height: rect.height / zoomLevel} : n)
+        );
     });
 
     let editingName = $state(false);
@@ -135,7 +146,6 @@
     let showContextMenu = $state(false);
     let contextMenuX = $state(0);
     let contextMenuY = $state(0);
-    let nodeElement: HTMLDivElement | undefined = $state();
 
     function handleContextMenu(event: MouseEvent) {
         event.preventDefault();
@@ -278,7 +288,7 @@
 
         <div class="field">
             <span class="field-label">ID:</span>
-            <span class="field-value">{data.id}</span>
+            <span class="field-value">{id}</span>
         </div>
 
         <div class="field">

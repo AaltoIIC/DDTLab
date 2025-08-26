@@ -1,5 +1,5 @@
 import type { Node, Edge } from '@xyflow/svelte';
-import type { LucideIcon } from '@lucide/svelte'; // TODO: This doesn't exist, likely hallucinated by AI, fix later
+import type { Icon as LucideIcon } from '@lucide/svelte';
 
 // Represents a category of components in the library
 export interface ComponentCategory {

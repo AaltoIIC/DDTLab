@@ -31,31 +31,6 @@
         default: RemovableEdge,
     } as {} as EdgeTypes;
 
-    export function addPackageNode(name: String = 'New Package') {
-            console.log('addPackageNode called');
-            const existingNodes = get(currentNodes);
-            const newNode: Node = {
-              id: `package-${Date.now()}`,
-              type: 'package',
-              selectable: false, 
-              dragHandle: '.drag-handle',
-              position: { x: 250, y: 100 + existingNodes.length * 150 },
-              data: {
-                  declaredName: name,
-                  comment: '',
-                  id: `PKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-              }
-          };
-
-        //   console.log('Creating new node:', newNode);
-          currentNodes.update(n => [newNode, ...n]); // Put it first in the node array so it is behind all the other nodes.
-          addToHistory(); // Track changes for undo/redo
-          currentNodes.subscribe(n => console.log('Total nodes:', n.length))();
-          console.log(JSON.stringify($currentEdges, null, 2));
-          console.log(JSON.stringify($currentNodes, null, 2));
-    }
-    
-
     // DEPRECATED WAY OF ADDING NODES
     // *******************************
     // export function addPartNode(definitionName: string = '') {
@@ -188,8 +163,6 @@
                 newEdges = result.edges;
             }
             
-            console.log('New nodes:', newNodes);
-            
             // Add to current view
             currentNodes.update(nodes => [...nodes, ...newNodes]);
             if (newEdges.length > 0) {
@@ -311,7 +284,7 @@
         showConnectionDropdown = false;
         pendingConnection = null;
     }
-    
+
     function handleConnectionCancel() {
         showConnectionDropdown = false;
         pendingConnection = null;
@@ -336,7 +309,6 @@
               {edgeTypes}
               defaultEdgeOptions={{
                   type: 'default',
-                  zIndex: 1000,
               }}
               onconnect={onConnect}
           >

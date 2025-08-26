@@ -1,23 +1,26 @@
 <script lang="ts">
     import { formatDate } from '$lib/helpers';
-    import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy } from '@lucide/svelte';
+    import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, PackagePlus } from '@lucide/svelte';
     import { fade, slide } from 'svelte/transition';
-    import { templates, deleteTemplate, duplicateTemplate, exportTemplate, importTemplate } from '$lib/stores/stores.svelte';
-    import type { ConceptTemplate } from '$lib/types/types';
+    import { templates, deleteTemplate, duplicateTemplate, exportTemplate, importTemplate, currentPackages, currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
+    import type { ConceptTemplate, PackageTemplate } from '$lib/types/types';
+    import type { Node } from '@xyflow/svelte';
     
     interface Props {
         isOpen?: boolean;
         onClose: () => void;
+        isPackage?: boolean;
     }
 
-    let { isOpen = false, onClose }: Props = $props();
+    let { isOpen = false, onClose, isPackage = false }: Props = $props();
     
     let expandedCategories: Record<string, boolean> = $state({
         all: true
     });
     
     let isDragging = $state(false);
-    let selectedTemplate: ConceptTemplate | null = $state(null);
+    let currentTemplates = $derived(isPackage ? currentPackages : templates);
+    let selectedTemplate: ConceptTemplate | PackageTemplate | null = $state(null);
     
     function toggleCategory(category: string) {
         expandedCategories[category] = !expandedCategories[category];
@@ -36,9 +39,9 @@
         isDragging = false;
     }
     
-    function handleDelete(template: ConceptTemplate) {
+    function handleDelete(template: ConceptTemplate | PackageTemplate) {
         if (confirm(`Are you sure you want to delete "${template.name}"?`)) {
-            deleteTemplate(template.id);
+            deleteTemplate(template);
         }
     }
     
@@ -86,6 +89,29 @@
         const itemCount = template.data.nodes.filter(n => n.type === 'item').length;
         return `${packageCount} packages, ${partCount} parts, ${itemCount} items`;
     }
+
+    export function addPackageNode() {
+        const existingNodes = $currentNodes;
+        const newNode: Node = {
+            id: `package-${Date.now()}`,
+            type: 'package',
+            dragHandle: '.drag-handle',
+            position: { x: 250, y: 100 + existingNodes.length * 150 },
+            data: {
+                declaredName: 'New Package',
+                comment: '',
+                id: `PKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+            }
+        };
+
+        currentNodes.update(n => [...n, newNode]); 
+        addToHistory(); // Track changes for undo/redo
+        currentNodes.subscribe(n => console.log('Total nodes:', n.length))();
+        console.log(JSON.stringify($currentEdges, null, 2));
+        console.log(JSON.stringify($currentNodes, null, 2));
+
+        onClose();
+    }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -98,7 +124,7 @@
     ></div>
     <div class="slider-panel" transition:slide={{ duration: 300, axis: 'x' }}>
         <div class="slider-header">
-            <h2 class="slider-title">Saved Templates</h2>
+            <h2 class="slider-title">Saved {isPackage ? 'Packages' : 'Templates'}</h2>
             <div class="header-actions">
                 <button class="icon-button" onclick={handleImport} title="Import template">
                     <Upload size={18} />
@@ -110,19 +136,37 @@
         </div>
         
         <div class="slider-content">
+            {#if isPackage}
+                    <button 
+                        class="library-header add-package-btn"
+                        onclick={addPackageNode}
+                    >
+                        <span>
+                            <PackagePlus size={18} />
+                        </span>
+                        <span>Add a New Package</span>
+                    </button>
+            {/if}
             <div class="library-section">
                 <button class="library-header" onclick={() => toggleCategory('all')}>
                     <span class="chevron {expandedCategories.all ? 'expanded' : ''}">
                         <ChevronRight size={16} />
                     </span>
-                    <span>All Templates ({$templates.length})</span>
+                    <span>All {isPackage ? 'Packages' : 'Templates'} ({$currentTemplates.length})</span>
                 </button>
                 {#if expandedCategories.all}
                     <div class="library-content" transition:slide={{ duration: 200 }}>
-                        {#if $templates.length === 0}
-                            <p class="placeholder-text">No saved templates yet. Create a design and click "Save as Template" to get started.</p>
+                        {#if $currentTemplates.length === 0}
+                            <p class="placeholder-text">
+                                {#if isPackage}
+                                    No saved packages yet. Create a package and press the button in the top right corner to save the package and anything "inside" it.
+                                {:else}
+                                    No saved templates yet. Create a design and click "Save as Template" to get started.
+                                {/if}
+
+                            </p>
                         {:else}
-                            {#each $templates as template}
+                            {#each $currentTemplates as template}
                                 <div 
                                     class="template-card"
                                     draggable="true"
@@ -144,20 +188,22 @@
                                     <div class="template-footer">
                                         <span class="date">{formatDate(template.createdAt)}</span>
                                         <div class="template-actions">
-                                            <button 
-                                                class="action-button" 
-                                                onclick={() => handleDuplicate(template)}
-                                                title="Duplicate"
-                                            >
-                                                <Copy size={14} />
-                                            </button>
-                                            <button 
-                                                class="action-button" 
-                                                onclick={() => handleExport(template)}
-                                                title="Export"
-                                            >
-                                                <Download size={14} />
-                                            </button>
+                                            {#if !isPackage}
+                                                <button 
+                                                    class="action-button" 
+                                                    onclick={() => handleDuplicate(template)}
+                                                    title="Duplicate"
+                                                >
+                                                    <Copy size={14} />
+                                                </button>
+                                                <button 
+                                                    class="action-button" 
+                                                    onclick={() => handleExport(template)}
+                                                    title="Export"
+                                                >
+                                                    <Download size={14} />
+                                                </button>
+                                            {/if}
                                             <button 
                                                 class="action-button delete" 
                                                 onclick={() => handleDelete(template)}
@@ -279,6 +325,10 @@
         border-color: #d1d5db;
     }
     
+    .add-package-btn {
+        margin-bottom: 13px;
+    }
+
     .chevron {
         transition: transform 0.2s;
         color: #6b7280;

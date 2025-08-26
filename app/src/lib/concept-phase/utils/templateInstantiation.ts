@@ -125,7 +125,6 @@ export function createData(definition: SysMLDefinition): {nodes: Node[], edges: 
                 declaredName: `New "${def.name}" ${capitalize(def.type)}`,
                 definition: def.name,
                 comment: '',
-                id: Math.random().toString(36).substring(2, 9).toUpperCase(),
                 orderStatus: 'Not Ordered',
                 metadata: toMetadata(def.data.attributes),
                 nodes: [],

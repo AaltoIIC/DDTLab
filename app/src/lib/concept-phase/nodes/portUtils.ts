@@ -1,6 +1,7 @@
 import { get } from 'svelte/store';
 import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
-import type { Port } from '../interfaces';
+import { checkCompatibility, type Port } from '../interfaces';
+import type { Node } from '@xyflow/svelte';
 
 export interface PortData {
     inputs?: Port[];
@@ -24,6 +25,19 @@ export function generatePortName(type: 'input' | 'output', existingPorts: Port[]
     }
     
     return portName;
+}
+
+export function findPort(node: Node | undefined, handleId: string | null | undefined): Port | undefined {
+    if (!node || !handleId) return undefined;
+    
+    // Handle ID format: nodeId-type-portName
+    const parts = handleId.split('-');
+    const type = parts[parts.length - 2]; // input or output
+    const portName = parts[parts.length - 1];
+    
+    const ports = type === 'input' ? node.data.inputs : node.data.outputs;
+    if (!Array.isArray(ports)) return undefined;
+    return ports.find((p: Port) => p.name === portName);
 }
 
 export function createPortHandlers<T extends PortData>(nodeId: string) {
@@ -171,6 +185,34 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
                     }
                 }
                 return node;
+            });
+        });
+
+        const nodes = get(currentNodes);
+        currentEdges.update(edges => {
+            return edges.map(edge => {
+                const sourceOrTarget = type === 'output' ? edge.source : edge.target;
+                if (sourceOrTarget === nodeId) {
+
+                    const sourceNode = nodes.find(n => n.id === edge.source);
+                    const targetNode = nodes.find(n => n.id === edge.target);
+
+                    const sourcePort = findPort(sourceNode, edge.sourceHandle)!;
+                    const targetPort = findPort(targetNode, edge.targetHandle)!;
+       
+                    const compatibility =  checkCompatibility(sourcePort, targetPort);
+                        
+                    return {
+                        ...edge,
+                        data: {
+                            ...edge.data,
+                            compatibility: compatibility.status,
+                            adapterRequired: compatibility.adapterType,
+                            message: compatibility.message
+                        }
+                    }   
+                }
+                return edge;
             });
         });
         addToHistory();

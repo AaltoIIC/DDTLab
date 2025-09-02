@@ -210,6 +210,7 @@
         justify-content: space-between;
         padding: 12px 0;
         box-sizing: border-box;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     .top-buttons {
         display: flex;
@@ -222,6 +223,11 @@
         flex-direction: column;
         align-items: center;
         justify-content: flex-end;
+        background-color: var(--main-dark-color);
+        border-radius: var(--main-border-radius);
+        width: 42px;
+        border-radius: 50px;
+        border: var(--main-border);
     }
     .menu-option {
         border: none;
@@ -265,13 +271,6 @@
     }
     .option-icon.req.active {
         stroke-width: 1.5;
-    }
-    .bottom-buttons {
-        background-color: var(--main-dark-color);
-        border-radius: var(--main-border-radius);
-        width: 42px;
-        border-radius: 50px;
-        border: var(--main-border);
     }
     .bottom-buttons .option-icon {
         color: rgba(255, 255, 255, 0.9);

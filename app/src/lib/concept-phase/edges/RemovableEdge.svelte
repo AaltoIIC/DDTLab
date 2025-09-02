@@ -85,7 +85,7 @@
 
 <EdgeLabelRenderer>
     <div
-        style="position: absolute; transform: translate(-50%, -50%); transform: translate({centerX}px, {centerY}px)"
+        style="position: absolute; transform: translate(-50%, -50%) translate({centerX}px, {centerY}px); pointer-events: all;"
         class="nodrag nopan edge-label-group"
     >
         {#if isHovered}

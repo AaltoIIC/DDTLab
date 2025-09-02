@@ -67,9 +67,10 @@
             <button
                 id="pkgBtn"
                 class="menu-option" 
+                class:active={isPackageOpen}
                 onclick={togglePackageSlider} 
             >
-                <Package class="option-icon" />
+                <span class="option-icon"><Package /></span>
             </button>
         </Tooltip>
 
@@ -80,7 +81,7 @@
                 class:active={isPartDefOpen} 
                 onclick={togglePartDefSlider}
             >
-                <Grid2X2 class="option-icon" />
+                <span class="option-icon"><Grid2X2 /></span>
             </button>
         </Tooltip>
 
@@ -91,7 +92,7 @@
                 class:active={isItemDefOpen} 
                 onclick={toggleItemDefSlider}
             >
-                <Squircle class="option-icon" />
+                <span class="option-icon"><Squircle /></span>
             </button>
         </Tooltip>
 
@@ -105,7 +106,7 @@
                 class:active={isLibraryOpen} 
                 onclick={toggleLibrary}
             >
-                <Library class="option-icon" />
+                <span class="option-icon"><Library /></span>
             </button>
         </Tooltip>
 
@@ -116,9 +117,21 @@
                 class:active={isTemplateSliderOpen} 
                 onclick={toggleTemplateSlider}
             >
-                <FileText class="option-icon" />
+                <span class="option-icon"><FileText /></span>
             </button>
         </Tooltip>
+    </div>
+    <div class="bottom-buttons">
+        <Tooltip text="Report Bug" position="right">
+            <a href="https://github.com/AaltoIIC/DDTLab/issues"
+                aria-label="Report bug" target="_blank">
+                <button id="bugBtn" class="menu-option" aria-label="Report bug">
+                    <svg class="option-icon report" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                    </svg>              
+                </button>
+            </a>
+        </Tooltip>            
     </div>
 </div>
 
@@ -128,107 +141,116 @@
 <ConceptLibrarySlider isOpen={isLibraryOpen} onClose={closeAllSliders} />
 <ConceptTemplateSlider isOpen={isTemplateSliderOpen} onClose={closeAllSliders} />
 
-  <style>
-      .sidebar {
-          position: fixed;
-          top: 110px;
-          left: 15px;
-          width: 68px;
-          height: 520px;
-          background-color: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          z-index: 100;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: flex-start;
-          padding: 12px 0;
-          box-sizing: border-box;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
+<style>
+    .sidebar {
+        position: fixed;
+        top: 110px;
+        left: 15px;
+        width: 68px;
+        height: 520px;
+        background-color: white;
+        border: var(--main-border);
+        border-radius: var(--main-border-radius);
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 0;
+        box-sizing: border-box;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
-      .top-buttons {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-      }
+    .top-buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+    }
 
-      .menu-option {
-          border: none;
-          background: none;
-          cursor: pointer;
-          width: 42px;
-          height: 42px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 8px;
-          transition: all 0.2s;
-      }
-      
-      .menu-option:hover {
-          background-color: #f3f4f6;
-      }
-      
-      .menu-option.active {
-          background-color: #dbeafe;
-      }
-      
-      .menu-option.active .option-icon {
-          color: #2563eb;
-      }
+    .bottom-buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        background-color: var(--main-dark-color);
+        border-radius: var(--main-border-radius);
+        width: 42px;
+        border-radius: 50px;
+        border: var(--main-border);
+    }
 
-      .menu-option-logo {
-          border: none;
-          background: none;
-          cursor: pointer;
-          width: 42px;
-          height: 42px;
-          margin-bottom: 12px;
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-      }
+    .menu-option {
+        border: none;
+        background: none;
+        cursor: pointer;
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    
+    .menu-option:hover:not(#bugBtn) {
+        background-color: #f3f4f6;
+    }
+    
+    .menu-option.active {
+        background-color: #dbeafe;
+    }
+    
+    .menu-option.active .option-icon {
+        color: #2563eb;
+    }
 
-      .logo-icon {
-          width: 22px;
-          height: 22px;
-          filter: brightness(10);
-          opacity: 0.9;
-      }
+    .menu-option-logo {
+        border: none;
+        background: none;
+        cursor: pointer;
+        width: 42px;
+        height: 42px;
+        margin-bottom: 12px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-      .logo-cont {
-          background-color: #1f2937;
-          border-radius: 8px;
-          width: 42px;
-          height: 42px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-      }
-      
-      .logo-cont:hover {
-          background-color: #374151;
-      }
+    .logo-icon {
+        width: 22px;
+        height: 22px;
+        filter: brightness(10);
+        opacity: 0.9;
+    }
 
-      .option-icon {
-          width: 20px;
-          height: 20px;
-          color: #3d1704;
-      }
-      
-      .menu-option:hover .option-icon {
-          color: #1f2937;
-      }
+    .logo-cont {
+        background-color: #1f2937;
+        border-radius: 8px;
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    
+    .logo-cont:hover {
+        background-color: #374151;
+    }
 
-      .separator {
-          width: 32px;
-          height: 1px;
-          background-color: #e5e7eb;
-          margin: 8px 0;
-      }
+    .separator {
+        width: 32px;
+        height: 1px;
+        background-color: #e5e7eb;
+        margin: 8px 0;
+    }
+
+    .bottom-buttons .option-icon {
+        color: rgba(255, 255, 255, 0.9);
+        width: 20px;
+        height: 20px;
+    }
   </style>

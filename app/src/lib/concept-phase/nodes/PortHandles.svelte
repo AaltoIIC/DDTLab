@@ -45,6 +45,21 @@
     let searchQuery: string = $state('');
     let searchInputRef: HTMLInputElement | null = $state(null);
     
+    function clickOutside(node: HTMLElement, callback: () => void) {
+        const handleClick = (event: MouseEvent) => {
+            if (node && !node.contains(event.target as Node)) {
+                callback();
+            }
+        };
+
+        document.addEventListener('click', handleClick, true);
+        return {
+            destroy() {
+                document.removeEventListener('click', handleClick, true);
+            }
+        };
+    }
+
     function selectInterface(index: number, interfaceId: string | undefined) {
         onUpdateInterface(index, interfaceId);
         showInterfaceSelector = null;
@@ -131,7 +146,12 @@
             {#if showInterfaceSelector === i}
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <div class="interface-selector" onclick={stopPropagation(bubble('click'))} onwheel={stopPropagation(bubble('wheel'))}>
+                <div 
+                    class="interface-selector" 
+                    onclick={stopPropagation(bubble('click'))} 
+                    onwheel={stopPropagation(bubble('wheel'))}
+                    use:clickOutside={() => showInterfaceSelector = null}
+                >
                     <div class="search-container">
                         <input
                             type="text"
@@ -139,8 +159,7 @@
                             placeholder="Search interfaces..."
                             bind:value={searchQuery}
                             bind:this={searchInputRef}
-                            onclick={stopPropagation(() => {})}
-                            onkeydown={stopPropagation(() => {})}
+
                         />
                     </div>
                     <div class="interface-categories">

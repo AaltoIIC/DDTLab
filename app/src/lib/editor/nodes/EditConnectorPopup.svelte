@@ -54,7 +54,7 @@
         const connector = ($currentNodes.find((node) => node.id === elementName)?.data as any)
             .element.connectors.find((connector: any) => connector.name === connectorName)
         newConnectorName = connector.name;
-        newConnectorClass = connector.class;
+        newConnectorClass = connector.VSSoClass;
         newConnectorDataType = { value: "no-dt", label: "No Data Type" };
         newConnectorUnit = { value: "-", label: "-" };
     } else {
@@ -100,7 +100,7 @@
             (newNodes[nodeIndex].data.element as any).connectors.push(
                 {
                     name: newConnectorName,
-                    class: newConnectorClass,
+                    VSSoClass: newConnectorClass,
                     type: type,
                     dataType: newConnectorDataType?.value,
                     unit: newConnectorUnit?.value
@@ -120,7 +120,7 @@
                 .element.connectors.find((connector: any) => connector.name === connectorName)
             
             connector.name = newConnectorName;
-            connector.class = newConnectorClass;
+            connector.VSSoClass = newConnectorClass;
             connector.dataType = newConnectorDataType?.value;
             connector.unit = newConnectorUnit?.value;
             

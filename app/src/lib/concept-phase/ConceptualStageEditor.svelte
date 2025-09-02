@@ -19,6 +19,7 @@
     import { instantiateTemplate } from './utils/templateInstantiation';
     import { onMount } from 'svelte';
     import { zoom } from 'd3-zoom';
+    import { findPort } from './nodes/portUtils';
     
 
     const nodeTypes = {
@@ -81,20 +82,7 @@
     //     currentNodes.update(n => [...n, newNode]);
     //     addToHistory(); // Track changes for undo/redo
     // }
-    
-    function findPort(node: Node | undefined, handleId: string | null | undefined): Port | undefined {
-        if (!node || !handleId) return undefined;
-        
-        // Handle ID format: nodeId-type-portName
-        const parts = handleId.split('-');
-        const type = parts[parts.length - 2]; // input or output
-        const portName = parts[parts.length - 1];
-        
-        const ports = type === 'input' ? node.data.inputs : node.data.outputs;
-        if (!Array.isArray(ports)) return undefined;
-        return ports.find((p: Port) => p.name === portName);
-    }
-    
+
     let flowContainer: HTMLDivElement | undefined = $state();
     const { viewport } = useSvelteFlow();
     let zoomLevel = $state(1);

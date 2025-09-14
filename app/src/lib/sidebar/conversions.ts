@@ -356,12 +356,19 @@ export const convertToTTL = () => {
     return (`${TTL_prefix}`);
 }
 
-export const convertToSSD = () => {
-    console.log(get(currentSystemMeta))
-    console.log(get(currentNodes))
-    console.log(get(currentEdges))
-    console.log(get(currentReqs))
+// Import the new SSD exporter
+import { exportToSSD } from '$lib/exporters/ssd';
 
-    return (`test
-        `);
+export const convertToSSD = () => {
+    try {
+        // Use the new modular SSD exporter
+        return exportToSSD();
+    } catch (error) {
+        console.error('Error converting to SSD:', error);
+        // Return a basic error message as XML comment
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<!-- Error: Failed to generate SSD file
+     ${error instanceof Error ? error.message : 'Unknown error'}
+-->`;
+    }
 }

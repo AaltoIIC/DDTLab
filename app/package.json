@@ -32,6 +32,7 @@
 		"@xyflow/svelte": "^0.1.25",
 		"driver.js": "^1.3.6",
 		"lodash": "^4.17.21",
+		"lucide-svelte": "^0.539.0",
 		"svelte-portal": "^2.2.1"
 	}
 }

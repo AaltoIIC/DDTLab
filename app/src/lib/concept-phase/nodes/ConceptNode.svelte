@@ -2,7 +2,7 @@
     import { stopPropagation, createBubbler } from 'svelte/legacy';
 
     const bubble = createBubbler();
-    import { Grid2X2, Squircle, X } from '@lucide/svelte';
+    import { Grid2X2, Squircle, X, Lock } from '@lucide/svelte';
     import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { navigateToPackage } from '../packageStore';
@@ -13,7 +13,8 @@
     import { get } from 'svelte/store';
     import { capitalize } from 'lodash';
     import { onMount } from 'svelte';
-    import { activeViewpointDetails } from '../viewpoints/viewpointStore';
+    import { activeViewpointDetails, activeViewpoint } from '../viewpoints/viewpointStore';
+    import { detectSystemType, nodeMatchesViewpoint, getSystemTypeColor, getSystemTypeLabel, type SystemTypeInfo } from '../utils/systemTypeDetection';
 
     type MetadataItem = {
         key: string;
@@ -53,11 +54,23 @@
     if (!data.outputs) data.outputs = [];
     if (!data.metadata) data.metadata = [];
 
+    // Get system type info
+    let systemTypeInfo = $derived.by(() => {
+        return data.systemType || detectSystemType({ id, type: 'custom', position: {x: 0, y: 0}, data });
+    });
+
     // Check if node should be hidden by viewpoint
     let isHiddenByViewpoint = $derived.by(() => {
+        // For custom viewpoints, use manual node selection
         if ($activeViewpointDetails?.type === 'custom' && $activeViewpointDetails.nodeIds) {
             return !$activeViewpointDetails.nodeIds.includes(id);
         }
+
+        // For system viewpoints, use system type matching
+        if ($activeViewpointDetails?.type === 'system') {
+            return !nodeMatchesViewpoint({ id, type: 'custom', position: {x: 0, y: 0}, data }, $activeViewpoint);
+        }
+
         return false;
     });
 
@@ -156,6 +169,10 @@
     let contextMenuX = $state(0);
     let contextMenuY = $state(0);
 
+    // System type dialog
+    let showSystemTypeDialog = $state(false);
+    let selectedSystemType = $state('auto');
+
     function handleContextMenu(event: MouseEvent) {
         event.preventDefault();
         event.stopPropagation();
@@ -200,6 +217,40 @@
         showContextMenu = false;
     }
 
+    function handleSetSystemType() {
+        // Initialize with current system type
+        if (data.systemType && !data.systemType.isAutoDetected) {
+            selectedSystemType = data.systemType.primary;
+        } else {
+            selectedSystemType = 'auto';
+        }
+        showSystemTypeDialog = true;
+    }
+
+    function applySystemType() {
+        if (selectedSystemType === 'auto') {
+            // Remove manual override, use auto-detection
+            delete data.systemType;
+        } else {
+            // Set manual override
+            data.systemType = {
+                primary: selectedSystemType as import('../utils/systemTypeDetection').SystemType,
+                isAutoDetected: false
+            };
+        }
+
+        // Update the nodes store
+        const nodes = get(currentNodes);
+        const nodeIndex = nodes.findIndex(n => n.id === id);
+        if (nodeIndex !== -1) {
+            nodes[nodeIndex].data = { ...data };
+            currentNodes.set([...nodes]);
+            addToHistory();
+        }
+
+        showSystemTypeDialog = false;
+    }
+
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -228,6 +279,34 @@
                 <Squircle size={14} />
             {/if}
             <span class="title">{data.definition ? `${data.definition} (${type})` : `${capitalize(type)}`}</span>
+            {#if systemTypeInfo.primary !== 'none'}
+                <div class="system-badges">
+                    <!-- Primary badge -->
+                    <span
+                        class="system-badge"
+                        style="background-color: {getSystemTypeColor(systemTypeInfo.primary)}"
+                        title="{systemTypeInfo.isAutoDetected ? 'Auto-detected' : 'Manually set'}: {systemTypeInfo.primary}"
+                    >
+                        {#if !systemTypeInfo.isAutoDetected}
+                            <Lock size={8} class="badge-icon" />
+                        {/if}
+                        {getSystemTypeLabel(systemTypeInfo.primary)}
+                    </span>
+
+                    <!-- Secondary badges -->
+                    {#if systemTypeInfo.secondary && systemTypeInfo.secondary.length > 0}
+                        {#each systemTypeInfo.secondary as secondaryType}
+                            <span
+                                class="system-badge secondary"
+                                style="background-color: {getSystemTypeColor(secondaryType)}"
+                                title="Auto-detected: {secondaryType}"
+                            >
+                                {getSystemTypeLabel(secondaryType)}
+                            </span>
+                        {/each}
+                    {/if}
+                </div>
+            {/if}
         </div>
         <button 
             class="delete-button" 
@@ -339,12 +418,46 @@
         onUpdateInterface={handleUpdateOutputInterface}
     />
     
-    <ContextMenu 
+    <ContextMenu
         bind:visible={showContextMenu}
         x={contextMenuX}
         y={contextMenuY}
+        showSystemType={true}
         on:duplicate={handleDuplicate}
+        on:setSystemType={handleSetSystemType}
     />
+
+    {#if showSystemTypeDialog}
+        <div class="system-type-dialog">
+            <div class="dialog-header">Set System Type</div>
+            <div class="dialog-content">
+                <label>
+                    <input type="radio" bind:group={selectedSystemType} value="auto" />
+                    Auto-detect (based on interfaces)
+                </label>
+                <label>
+                    <input type="radio" bind:group={selectedSystemType} value="electrical" />
+                    Electrical
+                </label>
+                <label>
+                    <input type="radio" bind:group={selectedSystemType} value="mechanical" />
+                    Mechanical
+                </label>
+                <label>
+                    <input type="radio" bind:group={selectedSystemType} value="fluid" />
+                    Fluid
+                </label>
+                <label>
+                    <input type="radio" bind:group={selectedSystemType} value="data" />
+                    Data
+                </label>
+            </div>
+            <div class="dialog-buttons">
+                <button onclick={() => showSystemTypeDialog = false}>Cancel</button>
+                <button onclick={applySystemType}>Apply</button>
+            </div>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -390,6 +503,35 @@
         font-weight: 600;
         font-size: 12px;
         color: #4b5563;
+    }
+
+    .system-badges {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 8px;
+    }
+
+    .system-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .system-badge.secondary {
+        opacity: 0.8;
+    }
+
+    .badge-icon {
+        display: inline-block;
+        vertical-align: middle;
     }
 
     .content {
@@ -489,5 +631,76 @@
     .concept-node.hidden-by-viewpoint {
         opacity: 0.2;
         pointer-events: none;
+    }
+
+    .system-type-dialog {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 16px;
+        z-index: 1001;
+        min-width: 200px;
+    }
+
+    .dialog-header {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 12px;
+        color: #111827;
+    }
+
+    .dialog-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .dialog-content label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #4b5563;
+        cursor: pointer;
+    }
+
+    .dialog-content input[type="radio"] {
+        cursor: pointer;
+    }
+
+    .dialog-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+
+    .dialog-buttons button {
+        padding: 4px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        background: white;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .dialog-buttons button:hover {
+        background: #f3f4f6;
+    }
+
+    .dialog-buttons button:last-child {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+
+    .dialog-buttons button:last-child:hover {
+        background: #2563eb;
     }
 </style>

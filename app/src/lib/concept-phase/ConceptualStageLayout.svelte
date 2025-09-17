@@ -262,9 +262,13 @@
         }
         packageViewStack.set([]);
 
-        // Start the tour if it is the first time opening the concept stage
-        if (localStorage.getItem("showedFirstTour") !== "true") {
-            startTour = firstTimeOpen = true;
+        // Start the tour only if it's the first time and hasn't been shown
+        if (typeof localStorage !== 'undefined' && localStorage.getItem("showedFirstTour") !== "true") {
+            firstTimeOpen = true;
+            startTour = true;
+        } else {
+            firstTimeOpen = false;
+            startTour = false;
         }
     });
     
@@ -276,6 +280,14 @@
             // Save any pending changes
             navigateToRoot();
         }
+
+        // Ensure tour is properly destroyed
+        if (driver) {
+            driver.destroy();
+            driver = undefined;
+        }
+        startTour = false;
+        firstTimeOpen = false;
     });
 
     const stopAutoTour = () => {

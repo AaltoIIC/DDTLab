@@ -1,7 +1,7 @@
 <script lang="ts">
     import { driver, type Driver, type DriveStep } from "driver.js";
     import "driver.js/dist/driver.css";
-    import { onMount } from "svelte";
+    import { onMount, onDestroy } from "svelte";
 
     interface Props {
         driverObj: Driver | undefined;
@@ -26,61 +26,57 @@
     }
 
     onMount(() => {
+        // Add skip functionality to the first step
+        const stepsWithSkip = steps.map((step, index) => {
+            if (index === 0 && disableCancel) {
+                return {
+                    ...step,
+                    popover: {
+                        ...step.popover,
+                        showButtons: ['next', 'close'], // First step gets next and close
+                        onCloseClick: () => {
+                            // Save that tour was skipped
+                            if (typeof localStorage !== 'undefined') {
+                                localStorage.setItem("showedFirstTour", "true");
+                            }
+                            onClose();
+                        }
+                    }
+                };
+            }
+            return step;
+        });
+
         driverObj = driver({
             popoverClass: 'tour-class',
             disableActiveInteraction: true,
             overlayOpacity: 0.35,
-            overlayClickBehavior: undefined, // Makes clicking the backdrop not do anything
+            overlayClickBehavior: undefined,
             onDestroyed: () => {start = false},
-            onCloseClick: () => onClose(),
-            steps,
-            showButtons: ['next', 'previous', 'close'], // Show all buttons including close
+            onCloseClick: () => {
+                if (typeof localStorage !== 'undefined') {
+                    localStorage.setItem("showedFirstTour", "true");
+                }
+                onClose();
+            },
+            steps: stepsWithSkip,
+            showButtons: ['next', 'previous', 'close'],
             progressText: '{{current}} of {{total}}'
         });
     });
 
-    $effect( () => {
+    onDestroy(() => {
         if (driverObj) {
-            driverObj.setConfig({
-                ...driverObj.getConfig(),
-                allowClose: true, // Always allow close now that we have all buttons
-                onPopoverRender: (popover: Element) => {
-                    // Add skip button for first-time users
-                    if (disableCancel) {
-                        setTimeout(() => {
-                            const footer = popover.querySelector('.driver-popover-footer');
-                            if (footer && !footer.querySelector('.skip-tour-btn')) {
-                                // Create skip button
-                                const skipBtn = document.createElement('button');
-                                skipBtn.className = 'driver-popover-btn skip-tour-btn';
-                                skipBtn.textContent = 'Skip Tour';
-                                skipBtn.onclick = () => {
-                                    // Mark tour as seen
-                                    if (typeof localStorage !== 'undefined') {
-                                        localStorage.setItem("showedFirstTour", "true");
-                                    }
-                                    onClose();
-                                };
+            driverObj.destroy();
+            driverObj = undefined;
+        }
+    });
 
-                                // Insert before the first button (which should be Previous/Next)
-                                const firstButton = footer.querySelector('button');
-                                if (firstButton) {
-                                    footer.insertBefore(skipBtn, firstButton);
-                                } else {
-                                    footer.appendChild(skipBtn);
-                                }
-                            }
-                        }, 50)
-                    }
-                }
-            });
-
-            if (start) {
-                driverObj.drive();
-            }
-            else {
-                driverObj.destroy();
-            }
+    $effect( () => {
+        if (driverObj && start) {
+            driverObj.drive();
+        } else if (driverObj && !start) {
+            driverObj.destroy();
         }
     });
 </script>
@@ -103,22 +99,6 @@
         .driver-popover.tour-class li {
             margin-left: 16px;
             list-style-type: circle;
-        }
-        .driver-popover.tour-class .skip-tour-btn {
-            background: #f5f5f5 !important;
-            color: #666 !important;
-            margin-right: auto !important;
-            border: 1px solid #ddd !important;
-        }
-        .driver-popover.tour-class .skip-tour-btn:hover {
-            background: #e5e5e5 !important;
-            color: #333 !important;
-            border-color: #ccc !important;
-        }
-        .driver-popover.tour-class .driver-popover-footer {
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
     }
 </style>

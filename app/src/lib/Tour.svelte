@@ -33,7 +33,9 @@
             overlayClickBehavior: undefined, // Makes clicking the backdrop not do anything
             onDestroyed: () => {start = false},
             onCloseClick: () => onClose(),
-            steps
+            steps,
+            showButtons: ['next', 'previous', 'close'], // Show all buttons including close
+            progressText: '{{current}} of {{total}}'
         });
     });
 
@@ -41,9 +43,37 @@
         if (driverObj) {
             driverObj.setConfig({
                 ...driverObj.getConfig(),
-                allowClose: !disableCancel
-            }
-            );
+                allowClose: true, // Always allow close now that we have all buttons
+                onPopoverRender: (popover: Element) => {
+                    // Add skip button for first-time users
+                    if (disableCancel) {
+                        setTimeout(() => {
+                            const footer = popover.querySelector('.driver-popover-footer');
+                            if (footer && !footer.querySelector('.skip-tour-btn')) {
+                                // Create skip button
+                                const skipBtn = document.createElement('button');
+                                skipBtn.className = 'driver-popover-btn skip-tour-btn';
+                                skipBtn.textContent = 'Skip Tour';
+                                skipBtn.onclick = () => {
+                                    // Mark tour as seen
+                                    if (typeof localStorage !== 'undefined') {
+                                        localStorage.setItem("showedFirstTour", "true");
+                                    }
+                                    onClose();
+                                };
+
+                                // Insert before the first button (which should be Previous/Next)
+                                const firstButton = footer.querySelector('button');
+                                if (firstButton) {
+                                    footer.insertBefore(skipBtn, firstButton);
+                                } else {
+                                    footer.appendChild(skipBtn);
+                                }
+                            }
+                        }, 50)
+                    }
+                }
+            });
 
             if (start) {
                 driverObj.drive();
@@ -52,7 +82,6 @@
                 driverObj.destroy();
             }
         }
-
     });
 </script>
 
@@ -74,6 +103,22 @@
         .driver-popover.tour-class li {
             margin-left: 16px;
             list-style-type: circle;
+        }
+        .driver-popover.tour-class .skip-tour-btn {
+            background: #f5f5f5 !important;
+            color: #666 !important;
+            margin-right: auto !important;
+            border: 1px solid #ddd !important;
+        }
+        .driver-popover.tour-class .skip-tour-btn:hover {
+            background: #e5e5e5 !important;
+            color: #333 !important;
+            border-color: #ccc !important;
+        }
+        .driver-popover.tour-class .driver-popover-footer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
     }
 </style>

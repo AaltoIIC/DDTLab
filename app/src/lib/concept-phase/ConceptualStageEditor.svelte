@@ -4,6 +4,7 @@
     import '@xyflow/svelte/dist/style.css';
     import PackageNode from './nodes/PackageNode.svelte';
     import ConceptNode from './nodes/ConceptNode.svelte';
+    import InternalPortNode from './nodes/InternalPortNode.svelte';
     import RemovableEdge from './edges/RemovableEdge.svelte';
     import ConnectionTypeDropdown from './ConnectionTypeDropdown.svelte';
     import { get } from 'svelte/store';
@@ -26,6 +27,7 @@
         package: PackageNode,
         part: ConceptNode,
         item: ConceptNode,
+        internalPort: InternalPortNode,
     } as {} as NodeTypes;
     
     const edgeTypes = {
@@ -184,15 +186,27 @@
     
     function onConnect(params: Connection) {
         console.log('Connection params:', params);
-        
+
         const nodes = get(currentNodes);
         const sourceNode = nodes.find(n => n.id === params.source);
         const targetNode = nodes.find(n => n.id === params.target);
-        
+
         // Check if source or target is a package node
         if (sourceNode?.type === 'package' || targetNode?.type === 'package') {
             console.log('Cannot connect to/from package nodes');
             return; // Prevent connection
+        }
+
+        // Validate internal port connections
+        // Internal input ports can only have outgoing connections
+        // Internal output ports can only have incoming connections
+        if (sourceNode?.type === 'internalPort' && sourceNode.data.portType === 'output') {
+            console.log('Internal output ports can only receive connections, not send them');
+            return;
+        }
+        if (targetNode?.type === 'internalPort' && targetNode.data.portType === 'input') {
+            console.log('Internal input ports can only send connections, not receive them');
+            return;
         }
         
         // Store the pending connection and show dropdown at midpoint of connection
@@ -214,7 +228,13 @@
             dropdownY = window.innerHeight / 2;
         }
         
-        showConnectionDropdown = true;
+        // Skip connection type dropdown for internal port connections
+        if (sourceNode?.type === 'internalPort' || targetNode?.type === 'internalPort') {
+            // Directly create the connection without asking for type
+            handleConnectionTypeSelect('flow'); // Default to flow for internal connections
+        } else {
+            showConnectionDropdown = true;
+        }
     }
     
     function handleConnectionTypeSelect(connectionType: 'binding' | 'flow') {

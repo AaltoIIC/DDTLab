@@ -16,11 +16,11 @@ export const activeViewpoint = writable<string>('all');
 
 // System viewpoints (predefined)
 const SYSTEM_VIEWPOINTS: Viewpoint[] = [
-  { id: 'all', name: 'All Systems', icon: '🔍', type: 'system' },
-  { id: 'electrical', name: 'Electrical', icon: '⚡', type: 'system' },
-  { id: 'mechanical', name: 'Mechanical', icon: '⚙️', type: 'system' },
-  { id: 'fluid', name: 'Fluid', icon: '💧', type: 'system' },
-  { id: 'data', name: 'Data', icon: '📊', type: 'system' },
+  { id: 'all', name: 'All', icon: '', type: 'system' },
+  { id: 'electrical', name: 'Elec', icon: '', type: 'system' },
+  { id: 'mechanical', name: 'Mech', icon: '', type: 'system' },
+  { id: 'fluid', name: 'Fluid', icon: '', type: 'system' },
+  { id: 'data', name: 'Data', icon: '', type: 'system' },
 ];
 
 // Get localStorage key for system-specific viewpoints

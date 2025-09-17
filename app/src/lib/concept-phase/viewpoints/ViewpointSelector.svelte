@@ -144,7 +144,9 @@
             class:selected={vp.id === $activeViewpoint}
             onclick={() => selectViewpoint(vp.id)}
           >
-            <span class="icon">{vp.icon}</span>
+            {#if vp.icon}
+              <span class="icon">{vp.icon}</span>
+            {/if}
             <span class="name">{vp.name}</span>
             {#if vp.id === $activeViewpoint}
               <Check size={14} class="check" />
@@ -246,19 +248,20 @@
     position: relative;
     width: 100%;
     margin-bottom: 10px;
-    padding: 0 10px;
+    padding: 0 8px;
   }
 
   .viewpoint-button {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     color: #374151;
     cursor: pointer;
@@ -277,19 +280,23 @@
 
   .button-text {
     flex: 1;
-    text-align: left;
+    text-align: center;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .dropdown {
     position: absolute;
-    top: calc(100% + 4px);
-    left: 10px;
-    right: 10px;
+    top: 0;
+    left: calc(100% + 8px);
+    width: 250px;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 6px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    z-index: 100;
+    z-index: 1000;
     max-height: 400px;
     overflow-y: auto;
   }

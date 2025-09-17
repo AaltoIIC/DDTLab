@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Eye, Check, Plus, Edit2, Trash2 } from '@lucide/svelte';
   import { activeViewpoint, viewpoints, type Viewpoint } from './viewpointStore';
-  import { currentNodes } from '$lib/stores/stores.svelte';
+  import { currentNodes, currentSystemMeta } from '$lib/stores/stores.svelte';
   import { slide, fade } from 'svelte/transition';
   import { get } from 'svelte/store';
 
@@ -16,6 +16,23 @@
   // Separate system and custom viewpoints
   let systemViewpoints = $derived($viewpoints.filter(v => v.type === 'system'));
   let customViewpoints = $derived($viewpoints.filter(v => v.type === 'custom'));
+
+  // Watch for system changes and reload viewpoints
+  let previousSystemId: string | null = null;
+  $effect(() => {
+    const currentId = $currentSystemMeta.id;
+    if (currentId && currentId !== previousSystemId) {
+      previousSystemId = currentId;
+      viewpoints.reloadForSystem();
+
+      // Check if the current active viewpoint still exists
+      // (it might be a custom viewpoint from another system)
+      const stillExists = $viewpoints.some(vp => vp.id === $activeViewpoint);
+      if (!stillExists && $activeViewpoint !== 'all') {
+        $activeViewpoint = 'all';
+      }
+    }
+  });
 
   function selectViewpoint(id: string) {
     $activeViewpoint = id;

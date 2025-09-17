@@ -6,6 +6,7 @@
         import { currentNodes, currentEdges, addToHistory, currentPackages } from '$lib/stores/stores.svelte';
     import type { PackageTemplate } from '$lib/types/types';
     import { generateName } from '$lib/helpers';
+    import { activeViewpointDetails } from '../viewpoints/viewpointStore';
 
         type PackageData = {
             declaredName: string;
@@ -27,6 +28,14 @@
         selected,
         id,
     }: Props = $props();
+
+    // Check if node should be hidden by viewpoint
+    let isHiddenByViewpoint = $derived.by(() => {
+        if ($activeViewpointDetails?.type === 'custom' && $activeViewpointDetails.nodeIds) {
+            return !$activeViewpointDetails.nodeIds.includes(id);
+        }
+        return false;
+    });
 
     // Update React Flow internals when data changes
     const updateNodeInternals = useUpdateNodeInternals();
@@ -166,6 +175,7 @@
 <div
     class="package-node"
     class:selected={selected}
+    class:hidden-by-viewpoint={isHiddenByViewpoint}
     onpointerdown={() => selectInsideNodes()}
 >
     <div class="drag-handle top"></div>
@@ -391,5 +401,11 @@
     .delete-color:hover {
         background-color: #fee2e2;
         color: #dc2626;
+    }
+
+    /* Hide nodes not in viewpoint */
+    .package-node.hidden-by-viewpoint {
+        opacity: 0.2;
+        pointer-events: none;
     }
 </style>

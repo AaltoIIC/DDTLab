@@ -19,6 +19,7 @@
     import { instantiateTemplate } from './utils/templateInstantiation';
     import { onMount } from 'svelte';
     import { zoom } from 'd3-zoom';
+    import { activeViewpoint, activeViewpointDetails } from './viewpoints/viewpointStore';
     
 
     const nodeTypes = {
@@ -296,11 +297,13 @@
     function nodeStrokeColor(node: Node) {
         return node.type === 'package' ? 'gray' : '';
     }
+
+    // No need for effect anymore - nodes handle their own visibility
 </script>
 
 
 
-  <div id="conceptual-editor" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
+  <div id="conceptual-editor" class="viewpoint-{$activeViewpoint}" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
       <div class="flow-container" bind:this={flowContainer}>
           <SvelteFlow
               nodes={currentNodes}
@@ -341,4 +344,22 @@
           width: 100%;
           height: 100%;
       }
+
+      /* Simple viewpoint indicator - just changes background color for now */
+      .viewpoint-electrical {
+          background-color: #fef3c7 !important; /* Light yellow */
+      }
+
+      .viewpoint-mechanical {
+          background-color: #e0e7ff !important; /* Light blue */
+      }
+
+      .viewpoint-fluid {
+          background-color: #dbeafe !important; /* Light blue */
+      }
+
+      .viewpoint-data {
+          background-color: #d1fae5 !important; /* Light green */
+      }
+
   </style>

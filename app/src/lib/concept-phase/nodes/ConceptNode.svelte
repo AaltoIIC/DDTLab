@@ -13,6 +13,7 @@
     import { get } from 'svelte/store';
     import { capitalize } from 'lodash';
     import { onMount } from 'svelte';
+    import { activeViewpointDetails } from '../viewpoints/viewpointStore';
 
     type MetadataItem = {
         key: string;
@@ -51,6 +52,14 @@
     if (!data.inputs) data.inputs = [];
     if (!data.outputs) data.outputs = [];
     if (!data.metadata) data.metadata = [];
+
+    // Check if node should be hidden by viewpoint
+    let isHiddenByViewpoint = $derived.by(() => {
+        if ($activeViewpointDetails?.type === 'custom' && $activeViewpointDetails.nodeIds) {
+            return !$activeViewpointDetails.nodeIds.includes(id);
+        }
+        return false;
+    });
 
     // Create port handlers
     const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<NodeData>(id);
@@ -194,7 +203,13 @@
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="concept-node" class:selected ondblclick={handleDoubleClick as (event: Event) => void} oncontextmenu={handleContextMenu} bind:this={nodeElement}>
+<div
+    class="concept-node"
+    class:selected
+    class:hidden-by-viewpoint={isHiddenByViewpoint}
+    ondblclick={handleDoubleClick as (event: Event) => void}
+    oncontextmenu={handleContextMenu}
+    bind:this={nodeElement}>
     <!-- Input Handles -->
     <PortHandles 
         nodeId={id}
@@ -468,5 +483,11 @@
     .delete-button:hover {
         background-color: #fee2e2;
         color: #dc2626;
+    }
+
+    /* Hide nodes not in viewpoint */
+    .concept-node.hidden-by-viewpoint {
+        opacity: 0.2;
+        pointer-events: none;
     }
 </style>

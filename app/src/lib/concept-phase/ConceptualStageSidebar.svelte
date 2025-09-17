@@ -9,6 +9,7 @@
     import ConceptTemplateSlider from './ConceptTemplateSlider.svelte';
     import { overSome } from 'lodash';
     import DefinitionSlider from './DefinitionSlider.svelte';
+    import ViewpointSelector from './viewpoints/ViewpointSelector.svelte';
     
     let isPackageOpen = $state(false);
     let isPartDefOpen = $state(false);
@@ -62,6 +63,12 @@
             </button>
         </Tooltip>
 
+        <div class="separator"></div>
+
+        <!-- Viewpoint Selector -->
+        <ViewpointSelector />
+
+        <div class="separator"></div>
 
         <Tooltip text="Add Package" position="right">
             <button

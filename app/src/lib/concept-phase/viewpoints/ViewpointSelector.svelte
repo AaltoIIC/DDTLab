@@ -1,9 +1,8 @@
 <script lang="ts">
   import { Eye, Check, Plus, Edit2, Trash2 } from '@lucide/svelte';
   import { activeViewpoint, viewpoints, type Viewpoint } from './viewpointStore';
-  import { currentNodes, currentSystemMeta } from '$lib/stores/stores.svelte';
+  import { currentSystemMeta } from '$lib/stores/stores.svelte';
   import { slide, fade } from 'svelte/transition';
-  import { get } from 'svelte/store';
 
   let showDropdown = $state(false);
   let showCreateDialog = $state(false);
@@ -11,7 +10,6 @@
 
   // Form state
   let viewpointName = $state('');
-  let selectedNodeIds: Set<string> = $state(new Set());
 
   // Separate system and custom viewpoints
   let systemViewpoints = $derived($viewpoints.filter(v => v.type === 'system'));
@@ -40,10 +38,6 @@
   }
 
   function startCreateCustom() {
-    // Get currently selected nodes
-    const nodes = get(currentNodes);
-    selectedNodeIds = new Set(nodes.filter(n => n.selected).map(n => n.id));
-
     viewpointName = '';
     editingViewpoint = null;
     showCreateDialog = true;
@@ -54,7 +48,6 @@
     e.stopPropagation();
     editingViewpoint = vp;
     viewpointName = vp.name;
-    selectedNodeIds = new Set(vp.nodeIds || []);
     showCreateDialog = true;
   }
 
@@ -74,7 +67,7 @@
     const viewpointData = {
       name: viewpointName,
       icon: '👁️',
-      nodeIds: Array.from(selectedNodeIds)
+      nodeIds: [] // Empty array since nodes are assigned via right-click
     };
 
     if (editingViewpoint) {
@@ -91,16 +84,6 @@
     showCreateDialog = false;
     editingViewpoint = null;
     viewpointName = '';
-    selectedNodeIds.clear();
-  }
-
-  function toggleNodeSelection(nodeId: string) {
-    if (selectedNodeIds.has(nodeId)) {
-      selectedNodeIds.delete(nodeId);
-    } else {
-      selectedNodeIds.add(nodeId);
-    }
-    selectedNodeIds = new Set(selectedNodeIds); // Trigger reactivity
   }
 
   // Close dropdown when clicking outside
@@ -204,37 +187,20 @@
           type="text"
           bind:value={viewpointName}
           placeholder="Enter view name"
+          autofocus
         />
       </div>
 
-      <div class="form-group">
-        <label>Select Nodes</label>
-        <div class="node-list">
-          {#each $currentNodes as node}
-            <label class="node-item">
-              <input
-                type="checkbox"
-                checked={selectedNodeIds.has(node.id)}
-                onchange={() => toggleNodeSelection(node.id)}
-              />
-              <span class="node-name">
-                {node.data.declaredName || node.id}
-                <span class="node-type">({node.type})</span>
-              </span>
-            </label>
-          {/each}
-          {#if $currentNodes.length === 0}
-            <p class="empty">No nodes in the system</p>
-          {/if}
-        </div>
-      </div>
+      <p class="info-text">
+        After creating this view, right-click on any node and select "Set System Type" to assign it to this custom view.
+      </p>
 
       <div class="dialog-buttons">
         <button class="cancel-btn" onclick={closeDialog}>Cancel</button>
         <button
           class="save-btn"
           onclick={saveViewpoint}
-          disabled={!viewpointName.trim() || selectedNodeIds.size === 0}
+          disabled={!viewpointName.trim()}
         >
           {editingViewpoint ? 'Update' : 'Create'}
         </button>
@@ -470,6 +436,17 @@
   .form-group input:focus {
     outline: none;
     border-color: #6b7280;
+  }
+
+  .info-text {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 16px 0;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
   }
 
   .node-list {

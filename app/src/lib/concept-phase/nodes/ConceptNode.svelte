@@ -13,7 +13,7 @@
     import { get } from 'svelte/store';
     import { capitalize } from 'lodash';
     import { onMount } from 'svelte';
-    import { activeViewpointDetails, activeViewpoint } from '../viewpoints/viewpointStore';
+    import { activeViewpointDetails, activeViewpoint, viewpoints } from '../viewpoints/viewpointStore';
     import { detectSystemType, nodeMatchesViewpoint, getSystemTypeColor, getSystemTypeLabel, type SystemTypeInfo } from '../utils/systemTypeDetection';
 
     type MetadataItem = {
@@ -56,18 +56,40 @@
 
     // Get system type info
     let systemTypeInfo = $derived.by(() => {
+        // If it has a custom viewpoint assigned, return that info
+        if (data.systemType?.customViewpointId) {
+            const customViewpoint = $viewpoints.find(v => v.id === data.systemType.customViewpointId);
+            return {
+                primary: 'custom' as any,
+                customViewpointName: customViewpoint?.name || data.systemType.customViewpointName,
+                customViewpointIcon: customViewpoint?.icon || '👁️',
+                isAutoDetected: false
+            };
+        }
         return data.systemType || detectSystemType({ id, type: 'custom', position: {x: 0, y: 0}, data });
     });
 
     // Check if node should be hidden by viewpoint
     let isHiddenByViewpoint = $derived.by(() => {
-        // For custom viewpoints, use manual node selection
-        if ($activeViewpointDetails?.type === 'custom' && $activeViewpointDetails.nodeIds) {
-            return !$activeViewpointDetails.nodeIds.includes(id);
+        // For custom viewpoints, check both manual selection AND nodes with matching custom system type
+        if ($activeViewpointDetails?.type === 'custom') {
+            // Check if node is manually included in the viewpoint
+            const manuallyIncluded = $activeViewpointDetails.nodeIds?.includes(id) || false;
+
+            // Check if node has this custom viewpoint as its system type
+            const hasMatchingCustomType = data.systemType?.customViewpointId === $activeViewpoint;
+
+            // Show node if either condition is true
+            return !(manuallyIncluded || hasMatchingCustomType);
         }
 
         // For system viewpoints, use system type matching
         if ($activeViewpointDetails?.type === 'system') {
+            // Also check if node has a matching custom type that was assigned
+            if (data.systemType?.customViewpointId) {
+                // Custom-typed nodes only show in their custom viewpoint or 'all'
+                return $activeViewpoint !== 'all';
+            }
             return !nodeMatchesViewpoint({ id, type: 'custom', position: {x: 0, y: 0}, data }, $activeViewpoint);
         }
 
@@ -220,7 +242,12 @@
     function handleSetSystemType() {
         // Initialize with current system type
         if (data.systemType && !data.systemType.isAutoDetected) {
-            selectedSystemType = data.systemType.primary;
+            // Check if it's a custom viewpoint
+            if (data.systemType.customViewpointId) {
+                selectedSystemType = data.systemType.customViewpointId;
+            } else {
+                selectedSystemType = data.systemType.primary;
+            }
         } else {
             selectedSystemType = 'auto';
         }
@@ -232,11 +259,23 @@
             // Remove manual override, use auto-detection
             delete data.systemType;
         } else {
-            // Set manual override
-            data.systemType = {
-                primary: selectedSystemType as import('../utils/systemTypeDetection').SystemType,
-                isAutoDetected: false
-            };
+            // Check if it's a custom viewpoint ID
+            const customViewpoint = $viewpoints.find(v => v.id === selectedSystemType && v.type === 'custom');
+            if (customViewpoint) {
+                // Set as a custom type with the viewpoint's info
+                data.systemType = {
+                    primary: 'custom' as any, // We'll need to handle this in detection
+                    customViewpointId: selectedSystemType,
+                    customViewpointName: customViewpoint.name,
+                    isAutoDetected: false
+                };
+            } else {
+                // Set as standard system type
+                data.systemType = {
+                    primary: selectedSystemType as import('../utils/systemTypeDetection').SystemType,
+                    isAutoDetected: false
+                };
+            }
         }
 
         // Update the nodes store
@@ -282,16 +321,29 @@
             {#if systemTypeInfo.primary !== 'none'}
                 <div class="system-badges">
                     <!-- Primary badge -->
-                    <span
-                        class="system-badge"
-                        style="background-color: {getSystemTypeColor(systemTypeInfo.primary)}"
-                        title="{systemTypeInfo.isAutoDetected ? 'Auto-detected' : 'Manually set'}: {systemTypeInfo.primary}"
-                    >
-                        {#if !systemTypeInfo.isAutoDetected}
+                    {#if systemTypeInfo.primary === 'custom'}
+                        <!-- Custom viewpoint badge -->
+                        <span
+                            class="system-badge custom"
+                            style="background-color: #8b5cf6"
+                            title="Custom View: {systemTypeInfo.customViewpointName}"
+                        >
                             <Lock size={8} class="badge-icon" />
-                        {/if}
-                        {getSystemTypeLabel(systemTypeInfo.primary)}
-                    </span>
+                            {systemTypeInfo.customViewpointIcon} {systemTypeInfo.customViewpointName}
+                        </span>
+                    {:else}
+                        <!-- Standard system type badge -->
+                        <span
+                            class="system-badge"
+                            style="background-color: {getSystemTypeColor(systemTypeInfo.primary)}"
+                            title="{systemTypeInfo.isAutoDetected ? 'Auto-detected' : 'Manually set'}: {systemTypeInfo.primary}"
+                        >
+                            {#if !systemTypeInfo.isAutoDetected}
+                                <Lock size={8} class="badge-icon" />
+                            {/if}
+                            {getSystemTypeLabel(systemTypeInfo.primary)}
+                        </span>
+                    {/if}
 
                     <!-- Secondary badges -->
                     {#if systemTypeInfo.secondary && systemTypeInfo.secondary.length > 0}
@@ -435,6 +487,8 @@
                     <input type="radio" bind:group={selectedSystemType} value="auto" />
                     Auto-detect (based on interfaces)
                 </label>
+
+                <div class="dialog-section-label">System Types</div>
                 <label>
                     <input type="radio" bind:group={selectedSystemType} value="electrical" />
                     Electrical
@@ -451,6 +505,17 @@
                     <input type="radio" bind:group={selectedSystemType} value="data" />
                     Data
                 </label>
+
+                {#if $viewpoints.filter(v => v.type === 'custom').length > 0}
+                    {@const customViewpoints = $viewpoints.filter(v => v.type === 'custom')}
+                    <div class="dialog-section-label">Custom Views</div>
+                    {#each customViewpoints as viewpoint}
+                        <label>
+                            <input type="radio" bind:group={selectedSystemType} value={viewpoint.id} />
+                            {viewpoint.icon} {viewpoint.name}
+                        </label>
+                    {/each}
+                {/if}
             </div>
             <div class="dialog-buttons">
                 <button onclick={() => showSystemTypeDialog = false}>Cancel</button>
@@ -527,6 +592,11 @@
 
     .system-badge.secondary {
         opacity: 0.8;
+    }
+
+    .system-badge.custom {
+        text-transform: none;
+        padding: 2px 8px;
     }
 
     .badge-icon {
@@ -672,6 +742,15 @@
 
     .dialog-content input[type="radio"] {
         cursor: pointer;
+    }
+
+    .dialog-section-label {
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #6b7280;
+        margin-top: 8px;
+        margin-bottom: 4px;
     }
 
     .dialog-buttons {

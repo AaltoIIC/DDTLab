@@ -15,6 +15,7 @@
     import { onMount } from 'svelte';
     import { activeViewpointDetails, activeViewpoint, viewpoints } from '../viewpoints/viewpointStore';
     import { detectSystemType, nodeMatchesViewpoint, getSystemTypeColor, getSystemTypeLabel, type SystemTypeInfo } from '../utils/systemTypeDetection';
+    import Portal from 'svelte-portal';
 
     type MetadataItem = {
         key: string;
@@ -25,6 +26,7 @@
         declaredName: string;
         definition: string;
         comment: string;
+        mass?: number; // Mass in kg
         orderStatus?: 'Delivered' | 'Pending' | 'Order Placed' | 'Confirmed' | 'In Production / In-House' | 'Not Ordered';
         metadata?: MetadataItem[];
         nodes?: import('@xyflow/svelte').Node[];
@@ -53,6 +55,7 @@
     if (!data.inputs) data.inputs = [];
     if (!data.outputs) data.outputs = [];
     if (!data.metadata) data.metadata = [];
+    if (data.mass === undefined) data.mass = 0;
 
     // Get system type info
     let systemTypeInfo = $derived.by(() => {
@@ -132,8 +135,10 @@
 
     let editingName = $state(false);
     let editingComment = $state(false);
+    let editingMass = $state(false);
     let tempName = $state(data.declaredName);
     let tempComment = $state(data.comment || '');
+    let tempMass = $state(data.mass?.toString() || '0');
 
     function updateNodeData(field: string, value: any) {
         currentNodes.update(nodes => {
@@ -167,6 +172,18 @@
         editingComment = false;
     }
 
+    function handleMassEdit() {
+        // Parse the mass value and ensure it's a valid number
+        const massValue = parseFloat(tempMass);
+        if (!isNaN(massValue) && massValue >= 0) {
+            updateNodeData('mass', massValue);
+        } else {
+            // Reset to previous value if invalid
+            tempMass = data.mass?.toString() || '0';
+        }
+        editingMass = false;
+    }
+
     function handleDelete() {
         // Remove this node and any connected edges
         currentNodes.update(nodes => nodes.filter(n => n.id !== id));
@@ -198,14 +215,11 @@
     function handleContextMenu(event: MouseEvent) {
         event.preventDefault();
         event.stopPropagation();
-        
-        if (!nodeElement) return;
 
-        // Position relative to the node
-        const rect = nodeElement.getBoundingClientRect();
-        contextMenuX = event.clientX - rect.left + nodeElement.scrollLeft;
-        contextMenuY = event.clientY - rect.top + nodeElement.scrollTop;
-        
+        // Use client coordinates since context menu is position: fixed
+        contextMenuX = event.clientX;
+        contextMenuY = event.clientY;
+
         showContextMenu = true;
     }
 
@@ -224,6 +238,7 @@
                 data: {
                     ...currentNode.data,
                     id: `${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                    mass: currentNode.data.mass || 0, // Copy mass value
                     inputs: Array.isArray(currentNode.data.inputs) ? currentNode.data.inputs.map(input => ({...input})) : [],
                     outputs: Array.isArray(currentNode.data.outputs) ? currentNode.data.outputs.map(output => ({...output})) : [],
                     metadata: Array.isArray(currentNode.data.metadata) ? currentNode.data.metadata.map(meta => ({...meta})) : [],
@@ -433,6 +448,39 @@
         </div>
 
         <div class="field">
+            <span class="field-label">Mass (kg):</span>
+            {#if editingMass}
+                <input
+                    class="field-input"
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    bind:value={tempMass}
+                    onblur={handleMassEdit}
+                    onkeydown={(e) => {
+                        if (e.key === 'Enter') handleMassEdit();
+                        if (e.key === 'Escape') {
+                            tempMass = data.mass?.toString() || '0';
+                            editingMass = false;
+                        }
+                    }}
+                    onclick={stopPropagation(bubble('click'))}
+                    autofocus
+                />
+            {:else}
+                <span
+                    class="field-value editable"
+                    onclick={stopPropagation(() => {
+                        editingMass = true;
+                        tempMass = data.mass?.toString() || '0';
+                    })}
+                >
+                    {data.mass || 0}
+                </span>
+            {/if}
+        </div>
+
+        <div class="field">
             <span class="field-label">ID:</span>
             <span class="field-value">{id}</span>
         </div>
@@ -470,14 +518,16 @@
         onUpdateInterface={handleUpdateOutputInterface}
     />
     
-    <ContextMenu
-        bind:visible={showContextMenu}
-        x={contextMenuX}
-        y={contextMenuY}
-        showSystemType={true}
-        on:duplicate={handleDuplicate}
-        on:setSystemType={handleSetSystemType}
-    />
+    <Portal>
+        <ContextMenu
+            bind:visible={showContextMenu}
+            x={contextMenuX}
+            y={contextMenuY}
+            showSystemType={true}
+            on:duplicate={handleDuplicate}
+            on:setSystemType={handleSetSystemType}
+        />
+    </Portal>
 
     {#if showSystemTypeDialog}
         <div class="system-type-dialog">

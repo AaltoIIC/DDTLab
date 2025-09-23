@@ -1,30 +1,37 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import Tooltip from '$lib/Tooltip.svelte';
-    import { Component, Box, Library, FileText, Package, Grid2X2, Squircle } from '@lucide/svelte';
+    import { Component, Box, Library, FileText, Package, Grid2X2, Squircle, Weight } from '@lucide/svelte';
     import { currentPackageView, navigateToRoot } from './packageStore';
-    import { currentNodes } from '$lib/stores/stores.svelte';
+    import { currentNodes, notification } from '$lib/stores/stores.svelte';
     import { get } from 'svelte/store';
     import ConceptLibrarySlider from './ConceptLibrarySlider.svelte';
     import ConceptTemplateSlider from './ConceptTemplateSlider.svelte';
     import { overSome } from 'lodash';
     import DefinitionSlider from './DefinitionSlider.svelte';
     import ViewpointSelector from './viewpoints/ViewpointSelector.svelte';
+    import MassCalculatorSlider from './MassCalculatorSlider.svelte';
     
     let isPackageOpen = $state(false);
     let isPartDefOpen = $state(false);
     let isItemDefOpen = $state(false);
     let isLibraryOpen = $state(false);
     let isTemplateSliderOpen = $state(false);
-    
+    let isMassCalculatorOpen = $state(false);
+
     function handleHomeClick() {
         // Reset to root level before navigating away
         navigateToRoot();
         goto('/');
     }
-    
+
     function closeAllSliders() {
-        isPackageOpen = isItemDefOpen = isPartDefOpen = isLibraryOpen = isTemplateSliderOpen = false;
+        isPackageOpen = isItemDefOpen = isPartDefOpen = isLibraryOpen = isTemplateSliderOpen = isMassCalculatorOpen = false;
+    }
+
+    function toggleMassCalculator() {
+        closeAllSliders();
+        isMassCalculatorOpen = true;
     }
 
     function togglePackageSlider() {
@@ -119,11 +126,24 @@
         <Tooltip text="Saved Templates" position="right">
             <button
                 id="templateBtn"
-                class="menu-option" 
-                class:active={isTemplateSliderOpen} 
+                class="menu-option"
+                class:active={isTemplateSliderOpen}
                 onclick={toggleTemplateSlider}
             >
                 <FileText class="option-icon" />
+            </button>
+        </Tooltip>
+
+        <div class="separator"></div>
+
+        <Tooltip text="Calculate Total Mass" position="right">
+            <button
+                id="massCalcBtn"
+                class="menu-option"
+                class:active={isMassCalculatorOpen}
+                onclick={toggleMassCalculator}
+            >
+                <Weight class="option-icon" />
             </button>
         </Tooltip>
     </div>
@@ -134,6 +154,7 @@
 <DefinitionSlider type='item' isOpen={isItemDefOpen} onClose={closeAllSliders} />
 <ConceptLibrarySlider isOpen={isLibraryOpen} onClose={closeAllSliders} />
 <ConceptTemplateSlider isOpen={isTemplateSliderOpen} onClose={closeAllSliders} />
+<MassCalculatorSlider isOpen={isMassCalculatorOpen} onClose={closeAllSliders} />
 
   <style>
       .sidebar {

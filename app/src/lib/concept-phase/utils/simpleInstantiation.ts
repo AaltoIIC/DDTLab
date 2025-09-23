@@ -5,113 +5,161 @@ function generateUniqueId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-function cloneNodeWithNewIds(node: any, parentId?: string): Node {
-  const newId = generateUniqueId(node.id);
-  
-  const clonedNode: Node = {
-    id: newId,
-    type: node.type,
-    position: { ...node.position },
-    data: {
-      ...node.data,
-      id: generateUniqueId(node.data.id),
-      metadata: [...(node.data.metadata || [])],
-      inputs: (node.data.inputs || []).map((port: any) => ({
-        ...port,
-        id: generateUniqueId(port.id)
-      })),
-      outputs: (node.data.outputs || []).map((port: any) => ({
-        ...port,
-        id: generateUniqueId(port.id)
-      }))
-    }
-  };
-  
-  if (parentId) {
-    clonedNode.parentId = parentId;
-  }
-  
-  // Handle nested nodes recursively
-  if (node.data.nodes && Array.isArray(node.data.nodes)) {
-    const childNodes: Node[] = [];
-    const childEdges: Edge[] = [];
-    const idMapping = new Map<string, string>();
-    
-    // First pass: create all nodes and build ID mapping
-    node.data.nodes.forEach((childNode: any) => {
-      const clonedChild = cloneNodeWithNewIds(childNode, newId);
-      idMapping.set(childNode.id, clonedChild.id);
-      childNodes.push(clonedChild);
-    });
-    
-    // Second pass: clone edges with updated IDs
-    if (node.data.edges && Array.isArray(node.data.edges)) {
-      node.data.edges.forEach((edge: any) => {
-        const newSourceId = idMapping.get(edge.source);
-        const newTargetId = idMapping.get(edge.target);
-        
-        if (newSourceId && newTargetId) {
-          // Find the actual nodes to get port names
-          const sourceNode = childNodes.find(n => n.id === newSourceId);
-          const targetNode = childNodes.find(n => n.id === newTargetId);
-          
-          if (sourceNode && targetNode && edge.sourceHandle && edge.targetHandle) {
-            // Extract port type and name from original handle
-            const sourceHandleParts = edge.sourceHandle.split('-');
-            const targetHandleParts = edge.targetHandle.split('-');
-            
-            // Get the port type (input/output) and port name
-            const sourceType = sourceHandleParts[sourceHandleParts.length - 2];
-            const sourcePortName = sourceHandleParts[sourceHandleParts.length - 1];
-            const targetType = targetHandleParts[targetHandleParts.length - 2];
-            const targetPortName = targetHandleParts[targetHandleParts.length - 1];
-            
-            // Reconstruct handle IDs with new node IDs
-            const sourceHandle = `${newSourceId}-${sourceType}-${sourcePortName}`;
-            const targetHandle = `${newTargetId}-${targetType}-${targetPortName}`;
-            
-            childEdges.push({
-              id: generateUniqueId('edge'),
-              source: newSourceId,
-              target: newTargetId,
-              sourceHandle,
-              targetHandle,
-              type: edge.type || 'default',
-              data: { ...edge.data }
-            });
-          }
-        }
-      });
-    }
-    
-    clonedNode.data.nodes = childNodes;
-    clonedNode.data.edges = childEdges;
-  }
-  
-  return clonedNode;
-}
-
 export function instantiateSimpleComponent(
   component: any,
   position: { x: number; y: number }
 ): { nodes: Node[]; edges: Edge[] } {
   console.log('Instantiating component:', component.name);
-  
-  // Create the package node with new position
-  const packageNode = {
-    ...component,
+
+  // Generate new ID for the package
+  const packageId = generateUniqueId(component.id);
+
+  // Calculate bounding box for all child nodes to size the package appropriately
+  let minX = Infinity, minY = Infinity;
+  let maxX = -Infinity, maxY = -Infinity;
+
+  if (component.data.nodes && Array.isArray(component.data.nodes)) {
+    component.data.nodes.forEach((node: any) => {
+      minX = Math.min(minX, node.position.x);
+      minY = Math.min(minY, node.position.y);
+      // Assume a default node size if not specified
+      const nodeWidth = node.measured?.width || 200;
+      const nodeHeight = node.measured?.height || 100;
+      maxX = Math.max(maxX, node.position.x + nodeWidth);
+      maxY = Math.max(maxY, node.position.y + nodeHeight);
+    });
+  }
+
+  // Set package size with very generous padding
+  const padding = 150;
+  let packageWidth = 800;
+  let packageHeight = 600;
+
+  if (minX !== Infinity) {
+    packageWidth = maxX - minX + padding * 2;
+    packageHeight = maxY - minY + padding * 2;
+  }
+
+  // Create the package node
+  const instantiatedPackage: Node = {
+    id: packageId,
+    type: component.type,
     position,
-    data: { ...component.data }
+    width: packageWidth,
+    height: packageHeight,
+    style: {
+      width: packageWidth,
+      height: packageHeight
+    },
+    data: {
+      ...component.data,
+      id: generateUniqueId(component.data.id),
+      nodes: [],
+      edges: [],
+      metadata: [...(component.data.metadata || [])],
+      inputs: (component.data.inputs || []).map((port: any) => ({
+        ...port,
+        id: generateUniqueId(port.id)
+      })),
+      outputs: (component.data.outputs || []).map((port: any) => ({
+        ...port,
+        id: generateUniqueId(port.id)
+      }))
+    }
   };
-  
-  const instantiatedPackage = cloneNodeWithNewIds(packageNode);
-  
+
   console.log('Created package:', instantiatedPackage);
-  
-  // Return only the package node at the root level
-  // Parts and items are stored inside the package data
+
+  // Prepare all nodes including package
+  const allNodes: Node[] = [instantiatedPackage];
+  const allEdges: Edge[] = [];
+
+  // Process child nodes and create ID mapping for edges
+  const idMapping = new Map<string, string>();
+
+  if (component.data.nodes && Array.isArray(component.data.nodes)) {
+    // Offset for positioning nodes relative to package top-left with padding
+    const offsetX = minX !== Infinity ? minX - padding : 0;
+    const offsetY = minY !== Infinity ? minY - padding : 0;
+
+    component.data.nodes.forEach((node: any) => {
+      const newNodeId = generateUniqueId(node.id);
+      idMapping.set(node.id, newNodeId);
+
+      const childNode: Node = {
+        id: newNodeId,
+        type: node.type,
+        parentId: packageId,
+        position: {
+          x: node.position.x - offsetX,
+          y: node.position.y - offsetY
+        },
+        data: {
+          ...node.data,
+          id: generateUniqueId(node.data.id),
+          mass: node.data.mass || 0,
+          metadata: [...(node.data.metadata || [])],
+          inputs: (node.data.inputs || []).map((port: any) => ({
+            ...port,
+            id: generateUniqueId(port.id)
+          })),
+          outputs: (node.data.outputs || []).map((port: any) => ({
+            ...port,
+            id: generateUniqueId(port.id)
+          }))
+        }
+      };
+
+      allNodes.push(childNode);
+    });
+  }
+
+  // Process edges with updated IDs
+  if (component.data.edges && Array.isArray(component.data.edges)) {
+    component.data.edges.forEach((edge: any) => {
+      const newSourceId = idMapping.get(edge.source);
+      const newTargetId = idMapping.get(edge.target);
+
+      if (newSourceId && newTargetId) {
+        // Update handle IDs with new node IDs
+        let sourceHandle = edge.sourceHandle;
+        let targetHandle = edge.targetHandle;
+
+        // Replace old node IDs in handles with new ones
+        if (sourceHandle) {
+          for (const [oldId, newId] of idMapping.entries()) {
+            if (sourceHandle.includes(oldId)) {
+              sourceHandle = sourceHandle.replace(oldId, newId);
+              break;
+            }
+          }
+        }
+        if (targetHandle) {
+          for (const [oldId, newId] of idMapping.entries()) {
+            if (targetHandle.includes(oldId)) {
+              targetHandle = targetHandle.replace(oldId, newId);
+              break;
+            }
+          }
+        }
+
+        const newEdge: Edge = {
+          id: generateUniqueId(edge.id),
+          source: newSourceId,
+          target: newTargetId,
+          sourceHandle,
+          targetHandle,
+          type: edge.type || 'default',
+          data: { ...edge.data }
+        };
+
+        allEdges.push(newEdge);
+      }
+    });
+  }
+
   return {
-    nodes: [instantiatedPackage],
-    edges: []
+    nodes: allNodes,
+    edges: allEdges
   };
 }

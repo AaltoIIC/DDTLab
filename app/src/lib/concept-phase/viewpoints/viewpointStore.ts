@@ -86,6 +86,15 @@ function createViewpointsStore() {
         return updated;
       });
     },
+    updateSystem: (id: string, updates: Partial<Viewpoint>) => {
+      // System viewpoints can have nodeIds to explicitly include nodes
+      // This is useful for package-based assignment
+      update(vps => {
+        return vps.map(vp =>
+          vp.id === id && vp.type === 'system' ? { ...vp, ...updates } : vp
+        );
+      });
+    },
     deleteCustom: (id: string) => {
       const systemId = getCurrentSystemId();
       if (!systemId) {

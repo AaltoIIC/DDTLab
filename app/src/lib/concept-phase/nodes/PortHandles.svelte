@@ -7,7 +7,8 @@
     import { onMount, tick } from 'svelte';
     import type { InterfaceCategory, Port } from '../interfaces';
     import { standardInterfaces, getInterfacesByCategory } from '../interfaces';
-    
+    import { customInterfaces, addCustomInterface, getCustomInterfaces } from '../interfaces/customInterfaceStore';
+
     type TabCategory = InterfaceCategory | 'all';
     
     interface Props {
@@ -44,27 +45,48 @@
     let selectedCategory: TabCategory = $state('all');
     let searchQuery: string = $state('');
     let searchInputRef: HTMLInputElement | null = $state(null);
-    
+    let showCustomInput: boolean = $state(false);
+    let customInterfaceName: string = $state('');
+
+    // Subscribe to custom interfaces
+    let allCustomInterfaces = $state(getCustomInterfaces());
+    $effect(() => {
+        customInterfaces.subscribe(() => {
+            allCustomInterfaces = getCustomInterfaces();
+        });
+    });
+
     function selectInterface(index: number, interfaceId: string | undefined) {
         onUpdateInterface(index, interfaceId);
         showInterfaceSelector = null;
         searchQuery = ''; // Reset search when closing
+        showCustomInput = false;
+        customInterfaceName = '';
     }
-    
+
+    function createCustomInterface(index: number) {
+        if (customInterfaceName.trim()) {
+            const newId = addCustomInterface(customInterfaceName.trim());
+            selectInterface(index, newId);
+        }
+    }
+
     // Filter interfaces based on search query
     function getFilteredInterfaces(category: TabCategory) {
         let interfaces;
         if (category === 'all') {
-            interfaces = Object.values(standardInterfaces);
+            interfaces = [...Object.values(standardInterfaces), ...allCustomInterfaces];
+        } else if (category === 'other') {
+            interfaces = allCustomInterfaces;
         } else {
             interfaces = getInterfacesByCategory(category);
         }
-        
+
         if (!searchQuery.trim()) return interfaces;
-        
+
         const query = searchQuery.toLowerCase();
-        return interfaces.filter(intf => 
-            intf.name.toLowerCase().includes(query) || 
+        return interfaces.filter(intf =>
+            intf.name.toLowerCase().includes(query) ||
             intf.id.toLowerCase().includes(query)
         );
     }
@@ -81,14 +103,26 @@
     
     function getInterfaceColor(interfaceType: string | undefined): string {
         if (!interfaceType) return '#6b7280'; // gray
-        const intf = standardInterfaces[interfaceType];
+
+        // Check standard interfaces first
+        let intf = standardInterfaces[interfaceType];
+
+        // If not found in standard, check custom interfaces
+        if (!intf) {
+            const customIntf = allCustomInterfaces.find(ci => ci.id === interfaceType);
+            if (customIntf) {
+                intf = customIntf;
+            }
+        }
+
         if (!intf) return '#6b7280';
-        
+
         switch (intf.category) {
             case 'electrical': return '#f59e0b'; // yellow
             case 'mechanical': return '#6b7280'; // gray
             case 'fluid': return '#3b82f6'; // blue
             case 'data': return '#10b981'; // green
+            case 'other': return '#9333ea'; // purple for custom
             default: return '#6b7280';
         }
     }
@@ -107,7 +141,10 @@
             <span class="handle-label">
                 {port.name}
                 {#if port.interfaceType}
-                    <span class="interface-type">({standardInterfaces[port.interfaceType]?.name || 'Unknown'})</span>
+                    {@const interfaceName = standardInterfaces[port.interfaceType]?.name ||
+                        allCustomInterfaces.find(ci => ci.id === port.interfaceType)?.name ||
+                        'Unknown'}
+                    <span class="interface-type">({interfaceName})</span>
                 {/if}
             </span>
             <button 
@@ -172,12 +209,19 @@
                         >
                             Fluid
                         </button>
-                        <button 
-                            class="category-tab" 
+                        <button
+                            class="category-tab"
                             class:active={selectedCategory === 'data'}
                             onclick={() => selectedCategory = 'data'}
                         >
                             Data
+                        </button>
+                        <button
+                            class="category-tab"
+                            class:active={selectedCategory === 'other'}
+                            onclick={() => selectedCategory = 'other'}
+                        >
+                            Other
                         </button>
                     </div>
                     <div class="interface-list">
@@ -204,6 +248,53 @@
                         {/each}
                         {#if getFilteredInterfaces(selectedCategory).length === 0}
                             <div class="no-results">No matching interfaces found</div>
+                        {/if}
+
+                        {#if selectedCategory === 'other'}
+                            {#if !showCustomInput}
+                                <button
+                                    class="interface-option create-custom"
+                                    onclick={() => showCustomInput = true}
+                                >
+                                    <Plus size={12} style="margin-right: 4px;" />
+                                    Create Custom Interface
+                                </button>
+                            {:else}
+                                <div class="custom-input-container">
+                                    <input
+                                        type="text"
+                                        class="custom-input"
+                                        placeholder="Enter interface name..."
+                                        bind:value={customInterfaceName}
+                                        onkeydown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                createCustomInterface(i);
+                                            } else if (e.key === 'Escape') {
+                                                showCustomInput = false;
+                                                customInterfaceName = '';
+                                            }
+                                            stopPropagation(() => {})();
+                                        }}
+                                        onclick={stopPropagation(() => {})}
+                                    />
+                                    <button
+                                        class="custom-btn"
+                                        onclick={() => createCustomInterface(i)}
+                                        disabled={!customInterfaceName.trim()}
+                                    >
+                                        Add
+                                    </button>
+                                    <button
+                                        class="custom-btn cancel"
+                                        onclick={() => {
+                                            showCustomInput = false;
+                                            customInterfaceName = '';
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            {/if}
                         {/if}
                     </div>
                 </div>
@@ -509,5 +600,72 @@
         font-weight: 500;
         margin-left: 8px;
         text-transform: capitalize;
+    }
+
+    .create-custom {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f3f0ff;
+        color: #7c3aed;
+        font-weight: 500;
+    }
+
+    .create-custom:hover {
+        background: #ede9fe;
+        color: #6d28d9;
+    }
+
+    .custom-input-container {
+        padding: 8px;
+        border-top: 1px solid #e5e7eb;
+        background: #f9fafb;
+    }
+
+    .custom-input {
+        width: 100%;
+        padding: 6px 8px;
+        font-size: 11px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        margin-bottom: 6px;
+        outline: none;
+    }
+
+    .custom-input:focus {
+        border-color: #9333ea;
+        box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.1);
+    }
+
+    .custom-btn {
+        padding: 4px 12px;
+        font-size: 10px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        margin-right: 4px;
+        transition: all 0.2s;
+    }
+
+    .custom-btn:not(:disabled):hover {
+        background: #f3f0ff;
+        border-color: #9333ea;
+        color: #7c3aed;
+    }
+
+    .custom-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .custom-btn.cancel {
+        background: #f3f4f6;
+    }
+
+    .custom-btn.cancel:hover {
+        background: #e5e7eb;
+        border-color: #9ca3af;
+        color: #6b7280;
     }
 </style>

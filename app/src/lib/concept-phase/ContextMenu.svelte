@@ -3,20 +3,22 @@
 
     const bubble = createBubbler();
     import { createEventDispatcher } from 'svelte';
-    import { Copy, Settings } from '@lucide/svelte';
+    import { Copy, Settings, FolderPlus } from '@lucide/svelte';
 
     interface Props {
         x?: number;
         y?: number;
         visible?: boolean;
         showSystemType?: boolean;
+        showAddToView?: boolean;
     }
 
-    let { x = 0, y = 0, visible = $bindable(false), showSystemType = false }: Props = $props();
+    let { x = 0, y = 0, visible = $bindable(false), showSystemType = false, showAddToView = false }: Props = $props();
 
     const dispatch = createEventDispatcher<{
         duplicate: void;
         setSystemType: void;
+        addToView: void;
     }>();
 
     function handleDuplicate() {
@@ -28,7 +30,12 @@
         dispatch('setSystemType');
         visible = false;
     }
-    
+
+    function handleAddToView() {
+        dispatch('addToView');
+        visible = false;
+    }
+
     function handleClickOutside(event: MouseEvent) {
         const target = event.target as HTMLElement;
         if (!target.closest('.context-menu')) {
@@ -59,6 +66,15 @@
                 <span>Set System Type</span>
             </button>
         {/if}
+        {#if showAddToView}
+            <button
+                class="context-menu-item"
+                onclick={handleAddToView}
+            >
+                <FolderPlus size={14} />
+                <span>Add Package to View</span>
+            </button>
+        {/if}
     </div>
 {/if}
 
@@ -66,14 +82,15 @@
 
 <style>
     .context-menu {
-        position: absolute;
+        position: fixed;
         background: white;
         border: 1px solid #e5e7eb;
         border-radius: 6px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         padding: 4px;
-        z-index: 1000;
+        z-index: 10000;
         min-width: 120px;
+        pointer-events: auto !important;
     }
     
     .context-menu-item {

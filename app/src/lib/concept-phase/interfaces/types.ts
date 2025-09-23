@@ -1,4 +1,4 @@
-export type InterfaceCategory = 'electrical' | 'mechanical' | 'fluid' | 'data';
+export type InterfaceCategory = 'electrical' | 'mechanical' | 'fluid' | 'data' | 'other';
 
 export interface InterfaceSpecifications {
   // Electrical

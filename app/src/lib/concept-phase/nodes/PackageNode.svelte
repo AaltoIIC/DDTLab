@@ -1,12 +1,15 @@
 <script lang="ts">
     import { run } from 'svelte/legacy';
 
-        import { Package, X, MoveDiagonal2, Info, Save } from '@lucide/svelte';
+        import { Package, X, MoveDiagonal2, Info, Save, FolderPlus } from '@lucide/svelte';
         import { useUpdateNodeInternals, NodeResizeControl, type Node } from '@xyflow/svelte';
         import { currentNodes, currentEdges, addToHistory, currentPackages } from '$lib/stores/stores.svelte';
     import type { PackageTemplate } from '$lib/types/types';
     import { generateName } from '$lib/helpers';
-    import { activeViewpointDetails } from '../viewpoints/viewpointStore';
+    import { activeViewpointDetails, viewpoints } from '../viewpoints/viewpointStore';
+    import ContextMenu from '../ContextMenu.svelte';
+    import { get } from 'svelte/store';
+    import Portal from 'svelte-portal';
 
         type PackageData = {
             declaredName: string;
@@ -37,6 +40,12 @@
         return false;
     });
 
+    // Get list of viewpoints this package belongs to
+    let assignedViewpoints = $derived.by(() => {
+        // Include both system and custom viewpoints that contain this package
+        return $viewpoints.filter(v => v.nodeIds?.includes(id) || false);
+    });
+
     // Update React Flow internals when data changes
     const updateNodeInternals = useUpdateNodeInternals();
     run(() => {
@@ -51,6 +60,13 @@
     let tempComment = $state(data.comment);
     let showComment = $state(false);
     let infoClicked = $state(false);
+
+    // Context menu state
+    let showContextMenu = $state(false);
+    let contextMenuX = $state(0);
+    let contextMenuY = $state(0);
+    let showAddToViewDialog = $state(false);
+    let selectedViewpointIds = $state<Set<string>>(new Set());
 
     // Returns an array of nodes and edges connecting those nodes together contained within the bounds of this package node
     function getInsideData() {
@@ -168,6 +184,78 @@
         current.style.pointerEvents = "auto";
         return element;
     }
+
+    function handleContextMenu(event: MouseEvent) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        // Use client coordinates since context menu is position: fixed
+        contextMenuX = event.clientX;
+        contextMenuY = event.clientY;
+
+        showContextMenu = true;
+    }
+
+    function handleAddToView() {
+        // Initialize with currently assigned viewpoints
+        const currentAssigned = $viewpoints.filter(v => v.nodeIds?.includes(id));
+        selectedViewpointIds = new Set(currentAssigned.map(v => v.id));
+        showAddToViewDialog = true;
+        showContextMenu = false;
+    }
+
+    function updatePackageViewpoints() {
+        const { inNodes } = getInsideData();
+        const nodeIds = inNodes.map(n => n.id);
+        nodeIds.push(id); // Add the package itself
+
+        const allViewpoints = get(viewpoints);
+
+        // Process each viewpoint
+        allViewpoints.forEach(viewpoint => {
+            const wasSelected = viewpoint.nodeIds?.includes(id) || false;
+            const isSelected = selectedViewpointIds.has(viewpoint.id);
+
+            if (wasSelected !== isSelected) {
+                // State changed for this viewpoint
+                if (isSelected) {
+                    // Add to viewpoint
+                    const existingNodeIds = viewpoint.nodeIds || [];
+                    const uniqueNodeIds = [...new Set([...existingNodeIds, ...nodeIds])];
+
+                    if (viewpoint.type === 'custom') {
+                        viewpoints.updateCustom(viewpoint.id, {
+                            ...viewpoint,
+                            nodeIds: uniqueNodeIds
+                        });
+                    } else if (viewpoint.type === 'system') {
+                        viewpoints.updateSystem(viewpoint.id, {
+                            ...viewpoint,
+                            nodeIds: uniqueNodeIds
+                        });
+                    }
+                } else {
+                    // Remove from viewpoint
+                    const filteredNodeIds = (viewpoint.nodeIds || []).filter(nId => !nodeIds.includes(nId));
+
+                    if (viewpoint.type === 'custom') {
+                        viewpoints.updateCustom(viewpoint.id, {
+                            ...viewpoint,
+                            nodeIds: filteredNodeIds
+                        });
+                    } else if (viewpoint.type === 'system') {
+                        viewpoints.updateSystem(viewpoint.id, {
+                            ...viewpoint,
+                            nodeIds: filteredNodeIds
+                        });
+                    }
+                }
+            }
+        });
+
+        showAddToViewDialog = false;
+        selectedViewpointIds = new Set();
+    }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -176,13 +264,12 @@
     class="package-node"
     class:selected={selected}
     class:hidden-by-viewpoint={isHiddenByViewpoint}
-    onpointerdown={() => selectInsideNodes()}
 >
-    <div class="drag-handle top"></div>
-    <div class="drag-handle bottom"></div>
-    <div class="drag-handle right"></div>
-    <div class="drag-handle left"></div>
-    <div class="package-header">
+    <div class="drag-handle top" onpointerdown={() => selectInsideNodes()} oncontextmenu={handleContextMenu}></div>
+    <div class="drag-handle bottom" onpointerdown={() => selectInsideNodes()} oncontextmenu={handleContextMenu}></div>
+    <div class="drag-handle right" onpointerdown={() => selectInsideNodes()} oncontextmenu={handleContextMenu}></div>
+    <div class="drag-handle left" onpointerdown={() => selectInsideNodes()} oncontextmenu={handleContextMenu}></div>
+    <div class="package-header" oncontextmenu={handleContextMenu}>
         <div class="package-header-left">
             <Package size={22} />
             {#if editingName}
@@ -210,6 +297,19 @@
                 >
                     {`${data.declaredName} (Package)`|| 'Unnamed'}
                 </span>
+            {/if}
+
+            {#if assignedViewpoints.length > 0}
+                <div class="viewpoint-badges">
+                    {#each assignedViewpoints as viewpoint}
+                        <span
+                            class="viewpoint-badge {viewpoint.type}"
+                            title="Assigned to: {viewpoint.name} ({viewpoint.type} view)"
+                        >
+                            {viewpoint.icon} {viewpoint.name}
+                        </span>
+                    {/each}
+                </div>
             {/if}
         </div>
         <div class="package-header-right">
@@ -269,6 +369,104 @@
             </NodeResizeControl>
         </span>
     </div>
+
+    <!-- Context Menu -->
+    <Portal>
+        <ContextMenu
+            bind:visible={showContextMenu}
+            x={contextMenuX}
+            y={contextMenuY}
+            showAddToView={true}
+            on:addToView={handleAddToView}
+        />
+    </Portal>
+
+    <!-- Add to View Dialog -->
+    {#if showAddToViewDialog}
+        <Portal>
+            {@const systemViewpoints = $viewpoints.filter(v => v.type === 'system')}
+            {@const customViewpoints = $viewpoints.filter(v => v.type === 'custom')}
+            {@const allViewpoints = [...systemViewpoints, ...customViewpoints]}
+            <div class="dialog-overlay" onclick={() => showAddToViewDialog = false}>
+                <div class="dialog" onclick={(e) => e.stopPropagation()}>
+                    <h3>Manage Package Views</h3>
+
+                    {#if allViewpoints.length > 0}
+                        <p class="dialog-description">
+                            Select which views should include this package and all its contents:
+                        </p>
+                        <div class="viewpoint-list">
+                            {#if systemViewpoints.length > 0}
+                                <div class="viewpoint-category">System Views</div>
+                                {#each systemViewpoints as viewpoint}
+                                    <label class="viewpoint-option" class:checked={selectedViewpointIds.has(viewpoint.id)}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedViewpointIds.has(viewpoint.id)}
+                                            onchange={(e) => {
+                                                const checked = e.currentTarget.checked;
+                                                if (checked) {
+                                                    selectedViewpointIds.add(viewpoint.id);
+                                                } else {
+                                                    selectedViewpointIds.delete(viewpoint.id);
+                                                }
+                                                selectedViewpointIds = new Set(selectedViewpointIds);
+                                            }}
+                                        />
+                                        <span>{viewpoint.icon} {viewpoint.name}</span>
+                                        {#if viewpoint.nodeIds?.includes(id)}
+                                            <span class="assigned-badge">Currently assigned</span>
+                                        {/if}
+                                    </label>
+                                {/each}
+                            {/if}
+
+                            {#if customViewpoints.length > 0}
+                                <div class="viewpoint-category">Custom Views</div>
+                                {#each customViewpoints as viewpoint}
+                                    <label class="viewpoint-option" class:checked={selectedViewpointIds.has(viewpoint.id)}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedViewpointIds.has(viewpoint.id)}
+                                            onchange={(e) => {
+                                                const checked = e.currentTarget.checked;
+                                                if (checked) {
+                                                    selectedViewpointIds.add(viewpoint.id);
+                                                } else {
+                                                    selectedViewpointIds.delete(viewpoint.id);
+                                                }
+                                                selectedViewpointIds = new Set(selectedViewpointIds);
+                                            }}
+                                        />
+                                        <span>{viewpoint.icon} {viewpoint.name}</span>
+                                        {#if viewpoint.nodeIds?.includes(id)}
+                                            <span class="assigned-badge">Currently assigned</span>
+                                        {/if}
+                                    </label>
+                                {/each}
+                            {/if}
+                        </div>
+                    {:else}
+                        <p class="no-viewpoints">
+                            No views available.
+                        </p>
+                    {/if}
+
+                    <div class="dialog-buttons">
+                        <button onclick={() => showAddToViewDialog = false}>Cancel</button>
+                        {#if allViewpoints.length > 0}
+                            <button
+                                onclick={updatePackageViewpoints}
+                                class="primary"
+                            >
+                                Update Views
+                            </button>
+                        {/if}
+                    </div>
+                </div>
+            </div>
+        </Portal>
+    {/if}
 </div>
 
 <style>
@@ -331,6 +529,41 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        flex: 1;
+        flex-wrap: wrap;
+    }
+
+    .viewpoint-badges {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        margin-left: auto;
+    }
+
+    .viewpoint-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        color: white;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+        opacity: 0.9;
+        transition: opacity 0.2s;
+    }
+
+    .viewpoint-badge.custom {
+        background: #8b5cf6; /* Purple for custom */
+    }
+
+    .viewpoint-badge.system {
+        background: #3b82f6; /* Blue for system */
+    }
+
+    .viewpoint-badge:hover {
+        opacity: 1;
     }
 
     .package-header-right {
@@ -407,5 +640,144 @@
     .package-node.hidden-by-viewpoint {
         opacity: 0.2;
         pointer-events: none;
+    }
+
+    /* Dialog styles */
+    .dialog-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1002;
+    }
+
+    .dialog {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .dialog h3 {
+        margin: 0 0 16px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .dialog-description {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 16px;
+    }
+
+    .viewpoint-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 20px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .viewpoint-category {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 8px;
+        margin-bottom: 4px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .viewpoint-category:first-child {
+        margin-top: 0;
+    }
+
+    .viewpoint-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .viewpoint-option:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    .viewpoint-option.checked {
+        background: #eff6ff;
+        border-color: #3b82f6;
+    }
+
+    .viewpoint-option input[type="checkbox"],
+    .viewpoint-option input[type="radio"] {
+        cursor: pointer;
+    }
+
+    .assigned-badge {
+        margin-left: auto;
+        font-size: 10px;
+        padding: 2px 6px;
+        background: #dbeafe;
+        color: #2563eb;
+        border-radius: 3px;
+        font-weight: 500;
+    }
+
+    .no-viewpoints {
+        font-size: 14px;
+        color: #6b7280;
+        text-align: center;
+        padding: 20px 0;
+    }
+
+    .dialog-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+
+    .dialog-buttons button {
+        padding: 6px 16px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+        background: white;
+        transition: all 0.2s;
+    }
+
+    .dialog-buttons button:hover {
+        background: #f9fafb;
+    }
+
+    .dialog-buttons button.primary {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+
+    .dialog-buttons button.primary:hover {
+        background: #2563eb;
+    }
+
+    .dialog-buttons button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 </style>

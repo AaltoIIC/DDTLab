@@ -101,22 +101,16 @@
     function handleDragStart(event: DragEvent, component: LibraryComponent) {
         isDragging = true;
         event.dataTransfer!.effectAllowed = 'copy';
-        // Convert the component template to the format expected by the editor
-        const dragData = {
-            ...component.template,
-            name: component.name
-        };
+        // Pass the template directly since it's already a complete component structure
+        const dragData = component.template;
         event.dataTransfer!.setData('application/json', JSON.stringify(dragData));
     }
     
     function handleDesignDragStart(event: DragEvent, design: ShipDesign) {
         isDragging = true;
         event.dataTransfer!.effectAllowed = 'copy';
-        // Convert the design template to the format expected by the editor
-        const dragData = {
-            ...design.template,
-            name: design.name
-        };
+        // Pass the template directly since it's already a complete component structure
+        const dragData = design.template;
         event.dataTransfer!.setData('application/json', JSON.stringify(dragData));
     }
     

@@ -99,7 +99,7 @@
     }
     
     let flowContainer: HTMLDivElement | undefined = $state();
-    const { viewport } = useSvelteFlow();
+    const { viewport, getViewport } = useSvelteFlow();
     let zoomLevel = $state(1);
     let x = $state(0);
     let y = $state(0);
@@ -131,47 +131,57 @@
     function handleDrop(event: DragEvent) {
         event.preventDefault();
         event.stopPropagation();
-        
+
         const jsonData = event.dataTransfer?.getData('application/json');
         if (!jsonData) return;
-        
+
         try {
             const data = JSON.parse(jsonData);
             console.log('Dropping data:', data);
-            
-            if (!flowContainer) return;
-            
-            // Get drop position relative to the flow container
-            const rect = flowContainer.getBoundingClientRect();
+
+            // Get drop position - use the event target if flowContainer is not available
+            const target = document.getElementById('conceptual-editor');
+            if (!target) {
+                console.error('Could not find drop target');
+                return;
+            }
+
+            const rect = target.getBoundingClientRect();
+            const currentViewport = getViewport();
+
+            // Calculate position accounting for viewport pan and zoom
             const position = {
-                x: (event.clientX - rect.x - x) / zoomLevel,
-                y: (event.clientY - rect.y - y) / zoomLevel
+                x: (event.clientX - rect.left - currentViewport.x) / currentViewport.zoom,
+                y: (event.clientY - rect.top - currentViewport.y) / currentViewport.zoom
             };
-            
+
             console.log('Drop position:', position);
-            
+
             let newNodes: Node[] = [];
             let newEdges: Edge[] = [];
-            
+
             // Check if it's a template or a simple component
             if (data.type === 'template' && data.template) {
                 // Instantiate template
                 const result = instantiateTemplate(data.template, position);
                 newNodes = result.nodes;
                 newEdges = result.edges;
-            } else {
-                // Instantiate simple component
+            } else if (data.type === 'package') {
+                // Instantiate simple component (from library) - data is already the complete component
                 const result = instantiateSimpleComponent(data, position);
                 newNodes = result.nodes;
                 newEdges = result.edges;
+            } else {
+                console.error('Unknown component type:', data.type);
+                return;
             }
-            
+
             // Add to current view
             currentNodes.update(nodes => [...nodes, ...newNodes]);
             if (newEdges.length > 0) {
                 currentEdges.update(edges => [...edges, ...newEdges]);
             }
-            
+
             addToHistory();
         } catch (error) {
             console.error('Failed to instantiate:', error);

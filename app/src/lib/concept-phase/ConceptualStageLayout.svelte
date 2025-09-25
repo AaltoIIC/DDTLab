@@ -45,7 +45,8 @@
                 description: 
                     `<p>The <strong>sidebar</strong> is home to all your key system design elements, starting with <strong>packages</strong>.</p>
                     <p>Click this button to add a package node to the editor. Think of a package as a <em>folder</em> or <em>directory</em> used purely to organize your model elements, like keeping all your mechanical drawings separate from your electrical schematics.</p>
-                    <p>Once added to the editing stage, packages can be resized and dragged to neatly wrap around other components.</p>`, 
+                    <p>Once added to the editing stage, packages can be resized and dragged to neatly wrap around other components.</p>
+                    <p>Packages can be saved and reused from the package slider, and everything wrapped inside of a package gets preserved.</p>`, 
                 side: "right", 
                 align:  "start"
             }

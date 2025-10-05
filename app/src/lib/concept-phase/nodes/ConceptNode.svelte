@@ -72,6 +72,30 @@
         return data.systemType || detectSystemType({ id, type: 'custom', position: {x: 0, y: 0}, data });
     });
 
+    // Helper function to check if this node is inside a package
+    function isNodeInsidePackage(nodeId: string): string | null {
+        const nodes = get(currentNodes);
+        const thisNode = nodes.find(n => n.id === nodeId);
+        if (!thisNode) return null;
+
+        // Find all package nodes
+        const packageNodes = nodes.filter(n => n.type === 'package');
+
+        for (const pkg of packageNodes) {
+            if (!pkg.width || !pkg.height) continue;
+
+            // Check if this node is within the bounds of the package
+            if (thisNode.position.x >= pkg.position.x &&
+                thisNode.position.y >= pkg.position.y &&
+                thisNode.position.x + (thisNode.width || 0) <= pkg.position.x + pkg.width &&
+                thisNode.position.y + (thisNode.height || 0) <= pkg.position.y + pkg.height) {
+                return pkg.id;
+            }
+        }
+
+        return null;
+    }
+
     // Check if node should be hidden by viewpoint
     let isHiddenByViewpoint = $derived.by(() => {
         // For custom viewpoints, check both manual selection AND nodes with matching custom system type
@@ -79,15 +103,30 @@
             // Check if node is manually included in the viewpoint
             const manuallyIncluded = $activeViewpointDetails.nodeIds?.includes(id) || false;
 
+            // Check if node's parent package is included in the viewpoint
+            const parentPackageId = isNodeInsidePackage(id);
+            const parentPackageIncluded = parentPackageId ?
+                ($activeViewpointDetails.nodeIds?.includes(parentPackageId) || false) : false;
+
             // Check if node has this custom viewpoint as its system type
             const hasMatchingCustomType = data.systemType?.customViewpointId === $activeViewpoint;
 
-            // Show node if either condition is true
-            return !(manuallyIncluded || hasMatchingCustomType);
+            // Show node if any condition is true
+            return !(manuallyIncluded || parentPackageIncluded || hasMatchingCustomType);
         }
 
         // For system viewpoints, use system type matching
         if ($activeViewpointDetails?.type === 'system') {
+            // Check if node's parent package is included in this system viewpoint
+            const parentPackageId = isNodeInsidePackage(id);
+            const parentPackageIncluded = parentPackageId ?
+                ($activeViewpointDetails.nodeIds?.includes(parentPackageId) || false) : false;
+
+            // If parent package is included, show this node
+            if (parentPackageIncluded) {
+                return false;
+            }
+
             // Also check if node has a matching custom type that was assigned
             if (data.systemType?.customViewpointId) {
                 // Custom-typed nodes only show in their custom viewpoint or 'all'

@@ -386,7 +386,7 @@
         <Portal>
             {@const systemViewpoints = $viewpoints.filter(v => v.type === 'system')}
             {@const customViewpoints = $viewpoints.filter(v => v.type === 'custom')}
-            {@const allViewpoints = [...systemViewpoints, ...customViewpoints]}
+            {@const allViewpoints = [...customViewpoints, ...systemViewpoints]}
             <div class="dialog-overlay" onclick={() => showAddToViewDialog = false}>
                 <div class="dialog" onclick={(e) => e.stopPropagation()}>
                     <h3>Manage Package Views</h3>
@@ -396,9 +396,9 @@
                             Select which views should include this package and all its contents:
                         </p>
                         <div class="viewpoint-list">
-                            {#if systemViewpoints.length > 0}
-                                <div class="viewpoint-category">System Views</div>
-                                {#each systemViewpoints as viewpoint}
+                            {#if customViewpoints.length > 0}
+                                <div class="viewpoint-category">Custom Views</div>
+                                {#each customViewpoints as viewpoint}
                                     <label class="viewpoint-option" class:checked={selectedViewpointIds.has(viewpoint.id)}>
                                         <input
                                             type="checkbox"
@@ -421,9 +421,9 @@
                                 {/each}
                             {/if}
 
-                            {#if customViewpoints.length > 0}
-                                <div class="viewpoint-category">Custom Views</div>
-                                {#each customViewpoints as viewpoint}
+                            {#if systemViewpoints.length > 0}
+                                <div class="viewpoint-category">System Views</div>
+                                {#each systemViewpoints as viewpoint}
                                     <label class="viewpoint-option" class:checked={selectedViewpointIds.has(viewpoint.id)}>
                                         <input
                                             type="checkbox"

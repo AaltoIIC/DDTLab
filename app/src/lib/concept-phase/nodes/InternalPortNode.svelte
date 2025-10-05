@@ -2,6 +2,9 @@
     import { Handle, Position, useUpdateNodeInternals } from '@xyflow/svelte';
     import { ArrowRight, ArrowLeft, Circle } from '@lucide/svelte';
     import type { Port } from '../interfaces/types';
+    import { get } from 'svelte/store';
+    import { currentNodes } from '$lib/stores/stores.svelte';
+    import { activeViewpointDetails, activeViewpoint } from '../viewpoints/viewpointStore';
 
     interface InternalPortData extends Port {
         portType: 'input' | 'output';
@@ -25,9 +28,50 @@
             updateNodeInternals(id);
         }
     });
+
+    // Helper function to check if this node is inside a package
+    function isNodeInsidePackage(nodeId: string): string | null {
+        const nodes = get(currentNodes);
+        const thisNode = nodes.find(n => n.id === nodeId);
+        if (!thisNode) return null;
+
+        // Find all package nodes
+        const packageNodes = nodes.filter(n => n.type === 'package');
+
+        for (const pkg of packageNodes) {
+            if (!pkg.width || !pkg.height) continue;
+
+            // Check if this node is within the bounds of the package
+            if (thisNode.position.x >= pkg.position.x &&
+                thisNode.position.y >= pkg.position.y &&
+                thisNode.position.x + (thisNode.width || 0) <= pkg.position.x + pkg.width &&
+                thisNode.position.y + (thisNode.height || 0) <= pkg.position.y + pkg.height) {
+                return pkg.id;
+            }
+        }
+
+        return null;
+    }
+
+    // Check if node should be hidden by viewpoint
+    let isHiddenByViewpoint = $derived.by(() => {
+        // Skip viewpoint filtering if 'all' is selected
+        if ($activeViewpoint === 'all') return false;
+
+        // Check if node is manually included in the viewpoint
+        const manuallyIncluded = $activeViewpointDetails?.nodeIds?.includes(id) || false;
+
+        // Check if node's parent package is included in the viewpoint
+        const parentPackageId = isNodeInsidePackage(id);
+        const parentPackageIncluded = parentPackageId ?
+            ($activeViewpointDetails?.nodeIds?.includes(parentPackageId) || false) : false;
+
+        // Show node if either condition is true
+        return !(manuallyIncluded || parentPackageIncluded);
+    });
 </script>
 
-<div class="internal-port-node" class:selected class:input={data.portType === 'input'} class:output={data.portType === 'output'}>
+<div class="internal-port-node" class:selected class:input={data.portType === 'input'} class:output={data.portType === 'output'} class:hidden-by-viewpoint={isHiddenByViewpoint}>
     {#if data.portType === 'input'}
         <Handle
             type="source"
@@ -97,6 +141,12 @@
 
     .port-icon {
         color: #6b7280;
+    }
+
+    /* Hide nodes not in viewpoint */
+    .internal-port-node.hidden-by-viewpoint {
+        opacity: 0.2;
+        pointer-events: none;
     }
 
     .port-info {

@@ -3,6 +3,8 @@
     import * as Select from "$lib/components/ui/select";
     import { onMount } from "svelte";
     import type { LogicalExpressionType } from "$lib/types/types";
+    import { currentNodes, navigationContext } from "$lib/stores/stores.svelte";
+    import { get } from "svelte/store";
 
    interface Props {
       value?: LogicalExpressionType;
@@ -32,10 +34,37 @@
         });
 
         document.addEventListener('connector-click', (e) => {
+            const detail = (e as any).detail;
+            const elementName = detail.elementName;
+            const connectorName = detail.connectorName;
+
+            // Find the node to get its actual name (not ID)
+            const nodes = get(currentNodes);
+            const node = nodes.find(n => n.id === elementName);
+            const nodeName = node?.data?.name || elementName;
+
+            // Build full hierarchical path including subsystem navigation
+            const navContext = get(navigationContext);
+            const pathNames: string[] = [];
+
+            // Add all parent system names from navigation path
+            if (navContext.path && navContext.path.length > 0) {
+                navContext.path.forEach(parent => {
+                    pathNames.push(parent.name);
+                });
+            }
+
+            // Add the component name and connector name
+            pathNames.push(nodeName);
+            pathNames.push(connectorName);
+
+            // Create hierarchical path: parent1.parent2.component.connector
+            const hierarchicalPath = pathNames.join('.');
+
             if (leftInFocus) {
-                value.leftHandSide = `sys:${(e as any).detail.connectorName}`;
+                value.leftHandSide = hierarchicalPath;
             } else if (rightInFocus) {
-                value.rightHandSide = `sys:${(e as any).detail.connectorName}`;
+                value.rightHandSide = hierarchicalPath;
             }
         });
     });
@@ -57,6 +86,8 @@
             <Select.Item value="=">=</Select.Item>
             <Select.Item value="<">{'<'}</Select.Item>
             <Select.Item value=">">{'>'}</Select.Item>
+            <Select.Item value="<=">{'<='}</Select.Item>
+            <Select.Item value=">=">{'>='}</Select.Item>
         </Select.Content>
     </Select.Root>
 

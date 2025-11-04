@@ -1,10 +1,117 @@
-import { 
+import {
     currentSystemMeta,
     currentNodes,
     currentEdges,
     currentReqs
 } from '$lib/stores/stores.svelte'
 import { get } from 'svelte/store'
+import type { RequirementType, LogicalExpressionType, IntervalType } from '$lib/types/types'
+import { env } from '$env/dynamic/public'
+
+// Get API URL from environment variable, fallback to localhost for development
+const API_URL = env.PUBLIC_API_URL || 'http://localhost:8001'
+
+// Mapping from frontend temporal operators to MTL syntax
+const TEMPORAL_OPERATOR_MAP = {
+    'Globally': 'G',
+    'Eventually': 'F',
+    'Until': 'U',
+    'Next': 'X',
+    'Since': 'S',
+    'Release': 'R'
+} as const;
+
+/**
+ * Sanitizes variable names for MTL syntax (removes invalid characters)
+ * Preserves dots (.) for hierarchical paths like "motor.motor_torque"
+ */
+function sanitizeVariableName(varName: string | number | boolean): string {
+    // Convert to string first
+    const str = String(varName);
+    // Remove or replace invalid characters (colons, spaces, etc.)
+    // Keep alphanumeric, underscores, and dots (for hierarchical paths)
+    return str.replace(/[^a-zA-Z0-9_.]/g, '_');
+}
+
+/**
+ * Converts a logical expression to MTL formula syntax
+ */
+function logicalExpressionToMTL(expr: LogicalExpressionType): string {
+    const { leftHandSide, operator, rightHandSide } = expr;
+
+    // Sanitize variable names but keep numbers as-is
+    const left = typeof leftHandSide === 'number' ? leftHandSide : sanitizeVariableName(leftHandSide);
+    const right = typeof rightHandSide === 'number' ? rightHandSide : sanitizeVariableName(rightHandSide);
+
+    return `${left} ${operator} ${right}`;
+}
+
+/**
+ * Converts a frontend requirement to MTL formula syntax
+ */
+function requirementToMTLFormula(req: RequirementType): string {
+    const mtlOp = TEMPORAL_OPERATOR_MAP[req.temporalOperator];
+
+    // Handle interval - MTL parser requires an interval for temporal operators
+    let interval = '[0,inf]';  // Default unbounded interval
+
+    if (req.interval) {
+        // Handle both array format [0, 10] and object format {lowerBound: 0, upperBound: 10}
+        let lowerBound: number | undefined;
+        let upperBound: number | undefined;
+
+        if (Array.isArray(req.interval)) {
+            // Array format: [0, 10]
+            lowerBound = req.interval[0];
+            upperBound = req.interval[1];
+        } else {
+            // Object format: {lowerBound: 0, upperBound: 10}
+            lowerBound = req.interval.lowerBound;
+            upperBound = req.interval.upperBound;
+        }
+
+        if (typeof lowerBound === 'number' &&
+            typeof upperBound === 'number' &&
+            !isNaN(lowerBound) &&
+            !isNaN(upperBound)) {
+            interval = `[${lowerBound},${upperBound}]`;
+        }
+    }
+
+    const rightExpr = logicalExpressionToMTL(req.rightHandSide);
+
+    // Binary temporal operators (Until, Since, Release) use both left and right hand sides
+    if (['Until', 'Since', 'Release'].includes(req.temporalOperator) && req.leftHandSide) {
+        const leftExpr = logicalExpressionToMTL(req.leftHandSide);
+        return `(${leftExpr}) ${mtlOp}${interval} (${rightExpr})`;
+    }
+
+    // Unary temporal operators (Globally, Eventually, Next)
+    return `${mtlOp}${interval} (${rightExpr})`;
+}
+
+/**
+ * Calls the FastAPI backend to convert an MTL formula to TTL ontology
+ */
+async function convertMTLToTTL(formula: string, requirementName: string): Promise<string> {
+    const response = await fetch(`${API_URL}/convert-mtl`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            formula: formula,
+            requirement_name: requirementName
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to convert MTL formula: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.ttl_content;
+}
 
 const TTL_prefix = `@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -22,338 +129,203 @@ const TTL_prefix = `@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix qudt: <http://qudt.org/2.1/schema/qudt> .
 @prefix sys: <http://example.com/system#> .
 
-# we define a an ontology to represent the requirements and mtl formulas
-
-req:Requirement a owl:Class ;
-    rdfs:label "Requirement" ;
-    rdfs:comment "Represents a system requirement expressed using MTL." .
-
-req:hasFormula a owl:ObjectProperty ;
-    rdfs:domain req:Requirement ;
-    rdfs:range mtl:MTLFormula ;
-    rdfs:label "has formula" ;
-    rdfs:comment "Links a requirement to its formal MTL representation." .
-
-req:hasDescription a owl:DatatypeProperty ;
-    rdfs:domain req:Requirement ;
-    rdfs:range xsd:string ;
-    rdfs:label "has description" ;
-    rdfs:comment "Provides a human-readable description of the requirement." .
-
-req:hasID a owl:DatatypeProperty ;
-    rdfs:domain req:Requirement ;
-    rdfs:range xsd:string ;
-    rdfs:label "has ID" ;
-    rdfs:comment "Unique identifier for the requirement." .
-
-req:appliesTo a owl:ObjectProperty ;
-    rdfs:domain req:Requirement ;
-    rdfs:range ssp:Component ;
-    rdfs:label "applies to" ;
-    rdfs:comment "Specifies which component a requirement applies to." .
-
-mtl:Operator a owl:Class ;
-    rdfs:label "MTL Operator" ;
-    rdfs:comment "The base class for all MTL operators." .
-
-mtl:TemporalOperator rdfs:subClassOf mtl:Operator ;
-    rdfs:label "Temporal Operator" ;
-    rdfs:comment "The class of temporal operators in MTL." .
-
-mtl:BooleanOperator rdfs:subClassOf mtl:Operator ;
-    rdfs:label "Boolean Operator" ;
-    rdfs:comment "The class of boolean operators in MTL." .
-
-mtl:TemporalOperator owl:disjointWith mtl:BooleanOperator .
-
-mtl:Operator owl:equivalentClass [
-    a owl:Class ;
-    owl:unionOf (mtl:TemporalOperator mtl:BooleanOperator)
-] .
-
-mtl:Until a mtl:TemporalOperator .
-mtl:Globally a mtl:TemporalOperator .
-mtl:Eventually a mtl:TemporalOperator .
-mtl:Next a mtl:TemporalOperator .
-mtl:Since a mtl:TemporalOperator . # new
-mtl:Release a mtl:TemporalOperator . # new
-
-mtl:EqualTo a mtl:BooleanOperator ;
-    rdfs:label "Equal To" ;
-    rdfs:comment "Represents the equality comparison in MTL formulas." .
-
-mtl:GreaterThan a mtl:BooleanOperator ;
-    rdfs:label "Greater Than" ;
-    rdfs:comment "Represents the greater than comparison in MTL formulas." .
-
-mtl:LessThan a mtl:BooleanOperator ;
-    rdfs:label "Less Than" ;
-    rdfs:comment "Represents the less than comparison in MTL formulas." .
-
-mtl:IfThenElse a mtl:BooleanOperator ;
-    rdfs:label "If-Then-Else" ;
-    rdfs:comment "Represents the if-then-else conditional operator in MTL formulas." .
-
-mtl:True a mtl:BooleanOperator ;
-    rdfs:label "True" ;
-    rdfs:comment "Represents conditions being true in MTL formulas." .
-
-mtl:False a mtl:BooleanOperator ;
-    rdfs:label "False" ;
-    rdfs:comment "Represents conditions being false in MTL formulas." .
-
-mtl:And a mtl:BooleanOperator ;
-    rdfs:label "And" ;
-    rdfs:comment "Represents the logical AND operator in MTL formulas." .
-
-mtl:Or a mtl:BooleanOperator ;
-    rdfs:label "Or" ;
-    rdfs:comment "Represents the logical OR operator in MTL formulas." .
-
-# these are new ------------------------------------------
-mtl:Xor a mtl:BooleanOperator ;
-    rdfs:label "Xor" ;
-    rdfs:comment "Represents the logical XOR operator in MTL formulas." .
-
-mtl:IfThen a mtl:BooleanOperator ;
-    rdfs:label "If Then" ;
-    rdfs:comment "Represents the implication operation in MTL formulas." .
-
-mtl:IfAndOnlyIf a mtl:BooleanOperator ;
-    rdfs:label "If and Only If" ;
-    rdfs:comment "Represents the bi-implication (equivalence) operation in MTL formulas." .
-
-mtl:CausesBefore a mtl:TemporalOperator ;
-    rdfs:label "Causes Before" ;
-    rdfs:comment "Represents a causal relationship with a time bound in MTL formulas." .
-
-mtl:CausesWithinInterval a mtl:TemporalOperator ;
-    rdfs:label "Causes Within Interval" ;
-    rdfs:comment "Represents a causal relationship within a specific time interval in MTL formulas." .
-# end these are new ------------------------------------------
-
-mtl:MTLFormula a owl:Class ;
-    rdfs:label "MTL Formula" ;
-    rdfs:comment "Represents a formula in the Metric Temporal Logic (MTL)." .
-
-mtl:hasOperator a owl:ObjectProperty ;
-    rdfs:domain mtl:MTLFormula ;
-    rdfs:range mtl:Operator .
-
-mtl:hasLeftOperand a owl:ObjectProperty ;
-    rdfs:domain mtl:MTLFormula ;
-    rdfs:range mtl:MTLFormula .
-
-mtl:hasRightOperand a rdf:Property ;
-    rdfs:domain mtl:MTLFormula ;
-    rdfs:range [ a owl:Class ;
-        owl:unionOf (mtl:MTLFormula rdfs:Literal)
-    ] ;
-    rdfs:label "has right operand" ;
-    rdfs:comment "Specifies the right operand of an MTL formula, which can be another formula or a literal value." .
-
-mtl:hasCondition a owl:ObjectProperty ;
-    rdfs:domain mtl:MTLFormula ;
-    rdfs:range mtl:MTLFormula . 
-
-mtl:hasThenClause a owl:ObjectProperty ;
-    rdfs:domain mtl:MTLFormula ;
-    rdfs:range mtl:MTLFormula .
-
-mtl:hasElseClause a owl:ObjectProperty ;
-    rdfs:domain mtl:MTLFormula ;
-    rdfs:range mtl:MTLFormula .
-
-mtl:hasTimeInterval a owl:ObjectProperty ;
-    rdfs:domain mtl:MTLFormula ;
-    rdfs:range time:Interval ;
-    rdfs:label "has time interval" ;
-    rdfs:comment "Specifies the time interval for an MTL formula." .
-
-fmu:FMU a owl:Class ;
-    rdfs:label "FMU" ;
-    rdfs:comment "Represents a Functional Mock-up Unit." .
-
-fmu:fmuType a owl:DatatypeProperty ;
-    rdfs:domain fmu:FMU ;
-    rdfs:range xsd:string ;
-    rdfs:label "FMU type" ;
-    rdfs:comment "Specifies the type of the FMU (e.g., 'Motor', 'Driver', 'Load')." .
-
-ssp:System a owl:Class ;
-    rdfs:label "SSP System" ;
-    rdfs:comment "Represents a system defined in an SSP file" .
-
-ssp:Component a owl:Class ;
-    rdfs:label "SSP Component" ;
-    rdfs:comment "Represents a component in an SSP file" .
-
-ssp:hasComponent a owl:ObjectProperty ;
-    rdfs:domain ssp:System ;
-    rdfs:range ssp:Component ;
-    rdfs:label "has component" ;
-    rdfs:comment "Links a system to its components" .
-
-ssp:componentType a owl:DatatypeProperty ;
-    rdfs:domain ssp:Component ;
-    rdfs:range xsd:string ;
-    rdfs:label "component type" ;
-    rdfs:comment "Specifies the type of a component in an SSP file (example: 'Motor', 'Driver')" .
-
-ssp:SSPComponentID a owl:DatatypeProperty ;
-    rdfs:domain ssp:Component ;
-    rdfs:range xsd:string ;
-    rdfs:label "SSP Component ID" ;
-    rdfs:comment "Unique identifier for SSP component." .
-
-ssp:hasVariableName a owl:DatatypeProperty ;
-    rdfs:domain ssp:Component ;
-    rdfs:range xsd:string ;
-    rdfs:label "has variable name" ;
-    rdfs:comment "Specifies the name of a variable in an SSP component." .
-
-ssp:hasVariable a owl:ObjectProperty;
-    rdfs:domain ssp:Component ;
-    rdfs:range ssp:Component ;
-    rdfs:label "has variable" ;
-    rdfs:comment "Specifies the variables belonging to an SSP component." .
-
-ssp:hasDataType a owl:DatatypeProperty ;
-    rdfs:domain ssp:Component ;
-    rdfs:range rdfs:Datatype ;
-    rdfs:label "has data type" ;
-    rdfs:comment "Specifies the data type of a variable in an SSP component." .
-
-fmu:FMUComponentID a owl:DatatypeProperty ;
-    rdfs:domain fmu:FMU ;
-    rdfs:range xsd:string ;
-    rdfs:label "FMU Component ID" ;
-    rdfs:comment "Unique identifier for FMU." .
-
-ssp:linkedToFMU a owl:ObjectProperty ;
-    rdfs:domain ssp:Component ;
-    rdfs:range fmu:FMU ;
-    rdfs:label "linked to FMU" ;
-    rdfs:comment "Links an SSP component to its corresponding FMU." .
-
-fmu:FMUVariable a owl:Class ;
-    rdfs:label "FMU Variable" ;
-    rdfs:comment "Represents a variable in the FMU Model." .
-
-fmu:hasVariable a owl:ObjectProperty ;
-    rdfs:domain fmu:FMU ;
-    rdfs:range fmu:FMUVariable ;
-    rdfs:label "has variable" ;
-    rdfs:comment "Links an FMU to its variables." .
-
-fmu:hasDataType a owl:DatatypeProperty ;
-    rdfs:domain fmu:FMUVariable ;
-    rdfs:range rdfs:Datatype ;
-    rdfs:label "variable type" ;
-    rdfs:comment "The data type of the FMU variable (example: 'double', 'Integer')." .
-
-fmu:hasFMUVariableName a owl:DatatypeProperty ;
-    rdfs:domain fmu:FMUVariable ;
-    rdfs:range xsd:string .
-
-sys:SSPComponent rdfs:subClassOf ssp:Component ;
-    rdfs:label "SSP Component" ;
-    rdfs:comment "Represents a component in an SSP file" .
-
-sys:SSPSystem rdfs:subClassOf ssp:System ;
-    rdfs:label "SSP System" ;
-    rdfs:comment "Represents a system defined in an SSP file" .
-
-# --------------------------------------------------------------
-# intial parameters
-# --------------------------------------------------------------
-fmu:InitialParameter a owl:Class ;
-    rdfs:label "Initial Parameters" ;
-    rdfs:comment "Represents the initial parameters for an FMU." .
-
-fmu:hasInitialParameter a owl:ObjectProperty ;
-    rdfs:domain fmu:FMU ;
-    rdfs:range fmu:InitialParameter ;
-    rdfs:label "has initial parameter" ;
-    rdfs:comment "Links an FMU to its initial parameters." .
-
-fmu:paramaterName a owl:DatatypeProperty ;
-    rdfs:domain fmu:InitialParameter ;
-    rdfs:range xsd:string ;
-    rdfs:label "parameter name" ;
-    rdfs:comment "Specifies the name of an initial parameter." .
-
-fmu:parameterValue a owl:DatatypeProperty ;
-    rdfs:domain fmu:InitialParameter ;
-    rdfs:range rdfs:Literal ;
-    rdfs:label "parameter value" ;
-    rdfs:comment "Specifies the value of an initial parameter." .
-
-req:RequirementSet a owl:Class ;
-    rdfs:label "Requirement Set" ;
-    rdfs:comment "Represents a set of requirements that are executed together." .
-
-req:hasRequirement a owl:ObjectProperty ;
-    rdfs:domain req:RequirementSet ;
-    rdfs:range req:Requirement ;
-    rdfs:label "has requirement" ;
-    rdfs:comment "Links a requirement set to its requirements." .
-
-req:ConditionalRequirement a owl:Class ;
-    rdfs:label "Conditional Requirement Set" ;
-    rdfs:comment "Represents a requirement that depends on initial parameters." .
-
-req:conditionParameter a owl:ObjectProperty ;
-    rdfs:domain req:ConditionalRequirement ;
-    rdfs:range [ a owl:Class ;
-        owl:unionOf (xsd:string fmu:FMUVariable)
-    ] ;
-    rdfs:label "condition parameter" ;
-    rdfs:comment "Specifies the parameter name or FMU variable for the condition." .
-
-req:conditionValue a owl:DatatypeProperty ;
-    rdfs:domain req:ConditionalRequirement ;
-    rdfs:range rdfs:Literal ;
-    rdfs:label "condition value" ;
-    rdfs:comment "Specifies the value for the condition." .
-
-req:hasRequirementSet a owl:ObjectProperty ;
-    rdfs:domain req:ConditionalRequirement ;
-    rdfs:range req:RequirementSet ;
-    rdfs:label "has requirement set" ;
-    rdfs:comment "Links a conditional requirement to its requirement set." .
-
-req:ConditionalDefaultRequirement a owl:Class ;
-    rdfs:subClassOf req:ConditionalRequirement, req:DefaultRequirementSet ;
-    rdfs:label "Conditional Default Requirement Set" ;
-    rdfs:comment "Represents a default requirement set that is applied conditionally based on initial parameters." .
-
-req:DefaultRequirementSet a owl:Class ;
-    rdfs:subClassOf req:RequirementSet ;
-    rdfs:label "Default Requirement Set" ;
-    rdfs:comment "Represents a set of requirements that always apply, regardless of conditions." .
-
-req:hasDefaultRequirementSet a owl:ObjectProperty ;
-    rdfs:domain fmu:FMU ;
-    rdfs:range [
-        a owl:Class ;
-        owl:unionOf (req:DefaultRequirementSet req:ConditionalDefaultRequirement)
-    ] ;
-    rdfs:label "has default requirement set" ;
-    rdfs:comment "Links an FMU to its default requirement set, which may be conditional or unconditional." .
-# --------------------------------------------------------------
-# end intial parameters
-# --------------------------------------------------------------
 
 `;
 
-export const convertToTTL = () => {
-    console.log(get(currentSystemMeta))
-    console.log(get(currentNodes))
-    console.log(get(currentEdges))
-    console.log(get(currentReqs))
+/**
+ * Parse an MTL formula string back to a RequirementType object
+ * Example: "(G[0.0, 10.0] (motor.speed < 50.0))" → RequirementType
+ */
+function parseMTLFormulaToRequirement(formula: string, name: string): RequirementType | null {
+    try {
+        // Remove outer parentheses if present
+        formula = formula.trim();
+        if (formula.startsWith('(') && formula.endsWith(')')) {
+            formula = formula.slice(1, -1);
+        }
 
-    return (`${TTL_prefix}`);
+        // MTL operator mapping (reverse of TEMPORAL_OPERATOR_MAP)
+        const MTL_TO_OPERATOR: Record<string, RequirementType['temporalOperator']> = {
+            'G': 'Globally',
+            'F': 'Eventually',
+            'U': 'Until',
+            'X': 'Next',
+            'S': 'Since',
+            'R': 'Release'
+        };
+
+        // Parse temporal operator and interval
+        // Match pattern: G[0.0, 10.0] or F[5.0, inf] etc.
+        const tempOpMatch = formula.match(/^([GFUXSR])\[([0-9.]+),\s*([0-9.inf]+)\]\s*(.+)$/);
+
+        if (!tempOpMatch) {
+            console.error('Could not parse temporal operator from formula:', formula);
+            return null;
+        }
+
+        const [, mtlOp, lowerBound, upperBound, rest] = tempOpMatch;
+        const temporalOperator = MTL_TO_OPERATOR[mtlOp];
+
+        if (!temporalOperator) {
+            console.error('Unknown temporal operator:', mtlOp);
+            return null;
+        }
+
+        // Parse interval
+        const lower = parseFloat(lowerBound);
+        const upper = upperBound === 'inf' ? Infinity : parseFloat(upperBound);
+        const interval: IntervalType = { lowerBound: lower, upperBound: upper };
+
+        // Parse the rest (logical expression)
+        // For binary operators (Until, Since, Release), there will be two expressions
+        // For unary operators (Globally, Eventually, Next), there will be one expression
+        let leftHandSide: LogicalExpressionType | undefined = undefined;
+        let rightHandSide: LogicalExpressionType;
+
+        if (['Until', 'Since', 'Release'].includes(temporalOperator)) {
+            // Binary operator - parse both sides
+            // Pattern: (leftExpr) U[...] (rightExpr)
+            const binaryMatch = rest.match(/^\(([^)]+)\)\s*([GFUXSR])\[.+\]\s*\(([^)]+)\)$/);
+            if (binaryMatch) {
+                const [, leftExpr, , rightExpr] = binaryMatch;
+                leftHandSide = parseLogicalExpression(leftExpr);
+                rightHandSide = parseLogicalExpression(rightExpr);
+            } else {
+                // Fallback: treat whole thing as right hand side
+                rightHandSide = parseLogicalExpression(rest);
+            }
+        } else {
+            // Unary operator - only right hand side
+            // Remove outer parentheses from the expression
+            let expr = rest.trim();
+            if (expr.startsWith('(') && expr.endsWith(')')) {
+                expr = expr.slice(1, -1);
+            }
+            rightHandSide = parseLogicalExpression(expr);
+        }
+
+        return {
+            name,
+            description: '',
+            temporalOperator,
+            leftHandSide,
+            rightHandSide,
+            interval
+        };
+    } catch (error) {
+        console.error('Error parsing MTL formula:', error);
+        return null;
+    }
+}
+
+/**
+ * Parse a logical expression like "motor.speed < 50.0"
+ */
+function parseLogicalExpression(expr: string): LogicalExpressionType {
+    expr = expr.trim();
+
+    // Match: leftHandSide operator rightHandSide
+    // Operators: =, <, >, <=, >= (check two-char operators first)
+    const match = expr.match(/^(.+?)\s*(<=|>=|[=<>])\s*(.+)$/);
+
+    if (match) {
+        const [, left, op, right] = match;
+        return {
+            leftHandSide: left.trim(),
+            operator: op as '=' | '<' | '>' | '<=' | '>=',
+            rightHandSide: isNaN(Number(right.trim())) ? right.trim() : Number(right.trim())
+        };
+    }
+
+    // Fallback
+    return {
+        leftHandSide: expr,
+        operator: '=',
+        rightHandSide: ''
+    };
+}
+
+/**
+ * Parse TTL file content and convert to requirements
+ */
+export const parseTTLToRequirements = async (ttlContent: string): Promise<RequirementType[]> => {
+    try {
+        const response = await fetch(`${API_URL}/parse-ttl`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ttl_content: ttlContent
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to parse TTL: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const requirements: RequirementType[] = [];
+
+        for (const parsed of data.requirements) {
+            const req = parseMTLFormulaToRequirement(parsed.formula, parsed.name);
+            if (req) {
+                requirements.push(req);
+            }
+        }
+
+        console.log('Successfully parsed requirements from TTL:', requirements);
+        return requirements;
+    } catch (error) {
+        console.error('Error parsing TTL to requirements:', error);
+        throw error;
+    }
+}
+
+export const convertToTTL = async (): Promise<string> => {
+    const requirements = get(currentReqs);
+
+    console.log('Converting requirements to TTL:', requirements);
+
+    // If no requirements, return just the prefix
+    if (!requirements || requirements.length === 0) {
+        console.log('No requirements found, returning TTL prefix only');
+        return TTL_prefix;
+    }
+
+    try {
+        // Convert each requirement to MTL formula and get TTL
+        const ttlPromises = requirements.map(async (req, index) => {
+            const mtlFormula = requirementToMTLFormula(req);
+            console.log(`Requirement ${index + 1} "${req.name}":`, mtlFormula);
+
+            // Use requirement name as the requirement identifier (sanitize for use in URIs)
+            const reqName = req.name.replace(/[^a-zA-Z0-9_]/g, '_');
+
+            return await convertMTLToTTL(mtlFormula, reqName);
+        });
+
+        const ttlResults = await Promise.all(ttlPromises);
+
+        // Since each TTL result includes prefixes, we only need the requirement bodies
+        // Extract just the requirement definitions (skip prefixes and comments)
+        const requirementBodies = ttlResults.map(ttl => {
+            const lines = ttl.split('\n');
+            // Find where the actual requirement starts (after prefixes and comments)
+            const startIndex = lines.findIndex(line => line.trim().startsWith('req:'));
+            return lines.slice(startIndex).join('\n');
+        });
+
+        // Combine with a single set of prefixes
+        const combinedTTL = TTL_prefix + '\n# System Requirements\n\n' + requirementBodies.join('\n\n');
+
+        console.log('Successfully converted all requirements to TTL');
+        return combinedTTL;
+
+    } catch (error) {
+        console.error('Error converting requirements to TTL:', error);
+        throw error;
+    }
 }
 
 // Import the new SSD exporter

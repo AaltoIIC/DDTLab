@@ -3,6 +3,7 @@
     import MenuOption from "$lib/sidebar/MenuOption.svelte";
     import {
         currentNodes,
+        currentReqs,
         addToHistory,
         currentSystemMeta,
         createSystem,
@@ -16,38 +17,100 @@
     import FMIComponentsPopover from '$lib/fmi/FMIComponentsPopover.svelte';
     import {
         convertToTTL,
-        convertToSSD
+        convertToSSD,
+        parseTTLToRequirements
     } from "./conversions";
     import Tooltip from "$lib/Tooltip.svelte";
-    import type { SubsystemDataType } from "$lib/types/types";  
+    import type { SubsystemDataType } from "$lib/types/types";
+    import JSZip from 'jszip';  
 
     let isReqsOpen = $state(false);
     let isAddDropdownOpen = $state(false);
     let isDownloadDropdownOpen = $state(false);
+    let isUploadDropdownOpen = $state(false);
     let isTestScenariosOpen = $state(false);
     let isFMIOpen = $state(false);
 
-    const downloadFile = (format: string) => {
+    let fileInput: HTMLInputElement;
+
+    const downloadFile = async (format: string) => {
         let content = '';
         let filename = '';
 
-        if (format === 'TTL') {
-            content = convertToTTL();
-            filename = `${makeValidFileName($currentSystemMeta.name)}.ttl`;
-        } else if (format === 'SSD') {
-            content = convertToSSD();
-            filename = `${makeValidFileName($currentSystemMeta.name)}.ssd`;
-        }
+        try {
+            if (format === 'TTL') {
+                content = await convertToTTL();
+                filename = `${makeValidFileName($currentSystemMeta.name)}.ttl`;
+            } else if (format === 'SSD') {
+                content = convertToSSD();
+                filename = `${makeValidFileName($currentSystemMeta.name)}.ssd`;
+            } else if (format === 'ZIP') {
+                // Generate both SSD and TTL files
+                const ssdContent = convertToSSD();
+                const ttlContent = await convertToTTL();
 
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+                // Create a new JSZip instance
+                const zip = new JSZip();
+
+                // Add both files to the ZIP
+                const baseName = makeValidFileName($currentSystemMeta.name);
+                zip.file(`${baseName}.ssd`, ssdContent);
+                zip.file(`${baseName}.ttl`, ttlContent);
+
+                // Generate the ZIP file
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(zipBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${baseName}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                return;
+            }
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            alert(`Failed to generate ${format} file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    const handleUploadClick = () => {
+        fileInput.click();
+    }
+
+    const handleFileUpload = async (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+
+        if (!file) return;
+
+        try {
+            const content = await file.text();
+            const parsedRequirements = await parseTTLToRequirements(content);
+
+            // Add parsed requirements to current requirements
+            currentReqs.update(reqs => [...reqs, ...parsedRequirements]);
+            addToHistory();
+
+            console.log(`Successfully imported ${parsedRequirements.length} requirement(s)`);
+
+            // Reset file input
+            target.value = '';
+        } catch (error) {
+            console.error('Error uploading TTL file:', error);
+            alert(`Failed to parse TTL file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
     }
 
     const handleAdd = (option: string) => {
@@ -161,12 +224,28 @@
         </Tooltip>
     </div>
     <div class="bottom-buttons">
-        <Tooltip text="Download TTL/SSD" position="right" disabled={isDownloadDropdownOpen}>
+        <Tooltip text="Upload TTL" position="right">
+            <button class="menu-option" aria-label="Upload TTL"
+                onclick={handleUploadClick}>
+                <svg class="option-icon upload" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                </svg>
+            </button>
+        </Tooltip>
+        <input
+            type="file"
+            accept=".ttl"
+            bind:this={fileInput}
+            onchange={handleFileUpload}
+            style="display: none;"
+        />
+        <Tooltip text="Download TTL/SSD/ZIP" position="right" disabled={isDownloadDropdownOpen}>
             <MenuOption
-                options={['TTL', 'SSD']}
+                options={['TTL', 'SSD', 'ZIP']}
                 optionIcons={[
                     '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" /></svg>',
-                    '<svg viewBox="-3 -1 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 13V10.375C16 9.47989 15.6444 8.62145 15.0115 7.98851C14.3786 7.35558 13.5201 7 12.625 7H11.125C10.8266 7 10.5405 6.88147 10.3295 6.6705C10.1185 6.45952 10 6.17337 10 5.875V4.375C10 3.47989 9.64442 2.62145 9.01149 1.98851C8.37855 1.35558 7.52011 1 6.625 1H4.75M7 1H2.125C1.504 1 1 1.504 1 2.125V19.375C1 19.996 1.504 20.5 2.125 20.5H14.875C15.496 20.5 16 19.996 16 19.375V10C16 7.61305 15.0518 5.32387 13.364 3.63604C11.6761 1.94821 9.38695 1 7 1Z" /><path d="M10.75 11L13 13.25L10.75 15.5M6.25 15.5L4 13.25L6.25 11" /></svg>'
+                    '<svg viewBox="-3 -1 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 13V10.375C16 9.47989 15.6444 8.62145 15.0115 7.98851C14.3786 7.35558 13.5201 7 12.625 7H11.125C10.8266 7 10.5405 6.88147 10.3295 6.6705C10.1185 6.45952 10 6.17337 10 5.875V4.375C10 3.47989 9.64442 2.62145 9.01149 1.98851C8.37855 1.35558 7.52011 1 6.625 1H4.75M7 1H2.125C1.504 1 1 1.504 1 2.125V19.375C1 19.996 1.504 20.5 2.125 20.5H14.875C15.496 20.5 16 19.996 16 19.375V10C16 7.61305 15.0518 5.32387 13.364 3.63604C11.6761 1.94821 9.38695 1 7 1Z" /><path d="M10.75 11L13 13.25L10.75 15.5M6.25 15.5L4 13.25L6.25 11" /></svg>',
+                    '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>'
                 ]}
                 onClick={downloadFile}
                 bind:isOpen={isDownloadDropdownOpen}

@@ -41,7 +41,14 @@
                 <span>{requirement.leftHandSide.rightHandSide}</span>
             </div>
         {/if}
-        <span class="temp-op">{requirement.temporalOperator}</span>
+        <div class="temp-op-container">
+            <span class="temp-op">{requirement.temporalOperator}</span>
+            {#if requirement.interval}
+                <span class="interval">
+                    [{Array.isArray(requirement.interval) ? `${requirement.interval[0]},${requirement.interval[1]}` : `${requirement.interval.lowerBound},${requirement.interval.upperBound}`}]
+                </span>
+            {/if}
+        </div>
         <div class="logical-exp">
             <span>{requirement.rightHandSide.leftHandSide}</span>
             <span>{requirement.rightHandSide.operator}</span>
@@ -52,13 +59,23 @@
 <DialogBox bind:this={dialogBox} />
 
 <style>
+    .temp-op-container {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin: 4px;
+    }
     .temp-op {
         font-size: 12px;
-        margin: 4px;
         border-radius: var(--main-border-radius);
         border: solid 1px rgba(0, 0, 0, 0.7);
         padding: 2px 4px;
         color: rgba(0, 0, 0, 0.7);
+    }
+    .interval {
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.6);
+        font-weight: 500;
     }
     .formula {
         font-size: 14px;

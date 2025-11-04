@@ -19,7 +19,7 @@ export interface SystemMetaType {
 
 export interface LogicalExpressionType {
     leftHandSide: string | number | boolean;
-    operator: '=' | '>' | '<';
+    operator: '=' | '>' | '<' | '>=' | '<=';
     rightHandSide: string | number | boolean;
 }
 export interface IntervalType {
@@ -33,7 +33,7 @@ export interface RequirementType {
     temporalOperator: 'Until' | 'Globally' | 'Eventually' | 'Next' | 'Since' | 'Release';
     leftHandSide?: LogicalExpressionType;
     rightHandSide: LogicalExpressionType;
-    interval?: IntervalType;
+    interval?: IntervalType | number[];  // Support both object and array formats
 }
 
 export interface SystemType extends SystemMetaType {

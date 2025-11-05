@@ -3,6 +3,7 @@
     import MenuOption from "$lib/sidebar/MenuOption.svelte";
     import {
         currentNodes,
+        currentEdges,
         currentReqs,
         addToHistory,
         currentSystemMeta,
@@ -20,6 +21,7 @@
         convertToSSD,
         parseTTLToRequirements
     } from "./conversions";
+    import { parseSSDFile, isValidSSD } from "$lib/importers/ssdParser";
     import Tooltip from "$lib/Tooltip.svelte";
     import type { SubsystemDataType } from "$lib/types/types";
     import JSZip from 'jszip';  
@@ -31,7 +33,8 @@
     let isTestScenariosOpen = $state(false);
     let isFMIOpen = $state(false);
 
-    let fileInput: HTMLInputElement;
+    let ttlFileInput: HTMLInputElement;
+    let ssdFileInput: HTMLInputElement;
 
     const downloadFile = async (format: string) => {
         let content = '';
@@ -85,11 +88,15 @@
         }
     }
 
-    const handleUploadClick = () => {
-        fileInput.click();
+    const handleUpload = (type: string) => {
+        if (type === 'TTL') {
+            ttlFileInput.click();
+        } else if (type === 'SSD') {
+            ssdFileInput.click();
+        }
     }
 
-    const handleFileUpload = async (event: Event) => {
+    const handleTTLUpload = async (event: Event) => {
         const target = event.target as HTMLInputElement;
         const file = target.files?.[0];
 
@@ -104,12 +111,76 @@
             addToHistory();
 
             console.log(`Successfully imported ${parsedRequirements.length} requirement(s)`);
+            alert(`Successfully imported ${parsedRequirements.length} requirement(s) from TTL file`);
 
             // Reset file input
             target.value = '';
         } catch (error) {
             console.error('Error uploading TTL file:', error);
             alert(`Failed to parse TTL file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    const handleSSDUpload = async (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+
+        if (!file) return;
+
+        try {
+            const content = await file.text();
+
+            // Validate SSD file
+            if (!isValidSSD(content)) {
+                throw new Error('Invalid SSD file format');
+            }
+
+            // Parse SSD file
+            const { nodes, edges, systemName } = parseSSDFile(content);
+
+            console.log('Parsed SSD file:', {
+                systemName,
+                nodeCount: nodes.length,
+                edgeCount: edges.length,
+                nodes: nodes.map(n => ({ id: n.id, name: n.data.name, position: n.position })),
+                edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target }))
+            });
+
+            // Validate parsed data
+            if (nodes.length === 0) {
+                throw new Error('No components found in SSD file');
+            }
+
+            // Update stores in sequence to avoid race conditions
+            // First update metadata
+            currentSystemMeta.update(meta => ({
+                ...meta,
+                name: systemName
+            }));
+
+            // Small delay to ensure metadata update completes
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            // Then update nodes and edges
+            currentNodes.set(nodes);
+            currentEdges.set(edges);
+
+            // Add to history after a small delay to ensure renders complete
+            setTimeout(() => {
+                addToHistory();
+            }, 50);
+
+            console.log(`Successfully imported system: ${systemName}`);
+            alert(`Successfully imported system "${systemName}"\n${nodes.length - 1} components\n${edges.length} connections`);
+
+            // Reset file input
+            target.value = '';
+        } catch (error) {
+            console.error('Error uploading SSD file:', error);
+            alert(`Failed to parse SSD file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+            // Reset file input even on error
+            target.value = '';
         }
     }
 
@@ -224,19 +295,33 @@
         </Tooltip>
     </div>
     <div class="bottom-buttons">
-        <Tooltip text="Upload TTL" position="right">
-            <button class="menu-option" aria-label="Upload TTL"
-                onclick={handleUploadClick}>
-                <svg class="option-icon upload" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
+        <Tooltip text="Upload TTL/SSD" position="right" disabled={isUploadDropdownOpen}>
+            <MenuOption
+                options={['TTL', 'SSD']}
+                optionIcons={[
+                    '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" /></svg>',
+                    '<svg viewBox="-3 -1 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 13V10.375C16 9.47989 15.6444 8.62145 15.0115 7.98851C14.3786 7.35558 13.5201 7 12.625 7H11.125C10.8266 7 10.5405 6.88147 10.3295 6.6705C10.1185 6.45952 10 6.17337 10 5.875V4.375C10 3.47989 9.64442 2.62145 9.01149 1.98851C8.37855 1.35558 7.52011 1 6.625 1H4.75M7 1H2.125C1.504 1 1 1.504 1 2.125V19.375C1 19.996 1.504 20.5 2.125 20.5H14.875C15.496 20.5 16 19.996 16 19.375V10C16 7.61305 15.0518 5.32387 13.364 3.63604C11.6761 1.94821 9.38695 1 7 1Z" /><path d="M10.75 11L13 13.25L10.75 15.5M6.25 15.5L4 13.25L6.25 11" /></svg>'
+                ]}
+                onClick={handleUpload}
+                bind:isOpen={isUploadDropdownOpen}
+                icon={`<svg class="option-icon upload" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                </svg>
-            </button>
+                </svg>`}
+                iconColor="white"
+            />
         </Tooltip>
         <input
             type="file"
             accept=".ttl"
-            bind:this={fileInput}
-            onchange={handleFileUpload}
+            bind:this={ttlFileInput}
+            onchange={handleTTLUpload}
+            style="display: none;"
+        />
+        <input
+            type="file"
+            accept=".ssd,.xml"
+            bind:this={ssdFileInput}
+            onchange={handleSSDUpload}
             style="display: none;"
         />
         <Tooltip text="Download TTL/SSD/ZIP" position="right" disabled={isDownloadDropdownOpen}>

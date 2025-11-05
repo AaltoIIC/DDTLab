@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ssd:SystemStructureDescription xmlns:ssm="http://ssp-standard.org/SSP1/SystemStructureParameterMapping" xmlns:ssd="http://ssp-standard.org/SSP1/SystemStructureDescription" xmlns:oms="https://raw.githubusercontent.com/OpenModelica/OMSimulator/master/schema/oms.xsd" xmlns:ssc="http://ssp-standard.org/SSP1/SystemStructureCommon" xmlns:ssb="http://ssp-standard.org/SSP1/SystemStructureSignalDictionary" xmlns:opc="https://www.semantum.fi/resources/SSPSimulator/master/schema/OPCServer.xsd" xmlns:ssv="http://ssp-standard.org/SSP1/SystemStructureParameterValues" version="1.0" name="motorSystem">
+  <ssd:System name="Root">
+    <ssd:Elements>
+      <ssd:Component name="inputModel" type="application/x-fmu-sharedlibrary" source="resources/0001_inputModel-2.fmu">
+        <ssd:Connectors>
+          <ssd:Connector kind="parameter" name="operating_speed">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="inputSignal" kind="output">
+            <ssc:Real/>
+          </ssd:Connector>
+        </ssd:Connectors>
+      </ssd:Component>
+      <ssd:Component name="TwoMassLoad" type="application/x-fmu-sharedlibrary" source="resources/0004_TwoMassLoad-2.fmu">
+        <ssd:Connectors>
+          <ssd:Connector name="tau_shaft" kind="output">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="omega_m" kind="input">
+            <ssc:Real/>
+          </ssd:Connector>
+        </ssd:Connectors>
+      </ssd:Component>
+      <ssd:Component name="SimpleVHzController" type="application/x-fmu-sharedlibrary" source="resources/0003_SimpleVHzController-2.fmu">
+        <ssd:Connectors>
+          <ssd:Connector name="v_sd" kind="output">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="omegaRef" kind="input">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="v_sq" kind="output">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="omega_s" kind="output">
+            <ssc:Real/>
+          </ssd:Connector>
+        </ssd:Connectors>
+      </ssd:Component>
+      <ssd:Component name="InductionMotor" type="application/x-fmu-sharedlibrary" source="resources/0002_InductionMotor-2.fmu">
+        <ssd:Connectors>
+          <ssd:Connector name="i_sd" kind="output">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="tau_L" kind="input">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="v_sd" kind="input">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="operating_speed" kind="input">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="tau_e" kind="output">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="i_sq" kind="output">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="omega_s" kind="input">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="omega_m" kind="output">
+            <ssc:Real/>
+          </ssd:Connector>
+          <ssd:Connector name="v_sq" kind="input">
+            <ssc:Real/>
+          </ssd:Connector>
+        </ssd:Connectors>
+      </ssd:Component>
+    </ssd:Elements>
+    <ssd:Connections>
+      <ssd:Connection startElement="SimpleVHzController" endConnector="v_sq" startConnector="v_sq" endElement="InductionMotor"/>
+      <ssd:Connection startElement="SimpleVHzController" endConnector="omega_s" startConnector="omega_s" endElement="InductionMotor"/>
+      <ssd:Connection startElement="TwoMassLoad" endConnector="tau_L" startConnector="tau_shaft" endElement="InductionMotor"/>
+      <ssd:Connection startElement="inputModel" endConnector="operating_speed" startConnector="inputSignal" endElement="InductionMotor"/>
+      <ssd:Connection startElement="SimpleVHzController" endConnector="v_sd" startConnector="v_sd" endElement="InductionMotor"/>
+      <ssd:Connection startElement="inputModel" endConnector="omegaRef" startConnector="inputSignal" endElement="SimpleVHzController"/>
+      <ssd:Connection startElement="InductionMotor" endConnector="omega_m" startConnector="omega_m" endElement="TwoMassLoad"/>
+    </ssd:Connections>
+  </ssd:System>
+</ssd:SystemStructureDescription>

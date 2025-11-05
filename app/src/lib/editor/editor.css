@@ -4,7 +4,7 @@
     --xy-connectionline-stroke-hover: var(--main-color);
     --xy-edge-stroke-selected-default: var(--main-color);
     --xy-connectionline-stroke-default: var(--main-color);
-    --xy-edge-stroke-width-default: 4;
+    --xy-edge-stroke-width-default: 1.5;
 }
 
 .svelte-flow__handle {

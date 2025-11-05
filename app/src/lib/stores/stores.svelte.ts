@@ -45,6 +45,12 @@ export const currentNodes = persistentStore<Node[]>('currentNodes', [
 export const currentEdges = persistentStore<Edge[]>('currentEdges', []);
 export const currentReqs = persistentStore<RequirementType[]>('currentReqs', []);
 
+// Custom connector data types defined by users
+export const customDataTypes = persistentStore<string[]>('customDataTypes', []);
+
+// Custom VSSo variables defined by users
+export const customVSSoVariables = persistentStore<string[]>('customVSSoVariables', []);
+
 export const systems = persistentStore<SystemType[]>('systems', []);
 
 export const templates = persistentStore<ConceptTemplate[]>('conceptTemplates', []);

@@ -43,6 +43,13 @@
             const node = nodes.find(n => n.id === elementName);
             const nodeName = node?.data?.name || elementName;
 
+            // Find the connector to get its VSSoClass (custom variable) if available
+            const connector = (node?.data?.element as any)?.connectors?.find(
+                (c: any) => c.name === connectorName
+            );
+            // Use VSSoClass if available, otherwise use connector name
+            const displayName = connector?.class || connectorName;
+
             // Build full hierarchical path including subsystem navigation
             const navContext = get(navigationContext);
             const pathNames: string[] = [];
@@ -54,11 +61,11 @@
                 });
             }
 
-            // Add the component name and connector name
+            // Add the component name and connector variable/name
             pathNames.push(nodeName);
-            pathNames.push(connectorName);
+            pathNames.push(displayName);
 
-            // Create hierarchical path: parent1.parent2.component.connector
+            // Create hierarchical path: parent1.parent2.component.variable
             const hierarchicalPath = pathNames.join('.');
 
             if (leftInFocus) {

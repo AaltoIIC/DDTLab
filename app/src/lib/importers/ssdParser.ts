@@ -107,24 +107,49 @@ export function parseSSDFile(xmlContent: string): ParsedSSDResult {
                 dataType = 'string';
             }
 
+            // If the connector name looks like a VSSo class (contains dots or capitals),
+            // set it as the class and derive a simpler name
+            let finalName = connectorName;
+            let finalClass = null;
+
+            // Check if this looks like a VSSo variable (has dots or camelCase pattern)
+            if (connectorName.includes('.') || /^[A-Z]/.test(connectorName)) {
+                finalClass = connectorName;
+                // Use last part as the display name
+                const parts = connectorName.split('.');
+                finalName = parts[parts.length - 1] || connectorName;
+            }
+
             const newConnector = {
-                name: connectorName,
-                class: null, // SSD doesn't have VSSo classes (using 'class' property not 'VSSoClass')
+                name: finalName,
+                class: finalClass, // Preserve VSSo class if detected
                 type: type,
                 dataType: dataType,
                 unit: '-'
             };
 
             connectors.push(newConnector);
-            console.log(`  Added connector: ${connectorName} (${type}, ${dataType})`);
+            console.log(`  Added connector: ${finalName}${finalClass ? ` (VSSo: ${finalClass})` : ''} (${type}, ${dataType})`);
         });
 
         console.log(`Component ${componentName} has ${connectors.length} non-parameter connectors`);
 
+        // If component name looks like a VSSo class, set it as VSSoClass
+        let finalComponentName = componentName;
+        let componentVSSoClass = null;
+
+        // Check if this looks like a VSSo variable (has dots or camelCase pattern)
+        if (componentName.includes('.') || /^[A-Z]/.test(componentName)) {
+            componentVSSoClass = componentName;
+            // Use last part as the display name
+            const parts = componentName.split('.');
+            finalComponentName = parts[parts.length - 1] || componentName;
+        }
+
         // Create node
         const elementData: ElementDataType = {
             type: 'component',
-            VSSoClass: null,
+            VSSoClass: componentVSSoClass,
             connectors: connectors
         };
 
@@ -147,7 +172,7 @@ export function parseSSDFile(xmlContent: string): ParsedSSDResult {
                 y: startY + row * verticalSpacing
             },
             data: {
-                name: componentName,
+                name: finalComponentName,
                 element: elementData
             },
             dragHandle: '.element-node-inner',

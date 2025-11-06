@@ -7,9 +7,11 @@
     interface Props {
         requirement: RequirementType;
         onEdit?: (requirement: RequirementType) => void;
+        fmuSource?: string;
+        isReadOnly?: boolean;
     }
 
-    let { requirement, onEdit }: Props = $props();
+    let { requirement, onEdit, fmuSource, isReadOnly = false }: Props = $props();
 
     let dialogBox: SvelteComponent | undefined = $state();
 
@@ -29,24 +31,34 @@
         onEdit?.(requirement);
     }
 </script>
-<div class="main-tile">
-    <div class="btn-group">
-        <button class="btn-edit" aria-label="Edit Requirement"
-            onclick={handleEdit}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-            </svg>
-        </button>
-        <button class="btn-remove" aria-label="Remove Requirement"
-            onclick={handleDelete}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
-        </button>
-    </div>
+<div class="main-tile {isReadOnly ? 'readonly' : ''}">
+    {#if !isReadOnly}
+        <div class="btn-group">
+            <button class="btn-edit" aria-label="Edit Requirement"
+                onclick={handleEdit}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>
+            </button>
+            <button class="btn-remove" aria-label="Remove Requirement"
+                onclick={handleDelete}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    {/if}
     <h4>{requirement.name}</h4>
     {#if requirement.id}
         <p class="req-id">ID: {requirement.id}</p>
+    {/if}
+    {#if fmuSource}
+        <div class="fmu-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+            <span>from: {fmuSource}</span>
+        </div>
     {/if}
     <p>{requirement.description}</p>
     <div class="formula">
@@ -147,6 +159,37 @@
         font-size: 12px;
         margin: 0;
         line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .main-tile.readonly {
+        background-color: rgba(59, 130, 246, 0.04);
+        border-color: rgba(59, 130, 246, 0.2);
+    }
+
+    .fmu-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        margin: 4px 0;
+        background-color: rgba(59, 130, 246, 0.1);
+        border-radius: 4px;
+        font-size: 11px;
+        color: rgba(37, 99, 235, 0.9);
+        font-weight: 500;
+        width: fit-content;
+    }
+
+    .fmu-badge svg {
+        width: 12px;
+        height: 12px;
+        flex-shrink: 0;
+    }
+
+    .fmu-badge span {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

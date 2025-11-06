@@ -37,18 +37,27 @@
             const detail = (e as any).detail;
             const elementName = detail.elementName;
             const connectorName = detail.connectorName;
+            const connectorVariable = detail.connectorVariable;
+
+            console.log('Received connector-click event:', {
+                elementName,
+                connectorName,
+                connectorVariable
+            });
 
             // Find the node to get its actual name (not ID)
             const nodes = get(currentNodes);
             const node = nodes.find(n => n.id === elementName);
-            const nodeName = node?.data?.name || elementName;
 
-            // Find the connector to get its VSSoClass (custom variable) if available
-            const connector = (node?.data?.element as any)?.connectors?.find(
-                (c: any) => c.name === connectorName
-            );
-            // Use VSSoClass if available, otherwise use connector name
-            const displayName = connector?.class || connectorName;
+            // Use component VSSo class if available, otherwise use component name
+            const componentVSSo = (node?.data?.element as any)?.VSSoClass;
+            const nodeName = componentVSSo || node?.data?.name || elementName;
+
+            // Use connectorVariable (VSSo class/custom variable) if available, otherwise use connector name
+            const displayName = connectorVariable || connectorName;
+
+            console.log('Component:', nodeName, 'from VSSo:', componentVSSo, 'or name:', node?.data?.name);
+            console.log('Using displayName:', displayName, 'from connectorVariable:', connectorVariable, 'or connectorName:', connectorName);
 
             // Build full hierarchical path including subsystem navigation
             const navContext = get(navigationContext);
@@ -61,7 +70,7 @@
                 });
             }
 
-            // Add the component name and connector variable/name
+            // Add the component name and connector variable
             pathNames.push(nodeName);
             pathNames.push(displayName);
 

@@ -32,13 +32,11 @@ export function convertConnector(
     connector: any, // Using any since the actual structure differs from type definition
     context: ConversionContext
 ): SSDConnector {
-    // Use the class (VSSo variable) as the name if available, otherwise use the typed name
+    // Use the class (VSSo variable) as the name if available, otherwise use the custom name
+    // Use the FULL VSSo path, not just the last part, to preserve standardized meaning
     let connectorName = connector.name;
     if (connector.class) {
-        // Extract the last part of the VSSo class path as the name
-        // e.g., "Vehicle.Speed" becomes "Speed"
-        const parts = connector.class.split('.');
-        connectorName = parts[parts.length - 1] || connector.class;
+        connectorName = connector.class;
     }
 
     const ssdConnector: SSDConnector = {
@@ -116,8 +114,11 @@ export function convertComponent(
         return ssdConnector;
     });
 
+    // Use VSSo class for component name if available, otherwise use custom name
+    const componentName = elementData.VSSoClass || node.data.name || node.id;
+
     const ssdComponent: SSDComponent = {
-        name: ensureUniqueName(node.data.name || node.id, usedNames),
+        name: ensureUniqueName(componentName, usedNames),
         connectors: connectors,
         geometry: convertGeometry(node)
     };

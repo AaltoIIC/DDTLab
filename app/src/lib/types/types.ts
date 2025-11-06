@@ -100,6 +100,7 @@ export interface FMIComponentType {
     linkedElements: string[];  // IDs of linked editor elements
     uploadDate: string;
     isUserUploaded: boolean;
+    requirements?: RequirementType[];  // Requirements from FMU modelDescription.xml
 }
 
 export interface FMIVariableType {

@@ -12,10 +12,11 @@
     interface Props {
         elementName: string;
         connectorName: string;
+        connectorVariable?: string | null;
         type: 'input' | 'output';
     }
 
-    let { elementName, connectorName, type }: Props = $props();
+    let { elementName, connectorName, connectorVariable, type }: Props = $props();
 
     let onHover: boolean = $state(false);
     let isEditing: boolean = $state(false);
@@ -37,9 +38,16 @@
 
     // Dispatch a custom event on click (so that it can be read in requirements tab)
     const dispatchCustomEvent = () => {
+        console.log('Dispatching connector-click:', {
+            connectorName,
+            connectorVariable,
+            elementName,
+            type
+        });
         const event = new CustomEvent('connector-click', {
             detail: {
                 connectorName,
+                connectorVariable,
                 elementName,
                 type
             }
@@ -63,14 +71,17 @@
     <div class="handle-back">
     </div>
     <Handle
-        id={`${elementName}.${connectorName}`}
+        id={`${elementName}.${connectorVariable || connectorName}`}
         type="{type === 'input' ? 'target' : 'source'}"
         position={type === 'input' ? Position.Left : Position.Right}
         style="position: relative; top: 0; left: 0; transform: none; z-index: 4;"
     />
     <div class="tooltip-outer" style={`transform: scale(${1 / zoomLevel});`}>
         <div class="handle-tooltip">
-            <span>{connectorName}</span>
+            <span>{connectorVariable || connectorName}</span>
+            {#if connectorVariable && connectorVariable !== connectorName}
+                <span class="tooltip-subtitle">({connectorName})</span>
+            {/if}
             <button class="btn-remove-edit"
                 onclick={() => isEditing = true}
                 aria-label="Edit Connector">
@@ -182,5 +193,11 @@
     }
     .input.handle-wrapper {
         flex-direction: row-reverse;
+    }
+    .tooltip-subtitle {
+        font-size: 10px;
+        opacity: 0.7;
+        font-weight: 400;
+        margin-left: 4px;
     }
 </style>

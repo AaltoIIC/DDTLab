@@ -27,10 +27,10 @@ export function parseSSDFile(xmlContent: string): ParsedSSDResult {
     const systemStructure = xmlDoc.querySelector('SystemStructureDescription');
     const systemName = systemStructure?.getAttribute('name') || 'Imported System';
 
-    // Get the root system
-    const rootSystem = xmlDoc.querySelector('System[name="Root"]');
+    // Get the root system (first System element, regardless of name)
+    const rootSystem = xmlDoc.querySelector('System');
     if (!rootSystem) {
-        throw new Error('No root system found in SSD file');
+        throw new Error('No system found in SSD file');
     }
 
     const nodes: Node[] = [];
@@ -228,8 +228,8 @@ export function isValidSSD(xmlContent: string): boolean {
             return false;
         }
 
-        // Check for root System
-        const rootSystem = xmlDoc.querySelector('System[name="Root"]');
+        // Check for any System element (not necessarily named "Root")
+        const rootSystem = xmlDoc.querySelector('System');
         if (!rootSystem) {
             return false;
         }

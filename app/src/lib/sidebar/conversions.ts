@@ -206,6 +206,7 @@ function parseMTLFormulaToRequirement(formula: string, name: string): Requiremen
 
         return {
             name,
+            id: '',
             description: '',
             temporalOperator,
             leftHandSide,
@@ -246,6 +247,44 @@ function parseLogicalExpression(expr: string): LogicalExpressionType {
 }
 
 /**
+ * Parse metadata (ID and description) from TTL content for a specific requirement
+ */
+function parseRequirementMetadata(ttlContent: string, reqName: string): { id: string; description: string } {
+    const lines = ttlContent.split('\n');
+    let id = '';
+    let description = '';
+
+    // Find the requirement block
+    const reqPattern = new RegExp(`req:${reqName}\\s+a\\s+req:Requirement`);
+    const reqLineIndex = lines.findIndex(line => reqPattern.test(line));
+
+    if (reqLineIndex !== -1) {
+        // Look for metadata in the following lines until we hit a blank line or new requirement
+        for (let i = reqLineIndex + 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+
+            if (line === '' || line.startsWith('req:') && line.includes('a req:Requirement')) {
+                break; // End of this requirement block
+            }
+
+            // Parse ID
+            const idMatch = line.match(/req:hasID\s+"([^"]+)"/);
+            if (idMatch) {
+                id = idMatch[1];
+            }
+
+            // Parse description
+            const descMatch = line.match(/req:hasDescription\s+"([^"]+)"/);
+            if (descMatch) {
+                description = descMatch[1].replace(/\\"/g, '"'); // Unescape quotes
+            }
+        }
+    }
+
+    return { id, description };
+}
+
+/**
  * Parse TTL file content and convert to requirements
  */
 export const parseTTLToRequirements = async (ttlContent: string): Promise<RequirementType[]> => {
@@ -270,6 +309,11 @@ export const parseTTLToRequirements = async (ttlContent: string): Promise<Requir
         for (const parsed of data.requirements) {
             const req = parseMTLFormulaToRequirement(parsed.formula, parsed.name);
             if (req) {
+                // Parse metadata from TTL content
+                const metadata = parseRequirementMetadata(ttlContent, parsed.name);
+                req.id = metadata.id;
+                req.description = metadata.description;
+
                 requirements.push(req);
             }
         }
@@ -280,6 +324,43 @@ export const parseTTLToRequirements = async (ttlContent: string): Promise<Requir
         console.error('Error parsing TTL to requirements:', error);
         throw error;
     }
+}
+
+/**
+ * Adds requirement metadata (ID and description) to the TTL content
+ * Inserts after the requirement name line: "req:RequirementName a req:Requirement ;"
+ */
+function addRequirementMetadata(ttlContent: string, req: RequirementType): string {
+    const lines = ttlContent.split('\n');
+    const reqNamePattern = /^req:\w+\s+a\s+req:Requirement\s*;/;
+
+    // Find the line with the requirement declaration
+    const reqLineIndex = lines.findIndex(line => reqNamePattern.test(line.trim()));
+
+    if (reqLineIndex === -1) {
+        console.warn('Could not find requirement declaration line in TTL, returning original content');
+        return ttlContent;
+    }
+
+    // Build metadata lines to insert
+    const metadataLines: string[] = [];
+
+    if (req.id) {
+        metadataLines.push(`    req:hasID "${req.id}" ;`);
+    }
+
+    if (req.description) {
+        // Escape quotes in description
+        const escapedDescription = req.description.replace(/"/g, '\\"');
+        metadataLines.push(`    req:hasDescription "${escapedDescription}" ;`);
+    }
+
+    // Insert metadata lines after the requirement declaration
+    if (metadataLines.length > 0) {
+        lines.splice(reqLineIndex + 1, 0, ...metadataLines);
+    }
+
+    return lines.join('\n');
 }
 
 export const convertToTTL = async (): Promise<string> => {
@@ -302,7 +383,10 @@ export const convertToTTL = async (): Promise<string> => {
             // Use requirement name as the requirement identifier (sanitize for use in URIs)
             const reqName = req.name.replace(/[^a-zA-Z0-9_]/g, '_');
 
-            return await convertMTLToTTL(mtlFormula, reqName);
+            const ttlContent = await convertMTLToTTL(mtlFormula, reqName);
+
+            // Add metadata (ID and description) to the TTL
+            return addRequirementMetadata(ttlContent, req);
         });
 
         const ttlResults = await Promise.all(ttlPromises);

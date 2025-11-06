@@ -246,12 +246,27 @@ export function convertConnection(
 
 // Extract connector name from handle ID
 function extractConnectorName(handleId: string): string | null {
-    // Handle format: "nodeId-connectorName-type"
+    // Handle format can be:
+    // 1. "nodeId.connectorName" (from SSD import)
+    // 2. "nodeId-connectorName-type" (from some other sources)
+
+    // Try dot format first (from SSD import)
+    if (handleId.includes('.')) {
+        const parts = handleId.split('.');
+        if (parts.length >= 2) {
+            // Return everything after the first dot (the connector name)
+            return parts.slice(1).join('.');
+        }
+    }
+
+    // Try dash format
     const parts = handleId.split('-');
     if (parts.length >= 3) {
         // Return the middle part(s) as the connector name
         return parts.slice(1, -1).join('-');
     }
+
+    // If neither format works, return null
     return null;
 }
 

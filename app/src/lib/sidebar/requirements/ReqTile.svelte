@@ -6,9 +6,10 @@
 
     interface Props {
         requirement: RequirementType;
+        onEdit?: (requirement: RequirementType) => void;
     }
 
-    let { requirement }: Props = $props();
+    let { requirement, onEdit }: Props = $props();
 
     let dialogBox: SvelteComponent | undefined = $state();
 
@@ -23,15 +24,30 @@
                 }
             });
     }
+
+    const handleEdit = () => {
+        onEdit?.(requirement);
+    }
 </script>
 <div class="main-tile">
-    <button class="btn-remove" aria-label="Remove Requirement"
-        onclick={handleDelete}>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-        </svg>                   
-    </button>
+    <div class="btn-group">
+        <button class="btn-edit" aria-label="Edit Requirement"
+            onclick={handleEdit}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+            </svg>
+        </button>
+        <button class="btn-remove" aria-label="Remove Requirement"
+            onclick={handleDelete}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
     <h4>{requirement.name}</h4>
+    {#if requirement.id}
+        <p class="req-id">ID: {requirement.id}</p>
+    {/if}
     <p>{requirement.description}</p>
     <div class="formula">
         {#if requirement.leftHandSide}
@@ -89,18 +105,22 @@
         background-color: var(--list-dark-color);
         padding: 4px;
     }
+    .btn-group {
+        position: absolute;
+        top: 7px;
+        right: 6px;
+        display: flex;
+        gap: 4px;
+    }
+    .btn-edit svg,
     .btn-remove svg {
         width: 16px;
         height: 16px;
         color: rgba(0, 0, 0, 0.45);
     }
+    .btn-edit svg:hover,
     .btn-remove svg:hover {
         color: rgba(0, 0, 0, 0.9);
-    }
-    .btn-remove {
-        position: absolute;
-        top: 7px;
-        right: 6px;
     }
 
     .main-tile {
@@ -116,12 +136,19 @@
         line-height: 1.2;
         font-weight: 500;
     }
+    .req-id {
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.6);
+        font-weight: 500;
+        margin: 2px 0 4px 0;
+        font-family: 'Roboto Mono', monospace;
+    }
     .main-tile p {
         font-size: 12px;
         margin: 0;
         line-height: 1.2;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;  
+        text-overflow: ellipsis;
     }
 </style>

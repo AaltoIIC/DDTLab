@@ -29,6 +29,7 @@ export interface IntervalType {
 
 export interface RequirementType {
     name: string;
+    id: string;
     description: string;
     temporalOperator: 'Until' | 'Globally' | 'Eventually' | 'Next' | 'Since' | 'Release';
     leftHandSide?: LogicalExpressionType;

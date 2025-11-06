@@ -35,6 +35,7 @@
 
     let ttlFileInput: HTMLInputElement;
     let ssdFileInput: HTMLInputElement;
+    let zipFileInput: HTMLInputElement;
 
     const downloadFile = async (format: string) => {
         let content = '';
@@ -55,10 +56,11 @@
                 // Create a new JSZip instance
                 const zip = new JSZip();
 
-                // Add both files to the ZIP
+                // Add files to the ZIP with proper structure
                 const baseName = makeValidFileName($currentSystemMeta.name);
                 zip.file(`${baseName}.ssd`, ssdContent);
-                zip.file(`${baseName}.ttl`, ttlContent);
+                // Place TTL file inside resources folder
+                zip.file(`resources/${baseName}.ttl`, ttlContent);
 
                 // Generate the ZIP file
                 const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -93,6 +95,8 @@
             ttlFileInput.click();
         } else if (type === 'SSD') {
             ssdFileInput.click();
+        } else if (type === 'ZIP') {
+            zipFileInput.click();
         }
     }
 
@@ -178,6 +182,119 @@
         } catch (error) {
             console.error('Error uploading SSD file:', error);
             alert(`Failed to parse SSD file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+            // Reset file input even on error
+            target.value = '';
+        }
+    }
+
+    const handleZipUpload = async (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+
+        if (!file) return;
+
+        try {
+            // Load the ZIP file
+            const zip = new JSZip();
+            const zipData = await zip.loadAsync(file);
+
+            let ssdContent: string | null = null;
+            let ttlContent: string | null = null;
+            let ssdFileName: string | null = null;
+            let ttlFileName: string | null = null;
+
+            // Search for .ssd and .ttl files in the ZIP
+            for (const [filename, zipEntry] of Object.entries(zipData.files)) {
+                if (zipEntry.dir) continue; // Skip directories
+
+                const lowerFilename = filename.toLowerCase();
+
+                if (lowerFilename.endsWith('.ssd') || lowerFilename.endsWith('.xml')) {
+                    ssdContent = await zipEntry.async('text');
+                    ssdFileName = filename;
+                } else if (lowerFilename.endsWith('.ttl')) {
+                    // Look for TTL files, prioritizing those in resources folder
+                    if (lowerFilename.startsWith('resources/')) {
+                        ttlContent = await zipEntry.async('text');
+                        ttlFileName = filename;
+                    } else if (!ttlContent) {
+                        // Only use TTL files outside resources if none found in resources yet
+                        ttlContent = await zipEntry.async('text');
+                        ttlFileName = filename;
+                    }
+                }
+            }
+
+            // Process SSD file if found
+            if (ssdContent) {
+                try {
+                    if (!isValidSSD(ssdContent)) {
+                        throw new Error(`Invalid SSD file format in ${ssdFileName}`);
+                    }
+
+                    const { nodes, edges, systemName } = parseSSDFile(ssdContent);
+
+                    if (nodes.length === 0) {
+                        throw new Error(`No components found in ${ssdFileName}`);
+                    }
+
+                    // Update stores
+                    currentSystemMeta.update(meta => ({
+                        ...meta,
+                        name: systemName
+                    }));
+
+                    await new Promise(resolve => setTimeout(resolve, 10));
+
+                    currentNodes.set(nodes);
+                    currentEdges.set(edges);
+
+                    console.log(`Successfully imported SSD: ${systemName} from ${ssdFileName}`);
+                } catch (error) {
+                    console.error('Error processing SSD from ZIP:', error);
+                    throw new Error(`Failed to process ${ssdFileName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                }
+            }
+
+            // Process TTL file if found
+            if (ttlContent) {
+                try {
+                    const parsedRequirements = await parseTTLToRequirements(ttlContent);
+                    currentReqs.update(reqs => [...reqs, ...parsedRequirements]);
+                    console.log(`Successfully imported ${parsedRequirements.length} requirement(s) from ${ttlFileName}`);
+                } catch (error) {
+                    console.error('Error processing TTL from ZIP:', error);
+                    throw new Error(`Failed to process ${ttlFileName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                }
+            }
+
+            // Add to history after processing both files
+            setTimeout(() => {
+                addToHistory();
+            }, 50);
+
+            // Build success message
+            const messages: string[] = [];
+            if (ssdContent && ttlContent) {
+                messages.push(`Successfully imported from ZIP archive:`);
+                messages.push(`- System structure from ${ssdFileName}`);
+                messages.push(`- Requirements from ${ttlFileName}`);
+            } else if (ssdContent) {
+                messages.push(`Successfully imported system structure from ${ssdFileName}`);
+            } else if (ttlContent) {
+                messages.push(`Successfully imported requirements from ${ttlFileName}`);
+            } else {
+                throw new Error('No valid .ssd or .ttl files found in ZIP archive');
+            }
+
+            alert(messages.join('\n'));
+
+            // Reset file input
+            target.value = '';
+        } catch (error) {
+            console.error('Error uploading ZIP file:', error);
+            alert(`Failed to process ZIP file: ${error instanceof Error ? error.message : 'Unknown error'}`);
 
             // Reset file input even on error
             target.value = '';
@@ -295,12 +412,13 @@
         </Tooltip>
     </div>
     <div class="bottom-buttons">
-        <Tooltip text="Upload TTL/SSD" position="right" disabled={isUploadDropdownOpen}>
+        <Tooltip text="Upload TTL/SSD/ZIP" position="right" disabled={isUploadDropdownOpen}>
             <MenuOption
-                options={['TTL', 'SSD']}
+                options={['TTL', 'SSD', 'ZIP']}
                 optionIcons={[
                     '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" /></svg>',
-                    '<svg viewBox="-3 -1 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 13V10.375C16 9.47989 15.6444 8.62145 15.0115 7.98851C14.3786 7.35558 13.5201 7 12.625 7H11.125C10.8266 7 10.5405 6.88147 10.3295 6.6705C10.1185 6.45952 10 6.17337 10 5.875V4.375C10 3.47989 9.64442 2.62145 9.01149 1.98851C8.37855 1.35558 7.52011 1 6.625 1H4.75M7 1H2.125C1.504 1 1 1.504 1 2.125V19.375C1 19.996 1.504 20.5 2.125 20.5H14.875C15.496 20.5 16 19.996 16 19.375V10C16 7.61305 15.0518 5.32387 13.364 3.63604C11.6761 1.94821 9.38695 1 7 1Z" /><path d="M10.75 11L13 13.25L10.75 15.5M6.25 15.5L4 13.25L6.25 11" /></svg>'
+                    '<svg viewBox="-3 -1 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 13V10.375C16 9.47989 15.6444 8.62145 15.0115 7.98851C14.3786 7.35558 13.5201 7 12.625 7H11.125C10.8266 7 10.5405 6.88147 10.3295 6.6705C10.1185 6.45952 10 6.17337 10 5.875V4.375C10 3.47989 9.64442 2.62145 9.01149 1.98851C8.37855 1.35558 7.52011 1 6.625 1H4.75M7 1H2.125C1.504 1 1 1.504 1 2.125V19.375C1 19.996 1.504 20.5 2.125 20.5H14.875C15.496 20.5 16 19.996 16 19.375V10C16 7.61305 15.0518 5.32387 13.364 3.63604C11.6761 1.94821 9.38695 1 7 1Z" /><path d="M10.75 11L13 13.25L10.75 15.5M6.25 15.5L4 13.25L6.25 11" /></svg>',
+                    '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>'
                 ]}
                 onClick={handleUpload}
                 bind:isOpen={isUploadDropdownOpen}
@@ -322,6 +440,13 @@
             accept=".ssd,.xml"
             bind:this={ssdFileInput}
             onchange={handleSSDUpload}
+            style="display: none;"
+        />
+        <input
+            type="file"
+            accept=".zip"
+            bind:this={zipFileInput}
+            onchange={handleZipUpload}
             style="display: none;"
         />
         <Tooltip text="Download TTL/SSD/ZIP" position="right" disabled={isDownloadDropdownOpen}>

@@ -18,6 +18,8 @@
     let { isOpen = $bindable(false) }: Props = $props();
 
     let isAddingNewReq = $state(false);
+    let isEditingReq = $state(false);
+    let editingReqOriginalName = $state('');
 
     // handle change of viewport when opening or closing popover
     const { setViewport, getViewport } = useSvelteFlow();
@@ -39,6 +41,7 @@
     });
 
     let newReqName = $state(generateName('Requirement', $currentReqs.map(r => r.name)));
+    let newReqId = $state('');
     let newReqDescription = $state('');
     let newReqOperator = $state({value: 'Globally', label: 'Globally'});
     let newReqLeftHandSide: LogicalExpressionType | undefined = $state(undefined);
@@ -71,28 +74,35 @@
 
     let isNameError = $state(false);
     const validateName = () => {
-        const isNameTaken = $currentReqs.map(r => r.name.replace(/\s+/g, '').toLowerCase())
-                                .includes(newReqName.replace(/\s+/g, '').toLowerCase());
+        // When editing, allow keeping the same name
+        const isNameTaken = $currentReqs
+            .filter(r => !isEditingReq || r.name !== editingReqOriginalName)
+            .map(r => r.name.replace(/\s+/g, '').toLowerCase())
+            .includes(newReqName.replace(/\s+/g, '').toLowerCase());
         isNameError = !isNameValid(newReqName) || isNameTaken;
     }
 
-    const addNewReq = () => {
-        if (isNameError) return;
+    const handleEditRequirement = (requirement: RequirementType) => {
+        isEditingReq = true;
+        editingReqOriginalName = requirement.name;
+        newReqName = requirement.name;
+        newReqId = requirement.id || '';
+        newReqDescription = requirement.description;
+        newReqOperator = {value: requirement.temporalOperator, label: requirement.temporalOperator};
+        newReqLeftHandSide = requirement.leftHandSide;
+        newReqRightHandSide = requirement.rightHandSide;
+        newReqInterval = requirement.interval ?
+            (Array.isArray(requirement.interval) ? requirement.interval : [requirement.interval.lowerBound, requirement.interval.upperBound])
+            : undefined;
+        isAddingNewReq = true;
+    }
 
-        currentReqs.update(reqs => {
-            return [...reqs, {
-                name: newReqName,
-                description: newReqDescription,
-                temporalOperator: newReqOperator.value,
-                leftHandSide: newReqLeftHandSide,
-                rightHandSide: newReqRightHandSide,
-                interval: newReqInterval
-            } as RequirementType];
-        });
-        addToHistory();
-
+    const resetForm = () => {
         isAddingNewReq = false;
+        isEditingReq = false;
+        editingReqOriginalName = '';
         newReqName = generateName('Requirement', $currentReqs.map(r => r.name));
+        newReqId = '';
         newReqDescription = '';
         newReqOperator = {value: 'Globally', label: 'Globally'};
         newReqLeftHandSide = undefined;
@@ -102,6 +112,55 @@
             operator: '='
         };
         newReqInterval = undefined;
+    }
+
+    const updateReq = () => {
+        if (isNameError) return;
+
+        currentReqs.update(reqs => {
+            return reqs.map(req => {
+                if (req.name === editingReqOriginalName) {
+                    return {
+                        name: newReqName,
+                        id: newReqId,
+                        description: newReqDescription,
+                        temporalOperator: newReqOperator.value,
+                        leftHandSide: newReqLeftHandSide,
+                        rightHandSide: newReqRightHandSide,
+                        interval: newReqInterval
+                    } as RequirementType;
+                }
+                return req;
+            });
+        });
+        addToHistory();
+        resetForm();
+    }
+
+    const addNewReq = () => {
+        if (isNameError) return;
+
+        currentReqs.update(reqs => {
+            return [...reqs, {
+                name: newReqName,
+                id: newReqId,
+                description: newReqDescription,
+                temporalOperator: newReqOperator.value,
+                leftHandSide: newReqLeftHandSide,
+                rightHandSide: newReqRightHandSide,
+                interval: newReqInterval
+            } as RequirementType];
+        });
+        addToHistory();
+        resetForm();
+    }
+
+    const handleSaveReq = () => {
+        if (isEditingReq) {
+            updateReq();
+        } else {
+            addNewReq();
+        }
     }
 </script>
 <div class="main-reqs-cont {isOpen ? 'open' : ''} shadow-sm" style:width={popoverWidth + 'px'}>
@@ -127,7 +186,7 @@
             </div>
         {:else}
             {#each $currentReqs as req (req.name)}
-                <ReqTile requirement={req} />
+                <ReqTile requirement={req} onEdit={handleEditRequirement} />
             {/each}
         {/if}
     </div>
@@ -135,18 +194,25 @@
         Add New Requirement
     </button>
     <div class="add-req-popover {isAddingNewReq ? 'open' : ''}">
-        <button class="btn-close" aria-label="Close" onclick={() => isAddingNewReq = false}>
+        <button class="btn-close" aria-label="Close" onclick={resetForm}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-            </svg>                      
+            </svg>
         </button>
-        <p class="new-req-txt">New Requirement</p>
+        <p class="new-req-txt">{isEditingReq ? 'Edit Requirement' : 'New Requirement'}</p>
         <div class="new-req-inner">
             <div class="area">
                 <p>Name:</p>
                 <Input class="h-8 {isNameError ? 'error-outline' : ''}"
                     bind:value={newReqName}
                     on:input={validateName}
+                />
+            </div>
+            <div class="area">
+                <p>ID:</p>
+                <Input class="h-8"
+                    bind:value={newReqId}
+                    placeholder="e.g., SYS-REQ-001"
                 />
             </div>
             <div class="area">
@@ -217,8 +283,8 @@
         </div>
 
         <button class="btn-add {isNameError ? 'inactive' : ''}"
-            onclick={addNewReq}>
-            Add
+            onclick={handleSaveReq}>
+            {isEditingReq ? 'Save' : 'Add'}
         </button>
     </div>
 </div>

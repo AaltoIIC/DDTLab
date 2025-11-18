@@ -200,8 +200,12 @@ export function parseSSDFile(xmlContent: string): ParsedSSDResult {
         const sourceNodeId = componentMap.get(startElement);
         const targetNodeId = componentMap.get(endElement);
 
+        console.log(`Connection: ${startElement}.${startConnector} -> ${endElement}.${endConnector}`);
+        console.log(`  Mapped to nodes: ${sourceNodeId} -> ${targetNodeId}`);
+
         if (!sourceNodeId || !targetNodeId) {
             console.warn(`Connection references unknown component: ${startElement} or ${endElement}`);
+            console.warn(`  Available components in map:`, Array.from(componentMap.keys()));
             return;
         }
 
@@ -209,12 +213,17 @@ export function parseSSDFile(xmlContent: string): ParsedSSDResult {
         const edgeId = generateId([...usedEdgeIds]);
         usedEdgeIds.add(edgeId);
 
+        const sourceHandle = `${sourceNodeId}.${startConnector}`;
+        const targetHandle = `${targetNodeId}.${endConnector}`;
+
+        console.log(`  Creating edge with handles: ${sourceHandle} -> ${targetHandle}`);
+
         const edge: Edge = {
             id: edgeId,
             source: sourceNodeId,
-            sourceHandle: `${sourceNodeId}.${startConnector}`,
+            sourceHandle: sourceHandle,
             target: targetNodeId,
-            targetHandle: `${targetNodeId}.${endConnector}`,
+            targetHandle: targetHandle,
             type: 'default', // Use 'default' to ensure RemovableEdge component is used
             data: {
                 offsetX: 0,

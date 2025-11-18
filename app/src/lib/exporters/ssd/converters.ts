@@ -237,10 +237,17 @@ export function convertConnection(
         return null;
     }
 
+    // Use VSSo class for element names if available, to match component export
+    const sourceElementData = sourceNode.data.element as ElementDataType;
+    const targetElementData = targetNode.data.element as ElementDataType;
+
+    const sourceElementName = sourceElementData?.VSSoClass || sourceNode.data.name || sourceNode.id;
+    const targetElementName = targetElementData?.VSSoClass || targetNode.data.name || targetNode.id;
+
     return {
-        startElement: sanitizeXMLName(sourceNode.data.name || sourceNode.id),
+        startElement: sanitizeXMLName(sourceElementName),
         startConnector: sanitizeXMLName(sourceConnectorName),
-        endElement: sanitizeXMLName(targetNode.data.name || targetNode.id),
+        endElement: sanitizeXMLName(targetElementName),
         endConnector: sanitizeXMLName(targetConnectorName)
     };
 }

@@ -7,7 +7,7 @@
     import VSSo from "../VSSo.json";
     import { Input } from "$lib/components/ui/input";
     import { onMount } from "svelte";
-    import { currentNodes } from '$lib/stores/stores.svelte';
+    import { currentNodes, customVSSoVariables } from '$lib/stores/stores.svelte';
 
     interface Props {
         id: string;
@@ -50,20 +50,66 @@
 
     let currentSearch: string = $state("");
 
-    const classes = (type === 'element' ? Object.keys(VSSo.elementTypes) :
+    const defaultClasses = (type === 'element' ? Object.keys(VSSo.elementTypes) :
         Object.values(VSSo.elementTypes).flat());
 
-    let shownClasses: string[] = $state(classes);
+    // Combine default classes with custom variables
+    let allClasses = $derived([...defaultClasses, ...$customVSSoVariables]);
+
+    let shownClasses: string[] = $state(allClasses);
     const updateResults = () => {
-        shownClasses = classes.filter((VSSoClass) => {
+        shownClasses = allClasses.filter((VSSoClass) => {
             return VSSoClass.toLowerCase().includes(currentSearch.toLowerCase());
         });
     }
+
+    // Update shown classes when custom variables change
+    run(() => {
+        updateResults();
+    });
 
     const selectClass = (VSSoClass: string) => {
         currentClass = VSSoClass;
         isPopoverOpen = false;
         onChange?.(VSSoClass);
+    }
+
+    // Custom variable dialog
+    let isAddingCustomVariable = $state(false);
+    let newCustomVariableName = $state("");
+    let customVariableError = $state(false);
+
+    const validateCustomVariableName = () => {
+        customVariableError = !newCustomVariableName.trim() ||
+                             allClasses.some(v => v.toLowerCase() === newCustomVariableName.trim().toLowerCase());
+    }
+
+    const addCustomVariable = () => {
+        const varName = newCustomVariableName.trim();
+        if (!varName || customVariableError) return;
+
+        customVSSoVariables.update(vars => {
+            if (!vars.includes(varName)) {
+                return [...vars, varName];
+            }
+            return vars;
+        });
+
+        // Set the newly created variable as selected
+        currentClass = varName;
+        onChange?.(varName);
+
+        // Reset and close dialog
+        newCustomVariableName = "";
+        customVariableError = false;
+        isAddingCustomVariable = false;
+        isPopoverOpen = false;
+    }
+
+    const openCustomVariableDialog = () => {
+        isAddingCustomVariable = true;
+        newCustomVariableName = "";
+        customVariableError = false;
     }
 
     currentNodes.subscribe((value) => {
@@ -123,12 +169,20 @@
     </button>
     <div class="main-popover {isPopoverOpen ? 'open' : ''} shadow-md"
         style:transform="scale({1/zoomLevel}) translate(-50%, 0)">
+        <button class="add-custom-var-btn" onclick={openCustomVariableDialog}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Custom Variable
+        </button>
+        <div class="separator"></div>
         <Input
             type="text"
             class="h-8"
             bind:value={currentSearch}
             on:input={updateResults}
-            placeholder="Search types..." 
+            placeholder="Search types..."
         />
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="main-class-list"
@@ -144,6 +198,41 @@
         </div>
     </div>
 </div>
+
+<!-- Custom Variable Dialog -->
+{#if isAddingCustomVariable}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="custom-var-dialog-overlay" onclick={() => isAddingCustomVariable = false}>
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="custom-var-dialog" onclick={(e) => e.stopPropagation()}>
+            <h3>Add Custom Variable</h3>
+            <div class="dialog-content">
+                <label>
+                    Variable Name:
+                    <Input
+                        class="h-8 {customVariableError ? 'error-outline' : ''}"
+                        bind:value={newCustomVariableName}
+                        on:input={validateCustomVariableName}
+                        placeholder="e.g., Motor.Temperature, Battery.Voltage"
+                    />
+                </label>
+                {#if customVariableError}
+                    <span class="error-message">Variable name is invalid or already exists</span>
+                {/if}
+            </div>
+            <div class="dialog-actions">
+                <button class="cancel-btn" onclick={() => isAddingCustomVariable = false}>
+                    Cancel
+                </button>
+                <button
+                    class="add-btn {customVariableError || !newCustomVariableName.trim() ? 'inactive' : ''}"
+                    onclick={addCustomVariable}>
+                    Add Variable
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
 
 <style>
     .main-class-list {
@@ -246,5 +335,113 @@
         color: rgba(0, 0, 0, 0.5);
         flex-shrink: 0;
         margin-right: -2.5px;
+    }
+
+    /* Custom Variable Styles */
+    .add-custom-var-btn {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--main-dark-color);
+        transition: background-color 0.15s;
+        font-family: 'Inter', sans-serif;
+        border-radius: var(--main-border-radius);
+        font-weight: 500;
+    }
+    .add-custom-var-btn:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    .separator {
+        height: 1px;
+        background-color: rgba(0, 0, 0, 0.1);
+        margin: 8px 0;
+    }
+
+    /* Custom Variable Dialog Styles */
+    .custom-var-dialog-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    }
+    .custom-var-dialog {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        width: 400px;
+        max-width: 90vw;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .custom-var-dialog h3 {
+        margin: 0 0 16px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--main-dark-color);
+    }
+    .dialog-content {
+        margin-bottom: 20px;
+    }
+    .dialog-content label {
+        display: block;
+        font-size: 14px;
+        color: rgba(0, 0, 0, 0.7);
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+    .dialog-content input {
+        margin-top: 8px;
+        width: 100%;
+    }
+    .error-message {
+        display: block;
+        color: #ef4444;
+        font-size: 12px;
+        margin-top: 6px;
+    }
+    .dialog-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+    .cancel-btn, .add-btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        transition: all 0.15s;
+    }
+    .cancel-btn {
+        background: white;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        color: rgba(0, 0, 0, 0.7);
+    }
+    .cancel-btn:hover {
+        background: rgba(0, 0, 0, 0.05);
+    }
+    .add-btn {
+        background: var(--main-dark-color);
+        border: none;
+        color: white;
+    }
+    .add-btn:hover {
+        filter: brightness(1.1);
+    }
+    .add-btn.inactive {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
     }
 </style>

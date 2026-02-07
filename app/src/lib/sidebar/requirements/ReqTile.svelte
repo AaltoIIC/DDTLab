@@ -6,9 +6,12 @@
 
     interface Props {
         requirement: RequirementType;
+        onEdit?: (requirement: RequirementType) => void;
+        fmuSource?: string;
+        isReadOnly?: boolean;
     }
 
-    let { requirement }: Props = $props();
+    let { requirement, onEdit, fmuSource, isReadOnly = false }: Props = $props();
 
     let dialogBox: SvelteComponent | undefined = $state();
 
@@ -23,15 +26,40 @@
                 }
             });
     }
+
+    const handleEdit = () => {
+        onEdit?.(requirement);
+    }
 </script>
-<div class="main-tile">
-    <button class="btn-remove" aria-label="Remove Requirement"
-        onclick={handleDelete}>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-        </svg>                   
-    </button>
+<div class="main-tile {isReadOnly ? 'readonly' : ''}">
+    {#if !isReadOnly}
+        <div class="btn-group">
+            <button class="btn-edit" aria-label="Edit Requirement"
+                onclick={handleEdit}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>
+            </button>
+            <button class="btn-remove" aria-label="Remove Requirement"
+                onclick={handleDelete}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    {/if}
     <h4>{requirement.name}</h4>
+    {#if requirement.id}
+        <p class="req-id">ID: {requirement.id}</p>
+    {/if}
+    {#if fmuSource}
+        <div class="fmu-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+            <span>from: {fmuSource}</span>
+        </div>
+    {/if}
     <p>{requirement.description}</p>
     <div class="formula">
         {#if requirement.leftHandSide}
@@ -41,7 +69,14 @@
                 <span>{requirement.leftHandSide.rightHandSide}</span>
             </div>
         {/if}
-        <span class="temp-op">{requirement.temporalOperator}</span>
+        <div class="temp-op-container">
+            <span class="temp-op">{requirement.temporalOperator}</span>
+            {#if requirement.interval}
+                <span class="interval">
+                    [{Array.isArray(requirement.interval) ? `${requirement.interval[0]},${requirement.interval[1]}` : `${requirement.interval.lowerBound},${requirement.interval.upperBound}`}]
+                </span>
+            {/if}
+        </div>
         <div class="logical-exp">
             <span>{requirement.rightHandSide.leftHandSide}</span>
             <span>{requirement.rightHandSide.operator}</span>
@@ -52,13 +87,23 @@
 <DialogBox bind:this={dialogBox} />
 
 <style>
+    .temp-op-container {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin: 4px;
+    }
     .temp-op {
         font-size: 12px;
-        margin: 4px;
         border-radius: var(--main-border-radius);
         border: solid 1px rgba(0, 0, 0, 0.7);
         padding: 2px 4px;
         color: rgba(0, 0, 0, 0.7);
+    }
+    .interval {
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.6);
+        font-weight: 500;
     }
     .formula {
         font-size: 14px;
@@ -72,18 +117,22 @@
         background-color: var(--list-dark-color);
         padding: 4px;
     }
+    .btn-group {
+        position: absolute;
+        top: 7px;
+        right: 6px;
+        display: flex;
+        gap: 4px;
+    }
+    .btn-edit svg,
     .btn-remove svg {
         width: 16px;
         height: 16px;
         color: rgba(0, 0, 0, 0.45);
     }
+    .btn-edit svg:hover,
     .btn-remove svg:hover {
         color: rgba(0, 0, 0, 0.9);
-    }
-    .btn-remove {
-        position: absolute;
-        top: 7px;
-        right: 6px;
     }
 
     .main-tile {
@@ -99,12 +148,50 @@
         line-height: 1.2;
         font-weight: 500;
     }
+    .req-id {
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.6);
+        font-weight: 500;
+        margin: 2px 0 4px 0;
+        font-family: 'Roboto Mono', monospace;
+    }
     .main-tile p {
         font-size: 12px;
         margin: 0;
         line-height: 1.2;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;  
+        text-overflow: ellipsis;
+    }
+
+    .main-tile.readonly {
+        background-color: rgba(59, 130, 246, 0.04);
+        border-color: rgba(59, 130, 246, 0.2);
+    }
+
+    .fmu-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        margin: 4px 0;
+        background-color: rgba(59, 130, 246, 0.1);
+        border-radius: 4px;
+        font-size: 11px;
+        color: rgba(37, 99, 235, 0.9);
+        font-weight: 500;
+        width: fit-content;
+    }
+
+    .fmu-badge svg {
+        width: 12px;
+        height: 12px;
+        flex-shrink: 0;
+    }
+
+    .fmu-badge span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 </style>

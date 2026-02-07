@@ -41,7 +41,7 @@
   nodeTypes={nodeTypes}
   edgeTypes={edgeTypes}
   defaultEdgeOptions={{
-    animated: true,
+    animated: false,
     deletable: true,
   }}
   connectionLineType={ConnectionLineType.SmoothStep}

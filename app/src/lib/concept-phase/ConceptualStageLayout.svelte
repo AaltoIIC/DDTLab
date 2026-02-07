@@ -28,14 +28,15 @@
     let firstTimeOpen = $state(false);
 
     const tourSteps: DriveStep[] = [
-        { 
-            popover: { 
-                title: 'Welcome to the Concept Stage tour!', 
-                description: 
+        {
+            element: '.concept-stage-layout',  // Target the main layout to center the welcome message
+            popover: {
+                title: 'Welcome to the Concept Stage tour!',
+                description:
                     `<p>The <strong>concept stage</strong> is where the <em>initial, rough design</em> of a system takes shape. Our Concept Stage Editor is built on the <strong>SysML v2</strong> modeling language standard. </p>
-                    <p>In this tour, you’ll learn the essentials of SysML modeling and discover how to use our interface to create your own system concept.</p>`, 
-                side: "right", 
-                align: 'center' 
+                    <p>In this tour, you'll learn the essentials of SysML modeling and discover how to use our interface to create your own system concept.</p>`,
+                side: "over",  // Use 'over' to center the popover
+                align: 'center'
             }
         },
         { 
@@ -262,9 +263,13 @@
         }
         packageViewStack.set([]);
 
-        // Start the tour if it is the first time opening the concept stage
-        if (localStorage.getItem("showedFirstTour") !== "true") {
-            startTour = firstTimeOpen = true;
+        // Start the tour only if it's the first time and hasn't been shown
+        if (typeof localStorage !== 'undefined' && localStorage.getItem("showedFirstTour") !== "true") {
+            firstTimeOpen = true;
+            startTour = true;
+        } else {
+            firstTimeOpen = false;
+            startTour = false;
         }
     });
     
@@ -276,6 +281,14 @@
             // Save any pending changes
             navigateToRoot();
         }
+
+        // Ensure tour is properly destroyed
+        if (driver) {
+            driver.destroy();
+            driver = undefined;
+        }
+        startTour = false;
+        firstTimeOpen = false;
     });
 
     const stopAutoTour = () => {

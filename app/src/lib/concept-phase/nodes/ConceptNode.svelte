@@ -2,7 +2,7 @@
     import { stopPropagation, createBubbler } from 'svelte/legacy';
 
     const bubble = createBubbler();
-    import { Grid2X2, Squircle, X } from '@lucide/svelte';
+    import { Grid2X2, Squircle, X, Lock } from '@lucide/svelte';
     import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { navigateToPackage } from '../packageStore';
@@ -13,6 +13,9 @@
     import { get } from 'svelte/store';
     import { capitalize } from 'lodash';
     import { onMount } from 'svelte';
+    import { activeViewpointDetails, activeViewpoint, viewpoints } from '../viewpoints/viewpointStore';
+    import { detectSystemType, nodeMatchesViewpoint, getSystemTypeColor, getSystemTypeLabel, type SystemTypeInfo } from '../utils/systemTypeDetection';
+    import Portal from 'svelte-portal';
 
     type MetadataItem = {
         key: string;
@@ -23,6 +26,7 @@
         declaredName: string;
         definition: string;
         comment: string;
+        mass?: number; // Mass in kg
         orderStatus?: 'Delivered' | 'Pending' | 'Order Placed' | 'Confirmed' | 'In Production / In-House' | 'Not Ordered';
         metadata?: MetadataItem[];
         nodes?: import('@xyflow/svelte').Node[];
@@ -51,6 +55,88 @@
     if (!data.inputs) data.inputs = [];
     if (!data.outputs) data.outputs = [];
     if (!data.metadata) data.metadata = [];
+    if (data.mass === undefined) data.mass = 0;
+
+    // Get system type info
+    let systemTypeInfo = $derived.by(() => {
+        // If it has a custom viewpoint assigned, return that info
+        if (data.systemType?.customViewpointId) {
+            const customViewpoint = $viewpoints.find(v => v.id === data.systemType.customViewpointId);
+            return {
+                primary: 'custom' as any,
+                customViewpointName: customViewpoint?.name || data.systemType.customViewpointName,
+                customViewpointIcon: customViewpoint?.icon || '👁️',
+                isAutoDetected: false
+            };
+        }
+        return data.systemType || detectSystemType({ id, type: 'custom', position: {x: 0, y: 0}, data });
+    });
+
+    // Helper function to check if this node is inside a package
+    function isNodeInsidePackage(nodeId: string): string | null {
+        const nodes = get(currentNodes);
+        const thisNode = nodes.find(n => n.id === nodeId);
+        if (!thisNode) return null;
+
+        // Find all package nodes
+        const packageNodes = nodes.filter(n => n.type === 'package');
+
+        for (const pkg of packageNodes) {
+            if (!pkg.width || !pkg.height) continue;
+
+            // Check if this node is within the bounds of the package
+            if (thisNode.position.x >= pkg.position.x &&
+                thisNode.position.y >= pkg.position.y &&
+                thisNode.position.x + (thisNode.width || 0) <= pkg.position.x + pkg.width &&
+                thisNode.position.y + (thisNode.height || 0) <= pkg.position.y + pkg.height) {
+                return pkg.id;
+            }
+        }
+
+        return null;
+    }
+
+    // Check if node should be hidden by viewpoint
+    let isHiddenByViewpoint = $derived.by(() => {
+        // For custom viewpoints, check both manual selection AND nodes with matching custom system type
+        if ($activeViewpointDetails?.type === 'custom') {
+            // Check if node is manually included in the viewpoint
+            const manuallyIncluded = $activeViewpointDetails.nodeIds?.includes(id) || false;
+
+            // Check if node's parent package is included in the viewpoint
+            const parentPackageId = isNodeInsidePackage(id);
+            const parentPackageIncluded = parentPackageId ?
+                ($activeViewpointDetails.nodeIds?.includes(parentPackageId) || false) : false;
+
+            // Check if node has this custom viewpoint as its system type
+            const hasMatchingCustomType = data.systemType?.customViewpointId === $activeViewpoint;
+
+            // Show node if any condition is true
+            return !(manuallyIncluded || parentPackageIncluded || hasMatchingCustomType);
+        }
+
+        // For system viewpoints, use system type matching
+        if ($activeViewpointDetails?.type === 'system') {
+            // Check if node's parent package is included in this system viewpoint
+            const parentPackageId = isNodeInsidePackage(id);
+            const parentPackageIncluded = parentPackageId ?
+                ($activeViewpointDetails.nodeIds?.includes(parentPackageId) || false) : false;
+
+            // If parent package is included, show this node
+            if (parentPackageIncluded) {
+                return false;
+            }
+
+            // Also check if node has a matching custom type that was assigned
+            if (data.systemType?.customViewpointId) {
+                // Custom-typed nodes only show in their custom viewpoint or 'all'
+                return $activeViewpoint !== 'all';
+            }
+            return !nodeMatchesViewpoint({ id, type: 'custom', position: {x: 0, y: 0}, data }, $activeViewpoint);
+        }
+
+        return false;
+    });
 
     // Create port handlers
     const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<NodeData>(id);
@@ -88,8 +174,10 @@
 
     let editingName = $state(false);
     let editingComment = $state(false);
+    let editingMass = $state(false);
     let tempName = $state(data.declaredName);
     let tempComment = $state(data.comment || '');
+    let tempMass = $state(data.mass?.toString() || '0');
 
     function updateNodeData(field: string, value: any) {
         currentNodes.update(nodes => {
@@ -123,6 +211,18 @@
         editingComment = false;
     }
 
+    function handleMassEdit() {
+        // Parse the mass value and ensure it's a valid number
+        const massValue = parseFloat(tempMass);
+        if (!isNaN(massValue) && massValue >= 0) {
+            updateNodeData('mass', massValue);
+        } else {
+            // Reset to previous value if invalid
+            tempMass = data.mass?.toString() || '0';
+        }
+        editingMass = false;
+    }
+
     function handleDelete() {
         // Remove this node and any connected edges
         currentNodes.update(nodes => nodes.filter(n => n.id !== id));
@@ -147,17 +247,18 @@
     let contextMenuX = $state(0);
     let contextMenuY = $state(0);
 
+    // System type dialog
+    let showSystemTypeDialog = $state(false);
+    let selectedSystemType = $state('auto');
+
     function handleContextMenu(event: MouseEvent) {
         event.preventDefault();
         event.stopPropagation();
-        
-        if (!nodeElement) return;
 
-        // Position relative to the node
-        const rect = nodeElement.getBoundingClientRect();
-        contextMenuX = event.clientX - rect.left + nodeElement.scrollLeft;
-        contextMenuY = event.clientY - rect.top + nodeElement.scrollTop;
-        
+        // Use client coordinates since context menu is position: fixed
+        contextMenuX = event.clientX;
+        contextMenuY = event.clientY;
+
         showContextMenu = true;
     }
 
@@ -176,6 +277,7 @@
                 data: {
                     ...currentNode.data,
                     id: `${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                    mass: currentNode.data.mass || 0, // Copy mass value
                     inputs: Array.isArray(currentNode.data.inputs) ? currentNode.data.inputs.map(input => ({...input})) : [],
                     outputs: Array.isArray(currentNode.data.outputs) ? currentNode.data.outputs.map(output => ({...output})) : [],
                     metadata: Array.isArray(currentNode.data.metadata) ? currentNode.data.metadata.map(meta => ({...meta})) : [],
@@ -191,10 +293,67 @@
         showContextMenu = false;
     }
 
+    function handleSetSystemType() {
+        // Initialize with current system type
+        if (data.systemType && !data.systemType.isAutoDetected) {
+            // Check if it's a custom viewpoint
+            if (data.systemType.customViewpointId) {
+                selectedSystemType = data.systemType.customViewpointId;
+            } else {
+                selectedSystemType = data.systemType.primary;
+            }
+        } else {
+            selectedSystemType = 'auto';
+        }
+        showSystemTypeDialog = true;
+    }
+
+    function applySystemType() {
+        if (selectedSystemType === 'auto') {
+            // Remove manual override, use auto-detection
+            delete data.systemType;
+        } else {
+            // Check if it's a custom viewpoint ID
+            const customViewpoint = $viewpoints.find(v => v.id === selectedSystemType && v.type === 'custom');
+            if (customViewpoint) {
+                // Set as a custom type with the viewpoint's info
+                data.systemType = {
+                    primary: 'custom' as any, // We'll need to handle this in detection
+                    customViewpointId: selectedSystemType,
+                    customViewpointName: customViewpoint.name,
+                    isAutoDetected: false
+                };
+            } else {
+                // Set as standard system type
+                data.systemType = {
+                    primary: selectedSystemType as import('../utils/systemTypeDetection').SystemType,
+                    isAutoDetected: false
+                };
+            }
+        }
+
+        // Update the nodes store
+        const nodes = get(currentNodes);
+        const nodeIndex = nodes.findIndex(n => n.id === id);
+        if (nodeIndex !== -1) {
+            nodes[nodeIndex].data = { ...data };
+            currentNodes.set([...nodes]);
+            addToHistory();
+        }
+
+        showSystemTypeDialog = false;
+    }
+
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="concept-node" class:selected ondblclick={handleDoubleClick as (event: Event) => void} oncontextmenu={handleContextMenu} bind:this={nodeElement}>
+<div
+    class="concept-node"
+    class:selected
+    class:hidden-by-viewpoint={isHiddenByViewpoint}
+    ondblclick={handleDoubleClick as (event: Event) => void}
+    oncontextmenu={handleContextMenu}
+    bind:this={nodeElement}>
     <!-- Input Handles -->
     <PortHandles 
         nodeId={id}
@@ -213,6 +372,47 @@
                 <Squircle size={14} />
             {/if}
             <span class="title">{data.definition ? `${data.definition} (${type})` : `${capitalize(type)}`}</span>
+            {#if systemTypeInfo.primary !== 'none'}
+                <div class="system-badges">
+                    <!-- Primary badge -->
+                    {#if systemTypeInfo.primary === 'custom'}
+                        <!-- Custom viewpoint badge -->
+                        <span
+                            class="system-badge custom"
+                            style="background-color: #8b5cf6"
+                            title="Custom View: {systemTypeInfo.customViewpointName}"
+                        >
+                            <Lock size={8} class="badge-icon" />
+                            {systemTypeInfo.customViewpointIcon} {systemTypeInfo.customViewpointName}
+                        </span>
+                    {:else}
+                        <!-- Standard system type badge -->
+                        <span
+                            class="system-badge"
+                            style="background-color: {getSystemTypeColor(systemTypeInfo.primary)}"
+                            title="{systemTypeInfo.isAutoDetected ? 'Auto-detected' : 'Manually set'}: {systemTypeInfo.primary}"
+                        >
+                            {#if !systemTypeInfo.isAutoDetected}
+                                <Lock size={8} class="badge-icon" />
+                            {/if}
+                            {getSystemTypeLabel(systemTypeInfo.primary)}
+                        </span>
+                    {/if}
+
+                    <!-- Secondary badges -->
+                    {#if systemTypeInfo.secondary && systemTypeInfo.secondary.length > 0}
+                        {#each systemTypeInfo.secondary as secondaryType}
+                            <span
+                                class="system-badge secondary"
+                                style="background-color: {getSystemTypeColor(secondaryType)}"
+                                title="Auto-detected: {secondaryType}"
+                            >
+                                {getSystemTypeLabel(secondaryType)}
+                            </span>
+                        {/each}
+                    {/if}
+                </div>
+            {/if}
         </div>
         <button 
             class="delete-button" 
@@ -287,6 +487,39 @@
         </div>
 
         <div class="field">
+            <span class="field-label">Mass (kg):</span>
+            {#if editingMass}
+                <input
+                    class="field-input"
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    bind:value={tempMass}
+                    onblur={handleMassEdit}
+                    onkeydown={(e) => {
+                        if (e.key === 'Enter') handleMassEdit();
+                        if (e.key === 'Escape') {
+                            tempMass = data.mass?.toString() || '0';
+                            editingMass = false;
+                        }
+                    }}
+                    onclick={stopPropagation(bubble('click'))}
+                    autofocus
+                />
+            {:else}
+                <span
+                    class="field-value editable"
+                    onclick={stopPropagation(() => {
+                        editingMass = true;
+                        tempMass = data.mass?.toString() || '0';
+                    })}
+                >
+                    {data.mass || 0}
+                </span>
+            {/if}
+        </div>
+
+        <div class="field">
             <span class="field-label">ID:</span>
             <span class="field-value">{id}</span>
         </div>
@@ -324,12 +557,61 @@
         onUpdateInterface={handleUpdateOutputInterface}
     />
     
-    <ContextMenu 
-        bind:visible={showContextMenu}
-        x={contextMenuX}
-        y={contextMenuY}
-        on:duplicate={handleDuplicate}
-    />
+    <Portal>
+        <ContextMenu
+            bind:visible={showContextMenu}
+            x={contextMenuX}
+            y={contextMenuY}
+            showSystemType={true}
+            on:duplicate={handleDuplicate}
+            on:setSystemType={handleSetSystemType}
+        />
+    </Portal>
+
+    {#if showSystemTypeDialog}
+        <div class="system-type-dialog">
+            <div class="dialog-header">Set System Type</div>
+            <div class="dialog-content">
+                <label>
+                    <input type="radio" bind:group={selectedSystemType} value="auto" />
+                    Auto-detect (based on interfaces)
+                </label>
+
+                <div class="dialog-section-label">System Types</div>
+                <label>
+                    <input type="radio" bind:group={selectedSystemType} value="electrical" />
+                    Electrical
+                </label>
+                <label>
+                    <input type="radio" bind:group={selectedSystemType} value="mechanical" />
+                    Mechanical
+                </label>
+                <label>
+                    <input type="radio" bind:group={selectedSystemType} value="fluid" />
+                    Fluid
+                </label>
+                <label>
+                    <input type="radio" bind:group={selectedSystemType} value="data" />
+                    Data
+                </label>
+
+                {#if $viewpoints.filter(v => v.type === 'custom').length > 0}
+                    {@const customViewpoints = $viewpoints.filter(v => v.type === 'custom')}
+                    <div class="dialog-section-label">Custom Views</div>
+                    {#each customViewpoints as viewpoint}
+                        <label>
+                            <input type="radio" bind:group={selectedSystemType} value={viewpoint.id} />
+                            {viewpoint.icon} {viewpoint.name}
+                        </label>
+                    {/each}
+                {/if}
+            </div>
+            <div class="dialog-buttons">
+                <button onclick={() => showSystemTypeDialog = false}>Cancel</button>
+                <button onclick={applySystemType}>Apply</button>
+            </div>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -375,6 +657,40 @@
         font-weight: 600;
         font-size: 12px;
         color: #4b5563;
+    }
+
+    .system-badges {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 8px;
+    }
+
+    .system-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .system-badge.secondary {
+        opacity: 0.8;
+    }
+
+    .system-badge.custom {
+        text-transform: none;
+        padding: 2px 8px;
+    }
+
+    .badge-icon {
+        display: inline-block;
+        vertical-align: middle;
     }
 
     .content {
@@ -468,5 +784,91 @@
     .delete-button:hover {
         background-color: #fee2e2;
         color: #dc2626;
+    }
+
+    /* Hide nodes not in viewpoint */
+    .concept-node.hidden-by-viewpoint {
+        opacity: 0.2;
+        pointer-events: none;
+    }
+
+    .system-type-dialog {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 16px;
+        z-index: 1001;
+        min-width: 200px;
+    }
+
+    .dialog-header {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 12px;
+        color: #111827;
+    }
+
+    .dialog-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .dialog-content label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #4b5563;
+        cursor: pointer;
+    }
+
+    .dialog-content input[type="radio"] {
+        cursor: pointer;
+    }
+
+    .dialog-section-label {
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #6b7280;
+        margin-top: 8px;
+        margin-bottom: 4px;
+    }
+
+    .dialog-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+
+    .dialog-buttons button {
+        padding: 4px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        background: white;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .dialog-buttons button:hover {
+        background: #f3f4f6;
+    }
+
+    .dialog-buttons button:last-child {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+
+    .dialog-buttons button:last-child:hover {
+        background: #2563eb;
     }
 </style>

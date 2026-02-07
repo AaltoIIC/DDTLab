@@ -3,6 +3,8 @@
     import * as Select from "$lib/components/ui/select";
     import { onMount } from "svelte";
     import type { LogicalExpressionType } from "$lib/types/types";
+    import { currentNodes, navigationContext } from "$lib/stores/stores.svelte";
+    import { get } from "svelte/store";
 
    interface Props {
       value?: LogicalExpressionType;
@@ -32,10 +34,53 @@
         });
 
         document.addEventListener('connector-click', (e) => {
+            const detail = (e as any).detail;
+            const elementName = detail.elementName;
+            const connectorName = detail.connectorName;
+            const connectorVariable = detail.connectorVariable;
+
+            console.log('Received connector-click event:', {
+                elementName,
+                connectorName,
+                connectorVariable
+            });
+
+            // Find the node to get its actual name (not ID)
+            const nodes = get(currentNodes);
+            const node = nodes.find(n => n.id === elementName);
+
+            // Use component VSSo class if available, otherwise use component name
+            const componentVSSo = (node?.data?.element as any)?.VSSoClass;
+            const nodeName = componentVSSo || node?.data?.name || elementName;
+
+            // Use connectorVariable (VSSo class/custom variable) if available, otherwise use connector name
+            const displayName = connectorVariable || connectorName;
+
+            console.log('Component:', nodeName, 'from VSSo:', componentVSSo, 'or name:', node?.data?.name);
+            console.log('Using displayName:', displayName, 'from connectorVariable:', connectorVariable, 'or connectorName:', connectorName);
+
+            // Build full hierarchical path including subsystem navigation
+            const navContext = get(navigationContext);
+            const pathNames: string[] = [];
+
+            // Add all parent system names from navigation path
+            if (navContext.path && navContext.path.length > 0) {
+                navContext.path.forEach(parent => {
+                    pathNames.push(parent.name);
+                });
+            }
+
+            // Add the component name and connector variable
+            pathNames.push(nodeName);
+            pathNames.push(displayName);
+
+            // Create hierarchical path: parent1.parent2.component.variable
+            const hierarchicalPath = pathNames.join('.');
+
             if (leftInFocus) {
-                value.leftHandSide = `sys:${(e as any).detail.connectorName}`;
+                value.leftHandSide = hierarchicalPath;
             } else if (rightInFocus) {
-                value.rightHandSide = `sys:${(e as any).detail.connectorName}`;
+                value.rightHandSide = hierarchicalPath;
             }
         });
     });
@@ -57,6 +102,8 @@
             <Select.Item value="=">=</Select.Item>
             <Select.Item value="<">{'<'}</Select.Item>
             <Select.Item value=">">{'>'}</Select.Item>
+            <Select.Item value="<=">{'<='}</Select.Item>
+            <Select.Item value=">=">{'>='}</Select.Item>
         </Select.Content>
     </Select.Root>
 

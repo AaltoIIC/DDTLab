@@ -24,6 +24,7 @@
             <TooltipHandle
                 {elementName}
                 connectorName={connector.name}
+                connectorVariable={connector.class}
                 type={connector.type}
             />
         {/each}

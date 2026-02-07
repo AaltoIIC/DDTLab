@@ -32,7 +32,31 @@
             fmiType: 'Co-Simulation',
             linkedElements: [],
             uploadDate: new Date().toISOString(),
-            isUserUploaded: false
+            isUserUploaded: false,
+            requirements: [
+                {
+                    name: 'MotorTorqueLimit',
+                    id: 'FMI-MOT-001',
+                    description: 'Motor output torque shall not exceed rated torque',
+                    temporalOperator: 'Globally',
+                    rightHandSide: {
+                        leftHandSide: 'motor.outputTorque',
+                        operator: '<=',
+                        rightHandSide: 420
+                    }
+                },
+                {
+                    name: 'MotorTemperatureLimit',
+                    id: 'FMI-MOT-002',
+                    description: 'Motor temperature shall remain within safe operating range',
+                    temporalOperator: 'Globally',
+                    rightHandSide: {
+                        leftHandSide: 'motor.temperature',
+                        operator: '<=',
+                        rightHandSide: 150
+                    }
+                }
+            ]
         },
         {
             id: 'fmi_2',
@@ -44,7 +68,20 @@
             fmiType: 'Model Exchange',
             linkedElements: [],
             uploadDate: new Date().toISOString(),
-            isUserUploaded: false
+            isUserUploaded: false,
+            requirements: [
+                {
+                    name: 'BLDCSpeedRange',
+                    id: 'FMI-MOT-003',
+                    description: 'BLDC motor speed shall remain within operational limits',
+                    temporalOperator: 'Globally',
+                    rightHandSide: {
+                        leftHandSide: 'motor.speed',
+                        operator: '<=',
+                        rightHandSide: 8000
+                    }
+                }
+            ]
         },
         {
             id: 'fmi_3',
@@ -80,7 +117,31 @@
             fmiType: 'Model Exchange',
             linkedElements: [],
             uploadDate: new Date().toISOString(),
-            isUserUploaded: false
+            isUserUploaded: false,
+            requirements: [
+                {
+                    name: 'SensorTemperatureRange',
+                    id: 'FMI-SEN-001',
+                    description: 'Temperature sensor reading shall be within calibrated range',
+                    temporalOperator: 'Globally',
+                    rightHandSide: {
+                        leftHandSide: 'sensor.temperature',
+                        operator: '<=',
+                        rightHandSide: 500
+                    }
+                },
+                {
+                    name: 'SensorAccuracy',
+                    id: 'FMI-SEN-002',
+                    description: 'Sensor error shall remain within specified tolerance',
+                    temporalOperator: 'Globally',
+                    rightHandSide: {
+                        leftHandSide: 'sensor.error',
+                        operator: '<=',
+                        rightHandSide: 2.5
+                    }
+                }
+            ]
         },
         {
             id: 'fmi_6',
@@ -92,7 +153,20 @@
             fmiType: 'Co-Simulation',
             linkedElements: [],
             uploadDate: new Date().toISOString(),
-            isUserUploaded: false
+            isUserUploaded: false,
+            requirements: [
+                {
+                    name: 'PressureRangeLimit',
+                    id: 'FMI-SEN-003',
+                    description: 'Pressure reading shall not exceed sensor maximum rating',
+                    temporalOperator: 'Globally',
+                    rightHandSide: {
+                        leftHandSide: 'sensor.pressure',
+                        operator: '<=',
+                        rightHandSide: 1000
+                    }
+                }
+            ]
         }
     ];
     

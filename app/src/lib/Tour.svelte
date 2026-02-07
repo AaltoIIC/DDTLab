@@ -1,7 +1,7 @@
 <script lang="ts">
     import { driver, type Driver, type DriveStep } from "driver.js";
     import "driver.js/dist/driver.css";
-    import { onMount } from "svelte";
+    import { onMount, onDestroy } from "svelte";
 
     interface Props {
         driverObj: Driver | undefined;
@@ -26,33 +26,58 @@
     }
 
     onMount(() => {
+        // Add skip functionality to the first step
+        const stepsWithSkip = steps.map((step, index) => {
+            if (index === 0 && disableCancel) {
+                return {
+                    ...step,
+                    popover: {
+                        ...step.popover,
+                        showButtons: ['next', 'close'], // First step gets next and close
+                        onCloseClick: () => {
+                            // Save that tour was skipped
+                            if (typeof localStorage !== 'undefined') {
+                                localStorage.setItem("showedFirstTour", "true");
+                            }
+                            onClose();
+                        }
+                    }
+                };
+            }
+            return step;
+        });
+
         driverObj = driver({
             popoverClass: 'tour-class',
             disableActiveInteraction: true,
             overlayOpacity: 0.35,
-            overlayClickBehavior: undefined, // Makes clicking the backdrop not do anything
+            overlayClickBehavior: undefined,
             onDestroyed: () => {start = false},
-            onCloseClick: () => onClose(),
-            steps
+            onCloseClick: () => {
+                if (typeof localStorage !== 'undefined') {
+                    localStorage.setItem("showedFirstTour", "true");
+                }
+                onClose();
+            },
+            steps: stepsWithSkip,
+            showButtons: ['next', 'previous', 'close'],
+            progressText: '{{current}} of {{total}}'
         });
     });
 
-    $effect( () => {
+    onDestroy(() => {
         if (driverObj) {
-            driverObj.setConfig({
-                ...driverObj.getConfig(),
-                allowClose: !disableCancel
-            }
-            );
-
-            if (start) {
-                driverObj.drive();
-            }
-            else {
-                driverObj.destroy();
-            }
+            driverObj.destroy();
+            driverObj = undefined;
         }
+    });
 
+    $effect( () => {
+        if (driverObj && start) {
+            driverObj.drive();
+        } else if (driverObj && !start) {
+            driverObj.destroy();
+        }
     });
 </script>
 

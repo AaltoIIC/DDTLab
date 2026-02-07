@@ -19,7 +19,7 @@ export interface SystemMetaType {
 
 export interface LogicalExpressionType {
     leftHandSide: string | number | boolean;
-    operator: '=' | '>' | '<';
+    operator: '=' | '>' | '<' | '>=' | '<=';
     rightHandSide: string | number | boolean;
 }
 export interface IntervalType {
@@ -29,11 +29,12 @@ export interface IntervalType {
 
 export interface RequirementType {
     name: string;
+    id: string;
     description: string;
     temporalOperator: 'Until' | 'Globally' | 'Eventually' | 'Next' | 'Since' | 'Release';
     leftHandSide?: LogicalExpressionType;
     rightHandSide: LogicalExpressionType;
-    interval?: IntervalType;
+    interval?: IntervalType | number[];  // Support both object and array formats
 }
 
 export interface SystemType extends SystemMetaType {
@@ -99,6 +100,7 @@ export interface FMIComponentType {
     linkedElements: string[];  // IDs of linked editor elements
     uploadDate: string;
     isUserUploaded: boolean;
+    requirements?: RequirementType[];  // Requirements from FMU modelDescription.xml
 }
 
 export interface FMIVariableType {

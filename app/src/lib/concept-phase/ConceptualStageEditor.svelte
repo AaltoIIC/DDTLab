@@ -4,6 +4,7 @@
     import '@xyflow/svelte/dist/style.css';
     import PackageNode from './nodes/PackageNode.svelte';
     import ConceptNode from './nodes/ConceptNode.svelte';
+    import InternalPortNode from './nodes/InternalPortNode.svelte';
     import RemovableEdge from './edges/RemovableEdge.svelte';
     import ConnectionTypeDropdown from './ConnectionTypeDropdown.svelte';
     import { get } from 'svelte/store';
@@ -20,12 +21,14 @@
     import { onMount } from 'svelte';
     import { zoom } from 'd3-zoom';
     import { findPort } from './nodes/portUtils';
+    import { activeViewpoint, activeViewpointDetails } from './viewpoints/viewpointStore';
     
 
     const nodeTypes = {
         package: PackageNode,
         part: ConceptNode,
         item: ConceptNode,
+        internalPort: InternalPortNode,
     } as {} as NodeTypes;
     
     const edgeTypes = {
@@ -84,7 +87,7 @@
     // }
 
     let flowContainer: HTMLDivElement | undefined = $state();
-    const { viewport } = useSvelteFlow();
+    const { viewport, getViewport } = useSvelteFlow();
     let zoomLevel = $state(1);
     let x = $state(0);
     let y = $state(0);
@@ -116,47 +119,57 @@
     function handleDrop(event: DragEvent) {
         event.preventDefault();
         event.stopPropagation();
-        
+
         const jsonData = event.dataTransfer?.getData('application/json');
         if (!jsonData) return;
-        
+
         try {
             const data = JSON.parse(jsonData);
             console.log('Dropping data:', data);
-            
-            if (!flowContainer) return;
-            
-            // Get drop position relative to the flow container
-            const rect = flowContainer.getBoundingClientRect();
+
+            // Get drop position - use the event target if flowContainer is not available
+            const target = document.getElementById('conceptual-editor');
+            if (!target) {
+                console.error('Could not find drop target');
+                return;
+            }
+
+            const rect = target.getBoundingClientRect();
+            const currentViewport = getViewport();
+
+            // Calculate position accounting for viewport pan and zoom
             const position = {
-                x: (event.clientX - rect.x - x) / zoomLevel,
-                y: (event.clientY - rect.y - y) / zoomLevel
+                x: (event.clientX - rect.left - currentViewport.x) / currentViewport.zoom,
+                y: (event.clientY - rect.top - currentViewport.y) / currentViewport.zoom
             };
-            
+
             console.log('Drop position:', position);
-            
+
             let newNodes: Node[] = [];
             let newEdges: Edge[] = [];
-            
+
             // Check if it's a template or a simple component
             if (data.type === 'template' && data.template) {
                 // Instantiate template
                 const result = instantiateTemplate(data.template, position);
                 newNodes = result.nodes;
                 newEdges = result.edges;
-            } else {
-                // Instantiate simple component
+            } else if (data.type === 'package') {
+                // Instantiate simple component (from library) - data is already the complete component
                 const result = instantiateSimpleComponent(data, position);
                 newNodes = result.nodes;
                 newEdges = result.edges;
+            } else {
+                console.error('Unknown component type:', data.type);
+                return;
             }
-            
+
             // Add to current view
             currentNodes.update(nodes => [...nodes, ...newNodes]);
             if (newEdges.length > 0) {
                 currentEdges.update(edges => [...edges, ...newEdges]);
             }
-            
+
             addToHistory();
         } catch (error) {
             console.error('Failed to instantiate:', error);
@@ -171,15 +184,27 @@
     
     function onConnect(params: Connection) {
         console.log('Connection params:', params);
-        
+
         const nodes = get(currentNodes);
         const sourceNode = nodes.find(n => n.id === params.source);
         const targetNode = nodes.find(n => n.id === params.target);
-        
+
         // Check if source or target is a package node
         if (sourceNode?.type === 'package' || targetNode?.type === 'package') {
             console.log('Cannot connect to/from package nodes');
             return; // Prevent connection
+        }
+
+        // Validate internal port connections
+        // Internal input ports can only have outgoing connections
+        // Internal output ports can only have incoming connections
+        if (sourceNode?.type === 'internalPort' && sourceNode.data.portType === 'output') {
+            console.log('Internal output ports can only receive connections, not send them');
+            return;
+        }
+        if (targetNode?.type === 'internalPort' && targetNode.data.portType === 'input') {
+            console.log('Internal input ports can only send connections, not receive them');
+            return;
         }
         
         // Store the pending connection and show dropdown at midpoint of connection
@@ -201,7 +226,13 @@
             dropdownY = window.innerHeight / 2;
         }
         
-        showConnectionDropdown = true;
+        // Skip connection type dropdown for internal port connections
+        if (sourceNode?.type === 'internalPort' || targetNode?.type === 'internalPort') {
+            // Directly create the connection without asking for type
+            handleConnectionTypeSelect('flow'); // Default to flow for internal connections
+        } else {
+            showConnectionDropdown = true;
+        }
     }
     
     function handleConnectionTypeSelect(connectionType: 'binding' | 'flow') {
@@ -284,11 +315,13 @@
     function nodeStrokeColor(node: Node) {
         return node.type === 'package' ? 'gray' : '';
     }
+
+    // No need for effect anymore - nodes handle their own visibility
 </script>
 
 
 
-  <div id="conceptual-editor" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
+  <div id="conceptual-editor" class="viewpoint-{$activeViewpoint}" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
       <div class="flow-container" bind:this={flowContainer}>
           <SvelteFlow
               nodes={currentNodes}
@@ -329,4 +362,22 @@
           width: 100%;
           height: 100%;
       }
+
+      /* Simple viewpoint indicator - just changes background color for now */
+      .viewpoint-electrical {
+          background-color: #fef3c7 !important; /* Light yellow */
+      }
+
+      .viewpoint-mechanical {
+          background-color: #e0e7ff !important; /* Light blue */
+      }
+
+      .viewpoint-fluid {
+          background-color: #dbeafe !important; /* Light blue */
+      }
+
+      .viewpoint-data {
+          background-color: #d1fae5 !important; /* Light green */
+      }
+
   </style>

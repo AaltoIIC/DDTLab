@@ -24,7 +24,7 @@ export function navigateToPackage(packageId: string, packageName: string, parent
     const stack = get(packageViewStack);
     const nodes = get(currentNodes);
     const edges = get(currentEdges);
-    
+
     // If we're at root level (stack is empty), create a root view to save current state
     if (stack.length === 0) {
         packageViewStack.update(s => [{
@@ -46,23 +46,66 @@ export function navigateToPackage(packageId: string, packageName: string, parent
     // Find the package node to get its internal content
     const packageNode = nodes.find(n => n.id === packageId);
     const packageData = packageNode?.data as any;
-    
-    // Create new view with the package's internal content
+
+    // Create internal port nodes if this is a part or item (not a package)
+    let internalPortNodes: Node[] = [];
+    if (packageNode?.type === 'part' || packageNode?.type === 'item') {
+        const inputs = packageData?.inputs || [];
+        const outputs = packageData?.outputs || [];
+
+        // Create internal nodes for input ports (appear on left side)
+        inputs.forEach((port: any, index: number) => {
+            internalPortNodes.push({
+                id: `internal-port-input-${port.name}`,
+                type: 'internalPort',
+                position: { x: 20, y: 150 + index * 100 },  // More spread out vertically
+                data: {
+                    ...port,
+                    portType: 'input',
+                    parentNodeId: packageId,
+                    parentNodeName: packageName,
+                    isInternal: true
+                },
+                draggable: true,  // Allow users to position ports where needed
+                deletable: false
+            });
+        });
+
+        // Create internal nodes for output ports (appear on right side)
+        outputs.forEach((port: any, index: number) => {
+            internalPortNodes.push({
+                id: `internal-port-output-${port.name}`,
+                type: 'internalPort',
+                position: { x: 800, y: 150 + index * 100 },  // Further right and more spread
+                data: {
+                    ...port,
+                    portType: 'output',
+                    parentNodeId: packageId,
+                    parentNodeName: packageName,
+                    isInternal: true
+                },
+                draggable: true,  // Allow users to position ports where needed
+                deletable: false
+            });
+        });
+    }
+
+    // Create new view with the package's internal content plus internal port nodes
     const newView: PackageView = {
         packageId,
         packageName,
         parentId,
-        nodes: packageData?.nodes || [],
+        nodes: [...(packageData?.nodes || []), ...internalPortNodes],
         edges: packageData?.edges || []
     };
 
     // Update the stack
     packageViewStack.update(stack => [...stack, newView]);
-    
+
     // Update the current nodes and edges to show the package's content
     currentNodes.set(newView.nodes);
     currentEdges.set(newView.edges);
-    
+
     // Add to history for undo/redo support
     addToHistory();
 }
@@ -74,7 +117,11 @@ export function navigateBack() {
         // Save current package content before navigating back
         const currentView = stack[stack.length - 1];
         const currentPackageId = currentView.packageId;
-        
+
+        // Filter out internal port nodes before saving
+        const currentNodesFiltered = get(currentNodes).filter(n => n.type !== 'internalPort');
+        const currentEdgesValue = get(currentEdges);
+
         // Update the package node in the parent level with the current content
         const parentView = stack[stack.length - 2];
         parentView.nodes = parentView.nodes.map(node => {
@@ -83,8 +130,8 @@ export function navigateBack() {
                     ...node,
                     data: {
                         ...node.data,
-                        nodes: get(currentNodes),
-                        edges: get(currentEdges)
+                        nodes: currentNodesFiltered,
+                        edges: currentEdgesValue
                     }
                 };
             }
@@ -93,11 +140,11 @@ export function navigateBack() {
 
         // Remove current view from stack
         packageViewStack.update(stack => stack.slice(0, -1));
-        
+
         // Restore parent level nodes/edges
         currentNodes.set(parentView.nodes);
         currentEdges.set(parentView.edges);
-        
+
         // Add to history
         addToHistory();
     }
@@ -116,18 +163,25 @@ export function navigateToLevel(targetIndex: number) {
     // Save current content to the stack
     if (currentLevel >= 0) {
         let updatedStack = [...stack];
+
+        // Filter out internal port nodes before saving
+        const currentNodesFiltered = get(currentNodes).filter(n => n.type !== 'internalPort');
+
         updatedStack[currentLevel] = {
             ...updatedStack[currentLevel],
-            nodes: get(currentNodes),
+            nodes: currentNodesFiltered,
             edges: get(currentEdges)
         };
-        
+
         // Now propagate changes up the stack
         // Start from current level and work backwards to update all parent references
         for (let i = currentLevel; i > targetIndex; i--) {
             const childView = updatedStack[i];
             const parentView = updatedStack[i - 1];
-            
+
+            // Filter out internal port nodes from child view
+            const childNodesFiltered = childView.nodes.filter(n => n.type !== 'internalPort');
+
             // Update the child node in the parent's nodes array
             parentView.nodes = parentView.nodes.map(node => {
                 if (node.id === childView.packageId) {
@@ -135,7 +189,7 @@ export function navigateToLevel(targetIndex: number) {
                         ...node,
                         data: {
                             ...node.data,
-                            nodes: childView.nodes,
+                            nodes: childNodesFiltered,
                             edges: childView.edges
                         }
                     };

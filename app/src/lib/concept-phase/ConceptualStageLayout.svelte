@@ -10,7 +10,7 @@
     import type { PackageView } from './packageStore';
     import { onMount, onDestroy } from 'svelte';
     import { get } from 'svelte/store';
-    import { Save, CircleQuestionMark } from '@lucide/svelte';
+    import { Save, CircleQuestionMark, Repeat } from '@lucide/svelte';
     import { saveTemplate } from '$lib/stores/stores.svelte';
     import Tour from '$lib/Tour.svelte';
     import { type Driver, type DriveStep } from "driver.js";
@@ -401,9 +401,13 @@
         <div class="top-bar">
             <div class="left-section">
                 <span class="system-name">{$currentSystemMeta.name}</span>
-                <button id="save-template-btn" onclick={handleSaveAsTemplate}>
+                <button id="save-template-btn" class="stage-btn" onclick={handleSaveAsTemplate}>
                     <Save size={16} />
                     Save as Template
+                </button>
+                <button class="stage-btn">
+                    <Repeat size={16} />
+                    Convert to Design
                 </button>
                 <div class="stage-indicator">
                     Conceptual Stage
@@ -520,7 +524,7 @@
         font-weight: 500;
     }
     
-    #save-template-btn {
+    .stage-btn {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -534,13 +538,13 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    
-    #save-template-btn:hover {
+
+    .stage-btn:hover {
         background: #374151;
         transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);       
     }
-    
+
     #help-btn {
         border: none;
         background: none;

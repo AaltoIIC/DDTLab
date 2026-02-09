@@ -292,7 +292,7 @@
                                                 showCustomInput = false;
                                                 customInterfaceName = '';
                                             }
-                                            stopPropagation(() => {})();
+                                            stopPropagation(() => {});
                                         }}
                                         onclick={stopPropagation(() => {})}
                                     />

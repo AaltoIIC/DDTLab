@@ -19,12 +19,14 @@
     } from '../stores/stores.svelte';
     import RootSystemNode from './nodes/RootSystemNode.svelte';
     import ElementNode from './nodes/ElementNode.svelte';
+    import InternalPortNode from '$lib/concept-phase/nodes/InternalPortNode.svelte';
     import RemovableEdge from './nodes/RemovableEdge.svelte';
     import './editor.css';
 
     const nodeTypes = {
       'RootSystem': RootSystemNode,
-      'Element': ElementNode
+      'Element': ElementNode,
+      'Internal': InternalPortNode
     } as {} as NodeTypes;
 
     const edgeTypes: EdgeTypes = {

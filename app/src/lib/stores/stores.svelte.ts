@@ -264,6 +264,52 @@ export const navigateToSubsystem = (subsystemId: string, parentNodeId: string) =
         console.error('Subsystem not found:', subsystemId);
         return;
     }
+    
+    // Create internal port nodes
+    const parentNodeData = get(currentNodes).find( n => n.id === parentNodeId)?.data
+    const parentNodeElement = parentNodeData?.element as SubsystemDataType;
+    const inputs = parentNodeElement.connectors.filter(c => c.type === 'input');
+    const outputs = parentNodeElement.connectors.filter(c => c.type === 'output');
+    
+    let internalPortNodes: Node[] = [];
+
+    inputs.forEach((connector, index) => {
+        internalPortNodes.push({
+            id: `internal-port-input-${connector.name}`,
+            type: 'Internal',
+            position: { x: 20, y: 150 + index * 100 },  // More spread out vertically
+            data: {
+                ...connector,
+                portType: 'input',
+                parentNodeId,
+                parentNodeName: parentNodeData?.name as string,
+                isInternal: true
+            },
+            draggable: true,  // Allow users to position ports where needed
+            deletable: false
+        });
+    })
+
+    outputs.forEach((connector, index) => {
+        internalPortNodes.push({
+            id: `internal-port-output-${connector.name}`,
+            type: 'Internal',
+            position: { x: 800, y: 150 + index * 100 },  // Further right and more spread
+            data: {
+                ...connector,
+                portType: 'output',
+                parentNodeId,
+                parentNodeName: parentNodeData?.name as string,
+                isInternal: true
+            },
+            draggable: true,  // Allow users to position ports where needed
+            deletable: false
+        });
+    });
+
+    const subNodes = [...subsystem.nodes.filter(n => n.type !== 'Internal'), ...internalPortNodes]
+    // TODO: This way is scuffed, fix later for both concept and design so its more robust
+    // subsystem.nodes.push(...internalPortNodes);
 
     navigationContext.update(ctx => ({
         ...ctx,
@@ -276,7 +322,7 @@ export const navigateToSubsystem = (subsystemId: string, parentNodeId: string) =
         name: subsystem.name,
         date: subsystem.date
     });
-    currentNodes.set(subsystem.nodes);
+    currentNodes.set(subNodes);
     currentEdges.set(subsystem.edges);
     currentReqs.set(subsystem.requirements);
 

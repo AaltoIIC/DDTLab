@@ -1,5 +1,6 @@
 {
     "elementTypes": {
+        "None": ["None"],
         "EngineSpeed": ["EngineSpeed"],
         "EngineLoad": ["EngineLoad"],
         "EnginePower": ["EnginePower"],
@@ -32,6 +33,7 @@
         "PowerGenerator": ["PowerGenerator"]
     },
     "systemParameters": [
+        "None",
         "EngineSpeed",
         "EngineLoad",
         "EnginePower",

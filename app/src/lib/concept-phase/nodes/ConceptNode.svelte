@@ -22,7 +22,7 @@
         value: string;
     };
 
-    type NodeData = {
+    export type NodeData = {
         declaredName: string;
         definition: string;
         comment: string;

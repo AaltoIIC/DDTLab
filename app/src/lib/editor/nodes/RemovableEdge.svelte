@@ -72,8 +72,8 @@
     currentEdges.update((edges) => {
       return edges.map((edge) => {
         if (edge.id === id) {
-          const currentOffsetX = edge.data?.offsetX || 0;
-          const currentOffsetY = edge.data?.offsetY || 0;
+          const currentOffsetX = edge.data?.offsetX as number || 0;
+          const currentOffsetY = edge.data?.offsetY as number || 0;
 
           let newOffsetX = currentOffsetX;
           let newOffsetY = currentOffsetY;
@@ -117,7 +117,7 @@
       zoomLevel = value.zoom;
   });
 </script>
-<BaseEdge path={edgePath} {markerEnd} {style} />
+<BaseEdge path={edgePath} {markerEnd} style="stroke: #4f46e5; stroke-width: 2;" />
 <EdgeLabelRenderer>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <!-- svelte-ignore a11y_mouse_events_have_key_events -->

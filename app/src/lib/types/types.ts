@@ -54,6 +54,7 @@ export interface ConnectorType {
     type: 'input' | 'output';
     dataType: string;
     unit: string;
+    metadata?: string;
 }
 
 export interface ElementDataType {

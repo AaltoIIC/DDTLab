@@ -2,7 +2,7 @@
     import { run } from 'svelte/legacy';
 
         import { Package, X, MoveDiagonal2, Info, Save, FolderPlus } from '@lucide/svelte';
-        import { useUpdateNodeInternals, NodeResizeControl, type Node } from '@xyflow/svelte';
+        import { useUpdateNodeInternals, NodeResizeControl, type Node, type Edge } from '@xyflow/svelte';
         import { currentNodes, currentEdges, addToHistory, currentPackages } from '$lib/stores/stores.svelte';
     import type { PackageTemplate } from '$lib/types/types';
     import { generateName } from '$lib/helpers';
@@ -10,11 +10,17 @@
     import ContextMenu from '../ContextMenu.svelte';
     import { get } from 'svelte/store';
     import Portal from 'svelte-portal';
+    import { untrack } from 'svelte';
 
         type PackageData = {
             declaredName: string;
             comment: string;
             id: string;
+            insideData: {
+                nodes: Node[];
+                inEdges: Edge[];
+                boundaryEdges: Edge[];
+            }
         };
 
 
@@ -68,20 +74,64 @@
     let showAddToViewDialog = $state(false);
     let selectedViewpointIds = $state<Set<string>>(new Set());
 
+    // Create a "stable" trigger string that only changes when nodes move or resize
+    let geometryTrigger = $derived(
+        $currentNodes.map(n => `${n.id}:${n.position.x},${n.position.y},${n.width},${n.height}`).join('|')
+        );    
+
+    $effect(() => {
+        // We want this to run whenever currentNodes changes
+        const trigger = geometryTrigger; 
+
+        // untrack prevents the effect from re-running if the updateNodeData 
+        // triggers a change notification (preventing infinite loops)
+        untrack(() => {
+            const { inNodes, inEdges, outEdges } = getInsideData(false);
+            
+            // Only update if the content has actually changed to prevent render loops
+            const currentData = data.insideData;
+            const currentFingerprint = [
+                (currentData.nodes || []).map(n => n.id).join(','),
+                (currentData.inEdges || []).map(e => e.id).join(','),
+                (currentData.boundaryEdges || []).map(e => e.id).join(',')
+            ].join('|');
+
+            const newFingerprint = [
+                inNodes.map(n => n.id).join(','),
+                inEdges.map(e => e.id).join(','),
+                outEdges.map(e => e.id).join(',')
+            ].join('|');
+
+            // 2. Only update if the total content changed
+            if (currentFingerprint !== newFingerprint) {
+                updateNodeData('insideData', { 
+                    nodes: inNodes, 
+                    inEdges: inEdges,
+                    boundaryEdges: outEdges // Now this will update when connections change!
+                });
+            }
+        });
+    });
     // Returns an array of nodes and edges connecting those nodes together contained within the bounds of this package node
-    function getInsideData() {
+    function getInsideData(includingSelf = true) {
         const allNodes = $currentNodes;
         const thisNode = allNodes.find( n => n.id === id );
-        if (!thisNode) return {inNodes: [], inEdges: []};
+        if (!thisNode) return {inNodes: [], inEdges: [], outEdges: []};
         const {position, width, height} = thisNode;
-        if (!width || !height) return {inNodes: [], inEdges: []};
+        if (!width || !height) return {inNodes: [], inEdges: [], outEdges: []};
 
         const inNodes = allNodes.filter( node => {
             const {position: childPos, width: childW, height: childH} = node;
-            return  childPos.x >= position.x && 
-                    childPos.y >= position.y &&
-                    childPos.x + (childW ?? 0) <= position.x + width &&
-                    childPos.y + (childH ?? 0) <= position.y + height;
+            if (includingSelf) 
+                return  childPos.x >= position.x && 
+                        childPos.y >= position.y &&
+                        childPos.x + (childW ?? 0) <= position.x + width &&
+                        childPos.y + (childH ?? 0) <= position.y + height;
+            else
+                return  childPos.x > position.x && 
+                        childPos.y > position.y &&
+                        childPos.x + (childW ?? 0) < position.x + width &&
+                        childPos.y + (childH ?? 0) < position.y + height;
         });
 
         const inNodeIds = new Set(inNodes.map(n => n.id));
@@ -90,7 +140,11 @@
             inNodeIds.has(edge.source) && inNodeIds.has(edge.target)
         );
 
-        return {inNodes, inEdges};
+        const outEdges = $currentEdges.filter(edge =>
+            inNodeIds.has(edge.source) !== inNodeIds.has(edge.target)
+        );
+
+        return {inNodes, inEdges, outEdges};
     }
 
     function selectInsideNodes() {

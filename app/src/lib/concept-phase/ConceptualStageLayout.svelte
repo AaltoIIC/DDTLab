@@ -5,7 +5,7 @@
     import ConceptualStageEditor from './ConceptualStageEditor.svelte';
     import ConceptualStageSidebar from './ConceptualStageSidebar.svelte';
     import PackageBreadcrumb from './PackageBreadcrumb.svelte';
-    import { currentSystemMeta, currentNodes, currentEdges } from '$lib/stores/stores.svelte';
+    import { currentSystemMeta, currentNodes, currentEdges, convertToDesign } from '$lib/stores/stores.svelte';
     import { currentPackageView, packageViewStack, navigateToRoot, navigateToPackage } from './packageStore';
     import type { PackageView } from './packageStore';
     import { onMount, onDestroy } from 'svelte';
@@ -405,7 +405,7 @@
                     <Save size={16} />
                     Save as Template
                 </button>
-                <button class="stage-btn">
+                <button class="stage-btn" onclick={convertToDesign}>
                     <Repeat size={16} />
                     Convert to Design
                 </button>

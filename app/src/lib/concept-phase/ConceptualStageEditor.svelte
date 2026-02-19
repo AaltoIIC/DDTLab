@@ -322,7 +322,7 @@
 
 
   <div id="conceptual-editor" class="viewpoint-{$activeViewpoint}" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
-      <div class="flow-container" bind:this={flowContainer}>
+      <div class="flow-container" bind:this={flowContainer} onclick={() => console.log(JSON.stringify($currentNodes, null, 2) + JSON.stringify($currentEdges, null, 2)) /* TODO: Remove onclick later, just for debugging */}>
           <SvelteFlow
               nodes={currentNodes}
               edges={currentEdges}

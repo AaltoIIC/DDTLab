@@ -12,6 +12,7 @@ import {
     type PartDefinition,
     type ItemDefinition,
     type PackageTemplate,
+    type ConnectorType,
 } from '../types/types';
 import {    
     type Node,
@@ -25,14 +26,11 @@ import { writable, get, derived } from 'svelte/store';
 import persistentStore from './persistentStore';
 import _ from 'lodash';
 import ConceptTemplateSlider from '$lib/concept-phase/ConceptTemplateSlider.svelte';
+import { packageViewStack, type PackageView } from '$lib/concept-phase/packageStore';
 
-export const notification = writable<NotificationType | null>(null);
-export const isAddingRequirement = writable<boolean>(false);
 
-// current system
-export const currentSystemMeta = persistentStore<SystemMetaType>('currentSystemMeta', {name: '', date: '', id: ''});
-export const currentNodes = persistentStore<Node[]>('currentNodes', [
-    {
+// Helper variable for root node
+export const rootNode = {
       id: 'root',
       type: 'RootSystem',
       data: { 
@@ -41,7 +39,13 @@ export const currentNodes = persistentStore<Node[]>('currentNodes', [
         },
       position: { x: 0, y: 150 }
     } as {} as Node
-]);
+
+export const notification = writable<NotificationType | null>(null);
+export const isAddingRequirement = writable<boolean>(false);
+
+// current system
+export const currentSystemMeta = persistentStore<SystemMetaType>('currentSystemMeta', {name: '', date: '', id: ''});
+export const currentNodes = persistentStore<Node[]>('currentNodes', [rootNode]);
 export const currentEdges = persistentStore<Edge[]>('currentEdges', []);
 export const currentReqs = persistentStore<RequirementType[]>('currentReqs', []);
 
@@ -118,6 +122,240 @@ export const setCurrentSystem = (id: string) => {
         currentPackages.set(system.packages);
     }
 }
+
+export const convertToDesign = () => {
+
+    // Get the root context
+    const stack = get(packageViewStack);
+    const rootLevel = stack.length > 0 ? stack[0] : null;
+    const rootNodes = rootLevel ? rootLevel.nodes : get(currentNodes);
+    const rootEdges = rootLevel ? rootLevel.edges : get(currentEdges);
+    const newRootId = generateId(get(systems).map(s => s.id));
+    const newRootName = generateName(`${get(currentSystemMeta).name, get(systems).map(s => s.name)} (Design Stage)`, get(systems).map(s => s.name));
+
+    // Deep recursive conversion
+    const converted = recursiveSystemBuilder(rootNodes, rootEdges, newRootId);
+
+    // Create the root system for the design stage
+    const designRootSystem: SystemType = {
+        id: newRootId,
+        name: newRootName,
+        date: new Date().toISOString(), 
+        nodes: [rootNode, ...converted.nodes],
+        edges: converted.edges,
+        requirements: [],
+        partDefinitions: [],
+        itemDefinitions: [],
+        packages: [],
+        stage: 'design'
+    }
+
+    saveSystem(designRootSystem);
+};
+
+const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: string): { nodes: Node[], edges: Edge[] } => {
+    // Helper function for extracting handle names in the cocnept stage
+    const extractHandleName = (handleId: string, type: '-input-' | '-output-') => {
+        const num = handleId.indexOf(type) + type.length;
+        return handleId.substring(num);
+    };
+    
+    
+    // Do not count nodes that are in packages twice
+    var nodesInPackages: any = [];
+    var edgesInPackages: any = [];
+    nodes.forEach(node => {
+        if (node.type === 'package') {
+        const internalNodes = (node.data.insideData as any)?.nodes || [];
+        nodesInPackages.push(internalNodes.map((n: Node) => n.id));
+
+        const internalEdges = (node.data.insideData as any)?.inEdges || [];
+        edgesInPackages.push(internalEdges.map((e: Edge) => e.id));
+        }
+    })
+
+    const filteredNodes = nodes.filter(node => !nodesInPackages.flat().includes(node.id));
+    const filteredEdges = edges.filter(edge => !edgesInPackages.flat().includes(edge.id));
+
+    const convertedNodes = filteredNodes.map(node => {
+        // Convert the input/output ports to connectors
+        var connectors: ConnectorType[] = [];
+        var ioedges: Edge[] = [];
+        if (node.type !== 'package') {
+            ((node.data.inputs as any[]) || []).forEach(input => {
+                connectors.push({
+                    name: input.name,
+                    VSSoClass: 'None',
+                    type: 'input',
+                    dataType: 'no-dt',
+                    unit: '-'
+                });
+            });
+            ((node.data.outputs as any[]) || []).forEach(output => {
+                connectors.push({
+                    name: output.name,
+                    VSSoClass: 'None',
+                    type: 'output',
+                    dataType: 'no-dt',
+                    unit: '-'
+                });
+            });
+        }
+        else {
+            var counter = 1;
+            const inData = node.data?.insideData as any
+            const inNodeIds = (inData.nodes as Node[]).map(n => n.id);
+            (inData?.boundaryEdges as Edge[] || []).forEach(edge => {
+                if (inNodeIds.includes(edge.target)) {
+                    connectors.push({
+                        name: `p-Connector (${counter})`,
+                        VSSoClass: 'None',
+                        type: 'input',
+                        dataType: 'no-dt',
+                        unit: '-',
+                        metadata: edge.target
+                    });
+                    ioedges.push({
+                        source: `internal-port-input-p-Connector (${counter})`,
+                        sourceHandle: `internal-port-input-p-Connector (${counter})-source`,
+                        target: `d-${edge.target}`,
+                        targetHandle: `d-${edge.target}.${extractHandleName(edge.targetHandle ?? "", '-input-')}`,
+                        id: `d-internal-${edge.id}`
+                    })
+                }
+                else {
+                    connectors.push({
+                        name: `p-Connector (${counter})`,
+                        VSSoClass: 'None',
+                        type: 'output',
+                        dataType: 'no-dt',
+                        unit: '-',
+                        metadata: edge.source
+                    });
+                    ioedges.push({
+                        source: `d-${edge.source}`,
+                        sourceHandle: `d-${edge.source}.${extractHandleName(edge.sourceHandle ?? "", '-output-')}`,
+                        target: `internal-port-output-p-Connector (${counter})`,
+                        targetHandle: `internal-port-output-p-Connector (${counter})-target`,
+                        id: `d-internal-${edge.id}`
+                    })
+                }
+                counter++;
+            });
+        }
+
+
+        if (node.type === 'package' || (node.data.nodes as any).length) {
+            const newSubsystemId = generateId(get(systems).map(s => s.id));
+            
+            // Convert children recursively
+            const internal = node.type === 'package' 
+            ? recursiveSystemBuilder(
+                (node.data?.insideData as any)?.nodes || [],
+                (node.data?.insideData as any)?.inEdges || [],
+                newSubsystemId
+            )
+            : recursiveSystemBuilder(
+                (node.data?.nodes as any) || [], 
+                (node.data?.edges as any) || [], 
+                newSubsystemId
+            );
+
+            // Create the new System entry
+            const subsystemRootNode = {...rootNode,
+                data: {
+                    parentSystemId: parentSystemId,
+                    parentNodeId: node.id,
+                }
+            }
+            const newSystem: SystemType = {
+                id: newSubsystemId,
+                name: node.data.declaredName as string,
+                parentSystemId: parentSystemId,
+                nodes: [subsystemRootNode, ...internal.nodes],
+                edges: [...ioedges, ...internal.edges],
+                date: new Date().toISOString(),
+                requirements: [],
+                partDefinitions: [],
+                itemDefinitions: [],
+                packages: [],
+            };
+            saveSystem(newSystem);
+
+            // Return the node to the parent level
+            return {
+                ...node,
+                id: `d-${node.id}`,
+                type: 'Element', 
+                data: { 
+                    name: node.data.declaredName as string,
+                    element: {
+                        type: 'system',
+                        VSSoClass: null,
+                        connectors: connectors,
+                        subsystemId: newSubsystemId,
+                        hasSubsystems: true,
+                    }
+                },
+                dragHandle: '.element-node-inner',
+                parentId: 'root'
+            };
+        }
+        return {
+            ...node,
+            id: `d-${node.id}`,
+            type: 'Element', 
+            data: { 
+                name: node.data.declaredName as string,
+                element: {
+                    type: 'component',
+                    VSSoClass: null,
+                    connectors: connectors,
+                }
+            },
+            dragHandle: '.element-node-inner',
+            parentId: 'root'
+        };
+    });
+
+    const convertedEdges = filteredEdges.map(edge => {
+
+        const newBaseEdge: Edge = {
+            source: `d-${edge.source}`,
+            sourceHandle: `d-${edge.source}.${extractHandleName(edge.sourceHandle ?? "", '-output-')}`,
+            target: `d-${edge.target}`,
+            targetHandle: `d-${edge.target}.${extractHandleName(edge.targetHandle ?? "", '-input-')}`,
+            id: `d-${edge.id}`
+        }
+
+        console.log(convertedNodes);
+        if (nodesInPackages.flat().includes(edge.source)) {
+            const newSourceNode = convertedNodes.find(n => 
+                n.data.element.connectors.map(c => c.metadata).includes(edge.source));
+            console.log("WILL I MAKE IT?");
+            const newConnector = newSourceNode?.data.element.connectors.find(c => c.metadata === edge.source);
+            console.log(newConnector);
+            return {...newBaseEdge,
+                source: newSourceNode!.id,
+                sourceHandle: `${newSourceNode!.id}.${newConnector!.name}`
+            }
+        }
+        if (nodesInPackages.flat().includes(edge.target)) {
+            const newTargetNode = convertedNodes.find(n => 
+                n.data.element.connectors.map(c => c.metadata).includes(edge.target));
+            console.log(newTargetNode);
+            const newConnector = newTargetNode?.data.element.connectors.find(c => c.metadata === edge.target);
+            console.log(newConnector);
+            return {...newBaseEdge,
+                target: newTargetNode!.id,
+                targetHandle: `${newTargetNode!.id}.${newConnector!.name}`
+            }
+        }
+        return newBaseEdge;
+    });
+
+    return { nodes: convertedNodes, edges: convertedEdges };
+};
 
 export const removeSystem = (id: string) => {
     function inner(id: string, allSystems: SystemType[]): SystemType[] {
@@ -373,8 +611,6 @@ export const resetNavigation = () => {
 
 export const fmiComponents = persistentStore<FMIComponentType[]>('fmiComponents', []);
 export const componentLinks = persistentStore<Record<string, string>>('componentLinks', {});
-
-// TODO: Add template storage logic
 
 export const templatesByCategory = derived(templates, $templates => {
     const grouped: Record<string, ConceptTemplate[]> = {

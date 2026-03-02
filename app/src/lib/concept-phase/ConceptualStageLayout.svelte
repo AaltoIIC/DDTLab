@@ -5,7 +5,7 @@
     import ConceptualStageEditor from './ConceptualStageEditor.svelte';
     import ConceptualStageSidebar from './ConceptualStageSidebar.svelte';
     import PackageBreadcrumb from './PackageBreadcrumb.svelte';
-    import { currentSystemMeta, currentNodes, currentEdges, convertToDesign } from '$lib/stores/stores.svelte';
+    import { currentSystemMeta, currentNodes, currentEdges, convertToDesign, removeOtherSystems } from '$lib/stores/stores.svelte';
     import { currentPackageView, packageViewStack, navigateToRoot, navigateToPackage } from './packageStore';
     import type { PackageView } from './packageStore';
     import { onMount, onDestroy } from 'svelte';
@@ -418,7 +418,7 @@
                 <button 
                     id="help-btn" 
                     title="Start tutorial tour" 
-                    onclick={() => {startTour = true}}
+                    onclick={() => {startTour = true} /* removeOtherSystems() FOR DEBUGGING PURPOSES */} 
                 >
                     <CircleQuestionMark size={16} />
                 </button>

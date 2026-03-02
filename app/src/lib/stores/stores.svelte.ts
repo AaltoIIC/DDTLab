@@ -131,7 +131,7 @@ export const convertToDesign = () => {
     const rootNodes = rootLevel ? rootLevel.nodes : get(currentNodes);
     const rootEdges = rootLevel ? rootLevel.edges : get(currentEdges);
     const newRootId = generateId(get(systems).map(s => s.id));
-    const newRootName = generateName(`${get(currentSystemMeta).name, get(systems).map(s => s.name)} (Design Stage)`, get(systems).map(s => s.name));
+    const newRootName = generateName(`${get(currentSystemMeta).name} (Design Stage)`, get(systems).map(s => s.name));
 
     // Deep recursive conversion
     const converted = recursiveSystemBuilder(rootNodes, rootEdges, newRootId);
@@ -284,7 +284,6 @@ const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: st
 
             // Return the node to the parent level
             return {
-                ...node,
                 id: `d-${node.id}`,
                 type: 'Element', 
                 data: { 
@@ -298,11 +297,16 @@ const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: st
                     }
                 },
                 dragHandle: '.element-node-inner',
-                parentId: 'root'
+                parentId: 'root',
+                measured: {
+                    width: 200,
+                    height: 200
+                },
+                position: node.position
             };
         }
         return {
-            ...node,
+
             id: `d-${node.id}`,
             type: 'Element', 
             data: { 
@@ -314,13 +318,18 @@ const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: st
                 }
             },
             dragHandle: '.element-node-inner',
-            parentId: 'root'
+            parentId: 'root',
+            measured: {
+                width: 200,
+                height: 200
+            },
+            position: node.position     
         };
     });
 
     const convertedEdges = filteredEdges.map(edge => {
 
-        const newBaseEdge: Edge = {
+        var newBaseEdge: Edge = {
             source: `d-${edge.source}`,
             sourceHandle: `d-${edge.source}.${extractHandleName(edge.sourceHandle ?? "", '-output-')}`,
             target: `d-${edge.target}`,
@@ -328,17 +337,15 @@ const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: st
             id: `d-${edge.id}`
         }
 
-        console.log(convertedNodes);
         if (nodesInPackages.flat().includes(edge.source)) {
             const newSourceNode = convertedNodes.find(n => 
                 n.data.element.connectors.map(c => c.metadata).includes(edge.source));
-            console.log("WILL I MAKE IT?");
             const newConnector = newSourceNode?.data.element.connectors.find(c => c.metadata === edge.source);
             console.log(newConnector);
-            return {...newBaseEdge,
+            newBaseEdge = {...newBaseEdge,
                 source: newSourceNode!.id,
                 sourceHandle: `${newSourceNode!.id}.${newConnector!.name}`
-            }
+            };
         }
         if (nodesInPackages.flat().includes(edge.target)) {
             const newTargetNode = convertedNodes.find(n => 
@@ -346,11 +353,25 @@ const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: st
             console.log(newTargetNode);
             const newConnector = newTargetNode?.data.element.connectors.find(c => c.metadata === edge.target);
             console.log(newConnector);
-            return {...newBaseEdge,
+            newBaseEdge = {...newBaseEdge,
                 target: newTargetNode!.id,
                 targetHandle: `${newTargetNode!.id}.${newConnector!.name}`
-            }
+            };
         }
+
+        if (edge.source.includes('internal-port-input')) {
+            newBaseEdge = {...newBaseEdge,
+                source: edge.source,
+                sourceHandle: edge.sourceHandle
+            };
+        }
+        if (edge.target.includes('internal-port-output')) {
+            newBaseEdge = {...newBaseEdge,
+                target: edge.target,
+                targetHandle: edge.targetHandle
+            };
+        }
+
         return newBaseEdge;
     });
 
@@ -371,6 +392,11 @@ export const removeSystem = (id: string) => {
         systems = inner(id, systems);
         return systems;
     });
+}
+
+// For debugging purposes
+export const removeOtherSystems = () => {
+    systems.update(sys => sys.filter(s => s.id === get(currentSystemMeta).id));
 }
 
 export const cloneSystem = (id: string) => {

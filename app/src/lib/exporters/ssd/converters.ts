@@ -289,8 +289,8 @@ export function convertSystem(
     const elements: (SSDComponent | SSDSystem)[] = [];
     const connections: SSDConnection[] = [];
 
-    // Filter out the root node
-    const nonRootNodes = system.nodes.filter(n => n.type !== 'RootSystem');
+    // Filter out the root node or input/output nodes
+    const nonRootNodes = system.nodes.filter(n => n.type !== 'RootSystem' && n.type !== 'Internal'); //TODO: Maybe temporary fix, I don't know if we should be including input/output nodes in the .ssd file
 
     // Convert each node
     for (const node of nonRootNodes) {

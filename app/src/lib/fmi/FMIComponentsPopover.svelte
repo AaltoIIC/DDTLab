@@ -1,11 +1,9 @@
 <script lang="ts">
-    import { run } from 'svelte/legacy';
-
     import { onMount } from 'svelte';
+    import { RefreshCw } from '@lucide/svelte';
     import { fmiComponents, componentLinks, currentNodes } from '$lib/stores/stores.svelte';
     import type { FMIComponentType } from '$lib/types/types';
-    import { generateId } from '$lib/helpers';
-    import { useSvelteFlow } from "@xyflow/svelte";
+    import { fetchCatalogFmuComponents, getCatalogApiBaseUrl } from './catalogApi';
     import { capitalize } from 'lodash';
     
     interface Props {
@@ -13,10 +11,22 @@
     }
 
     let { isOpen = $bindable(false) }: Props = $props();
+
+    type ManufacturerFilter = 'all' | 'kongsberg' | 'abb' | 'other';
+
+    const manufacturerFilters: { value: ManufacturerFilter; label: string }[] = [
+        { value: 'all', label: 'All' },
+        { value: 'kongsberg', label: 'Kongsberg' },
+        { value: 'abb', label: 'ABB' },
+        { value: 'other', label: 'Other' }
+    ];
     
     let searchQuery = $state('');
-    let selectedCategory: string = 'all';
-    let expandedCategories: Set<string> = $state(new Set(['motors', 'propellers', 'sensors']));
+    let manufacturerFilter = $state<ManufacturerFilter>('all');
+    let expandedCategories: Set<string> = $state(new Set(['motors', 'propellers', 'sensors', 'engines', 'controllers', 'other']));
+    let isLoadingCatalog = $state(false);
+    let catalogError = $state('');
+    let catalogLastLoadedCount = $state(0);
     
     const popoverWidth = 340;
     
@@ -33,6 +43,8 @@
             linkedElements: [],
             uploadDate: new Date().toISOString(),
             isUserUploaded: false,
+            oemName: 'ABB',
+            oemShortCode: 'ABB',
             requirements: [
                 {
                     name: 'MotorTorqueLimit',
@@ -93,7 +105,9 @@
             fmiType: 'Co-Simulation & Model Exchange',
             linkedElements: [],
             uploadDate: new Date().toISOString(),
-            isUserUploaded: false
+            isUserUploaded: false,
+            oemName: 'Kongsberg',
+            oemShortCode: 'KM'
         },
         {
             id: 'fmi_4',
@@ -170,17 +184,74 @@
         }
     ];
     
-    // Initialize with mock data if empty
-    onMount(() => {
-        if ($fmiComponents.length === 0) {
-            fmiComponents.set(mockComponents);
+    const loadCatalogComponents = async () => {
+        isLoadingCatalog = true;
+        catalogError = '';
+
+        try {
+            const catalogComponents = await fetchCatalogFmuComponents();
+            fmiComponents.set(catalogComponents);
+            catalogLastLoadedCount = catalogComponents.length;
+        } catch (error) {
+            catalogError = error instanceof Error ? error.message : 'Failed to load FMU catalog';
+
+            if ($fmiComponents.length === 0) {
+                fmiComponents.set(mockComponents.map(component => ({
+                    ...component,
+                    catalogSource: 'mock'
+                })));
+            }
+        } finally {
+            isLoadingCatalog = false;
         }
+    };
+
+    onMount(() => {
+        loadCatalogComponents();
     });
+
+    const getManufacturer = (component: FMIComponentType): Exclude<ManufacturerFilter, 'all'> => {
+        const oemShortCode = component.oemShortCode?.trim().toUpperCase();
+        const manufacturerText = [
+            component.oemName,
+            component.name
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        if (oemShortCode === 'ABB' || manufacturerText.includes('abb')) {
+            return 'abb';
+        }
+
+        if (oemShortCode === 'KM' || oemShortCode === 'KONGSBERG' || manufacturerText.includes('kongsberg')) {
+            return 'kongsberg';
+        }
+
+        return 'other';
+    };
     
     let filteredComponents = $derived($fmiComponents.filter(comp => {
-        const matchesSearch = comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            comp.description.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesSearch;
+        const query = searchQuery.trim().toLowerCase();
+
+        if (manufacturerFilter !== 'all' && getManufacturer(comp) !== manufacturerFilter) {
+            return false;
+        }
+
+        if (!query) {
+            return true;
+        }
+
+        const searchableText = [
+            comp.name,
+            comp.description,
+            comp.domain,
+            comp.filename,
+            comp.modelIdentifier,
+            comp.oemName,
+            comp.oemShortCode,
+            comp.fmiType,
+            comp.fmiVersion
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        return searchableText.includes(query);
     }));
     
     let componentsByCategory = $derived(filteredComponents.reduce((acc, comp) => {
@@ -220,12 +291,18 @@
         });
     };
     
-    const handleUpload = () => {
-        alert('FMU upload functionality coming soon!');
-    };
-    
     const handleAutoSelect = () => {
         alert('Auto-select based on requirements coming soon!');
+    };
+
+    const getVariableSummary = (component: FMIComponentType) => {
+        const counts = [
+            typeof component.inputCount === 'number' ? `${component.inputCount} in` : '',
+            typeof component.outputCount === 'number' ? `${component.outputCount} out` : '',
+            typeof component.parameterCount === 'number' ? `${component.parameterCount} param` : ''
+        ].filter(Boolean);
+
+        return counts.join(' / ');
     };
     
     const getCategoryIcon = (category: string) => {
@@ -254,29 +331,54 @@
     </button>
     
     <div class="fmi-header">
-        <h3>FMI Components</h3>
+        <h3>FMU Catalog</h3>
         <div class="header-actions">
-            <button class="btn-small" onclick={handleUpload} title="Upload FMU">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                </svg>
+            <button class="btn-small" onclick={loadCatalogComponents} title="Refresh FMU catalog" disabled={isLoadingCatalog}>
+                <span class={isLoadingCatalog ? 'spin-icon' : ''}>
+                    <RefreshCw size={14} />
+                </span>
             </button>
         </div>
+    </div>
+
+    <div class="catalog-status {catalogError ? 'error' : ''}">
+        {#if catalogError}
+            <span>Catalog unavailable. Showing cached FMUs.</span>
+        {:else if isLoadingCatalog}
+            <span>Loading FMUs from {getCatalogApiBaseUrl()}</span>
+        {:else}
+            <span>{catalogLastLoadedCount || $fmiComponents.length} FMUs loaded from catalog</span>
+        {/if}
     </div>
     
     <div class="search-container">
         <input 
             type="text" 
-            placeholder="Search components..."
+            placeholder="Search FMUs..."
             bind:value={searchQuery}
             class="search-input"
         />
+    </div>
+
+    <div class="filter-container">
+        <div class="filter-label">Manufacturer</div>
+        <div class="manufacturer-filter" role="group" aria-label="Filter FMUs by manufacturer">
+            {#each manufacturerFilters as filter}
+                <button
+                    type="button"
+                    class:active={manufacturerFilter === filter.value}
+                    onclick={() => manufacturerFilter = filter.value}
+                >
+                    {filter.label}
+                </button>
+            {/each}
+        </div>
     </div>
     
     <div class="components-tree">
         {#if Object.keys(componentsByCategory).length === 0}
             <div class="empty-state">
-                <p>No components found</p>
+                <p>{isLoadingCatalog ? 'Loading FMUs...' : 'No FMUs found'}</p>
             </div>
         {:else}
             {#each Object.entries(componentsByCategory) as [category, components]}
@@ -303,11 +405,10 @@
                     {#if expandedCategories.has(category)}
                         <div class="components-list">
                             {#each components as component}
-                                <div 
+                                <button
+                                    type="button"
                                     class="component-item {$componentLinks[selectedNodeId || ''] === component.id ? 'linked' : ''}"
                                     onclick={() => linkComponent(component.id)}
-                                    role="button"
-                                    tabindex="0"
                                 >
                                     <div class="component-main">
                                         <span class="component-name">{component.name}</span>
@@ -317,11 +418,18 @@
                                             </svg>
                                         {/if}
                                     </div>
+                                    <div class="component-description">{component.description}</div>
                                     <div class="component-details">
                                         <span class="fmi-version">FMI {component.fmiVersion}</span>
                                         <span class="fmi-type">{component.fmiType}</span>
+                                        {#if component.oemShortCode}
+                                            <span>{component.oemShortCode}</span>
+                                        {/if}
+                                        {#if getVariableSummary(component)}
+                                            <span>{getVariableSummary(component)}</span>
+                                        {/if}
                                     </div>
-                                </div>
+                                </button>
                             {/each}
                         </div>
                     {/if}
@@ -430,10 +538,43 @@
     .btn-small:hover {
         filter: brightness(1.1);
     }
+
+    .btn-small:disabled {
+        cursor: wait;
+        opacity: 0.7;
+    }
     
-    .btn-small svg {
-        width: 14px;
-        height: 14px;
+    .btn-small span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .spin-icon {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .catalog-status {
+        padding: 8px 20px;
+        border-bottom: var(--main-border);
+        font-size: 12px;
+        color: rgba(0, 0, 0, 0.55);
+        line-height: 1.3;
+    }
+
+    .catalog-status.error {
+        color: #b45309;
+        background: #fffbeb;
     }
     
     
@@ -453,6 +594,55 @@
     
     .search-input:focus {
         border-color: var(--main-dark-color);
+    }
+
+    .filter-container {
+        padding: 10px 20px 12px;
+        border-bottom: var(--main-border);
+    }
+
+    .filter-label {
+        margin-bottom: 8px;
+        color: rgba(0, 0, 0, 0.55);
+        font-size: 12px;
+        line-height: 1;
+    }
+
+    .manufacturer-filter {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        padding: 3px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 6px;
+        background: var(--main-grey-color);
+        gap: 2px;
+    }
+
+    .manufacturer-filter button {
+        min-width: 0;
+        height: 28px;
+        padding: 0 6px;
+        border: none;
+        border-radius: 4px;
+        background: transparent;
+        color: rgba(0, 0, 0, 0.65);
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .manufacturer-filter button:hover {
+        background: rgba(255, 255, 255, 0.75);
+    }
+
+    .manufacturer-filter button.active {
+        background: white;
+        color: var(--main-dark-color);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
     }
     
     .components-tree {
@@ -531,6 +721,7 @@
     }
     
     .component-item {
+        width: 100%;
         padding: 8px 12px;
         margin-bottom: 2px;
         background: var(--main-grey-color);
@@ -538,6 +729,10 @@
         cursor: pointer;
         transition: all 0.2s;
         border: 1px solid transparent;
+        display: block;
+        text-align: left;
+        font-family: inherit;
+        appearance: none;
     }
     
     .component-item:hover {
@@ -561,17 +756,32 @@
         font-size: 13px;
         font-weight: 500;
         color: rgba(0, 0, 0, 0.8);
+        min-width: 0;
+    }
+
+    .component-description {
+        color: rgba(0, 0, 0, 0.55);
+        font-size: 11px;
+        line-height: 1.25;
+        margin-bottom: 6px;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
     }
     
     .link-icon {
         width: 14px;
         height: 14px;
         color: #3b82f6;
+        flex-shrink: 0;
     }
     
     .component-details {
         display: flex;
-        gap: 12px;
+        flex-wrap: wrap;
+        gap: 4px 8px;
         font-size: 11px;
         color: rgba(0, 0, 0, 0.5);
     }

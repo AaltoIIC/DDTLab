@@ -128,7 +128,7 @@ export function convertComponent(
     if (fmiLink) {
         const fmiComponent = fmiComponents.find(c => c.id === fmiLink);
         if (fmiComponent) {
-            ssdComponent.source = `resources/${fmiComponent.name}.fmu`;
+            ssdComponent.source = `resources/${fmiComponent.filename || `${fmiComponent.name}.fmu`}`;
             ssdComponent.type = DEFAULT_FMU_TYPE;
         } else {
             context.warnings.push({

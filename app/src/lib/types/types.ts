@@ -96,12 +96,24 @@ export interface FMIComponentType {
     description: string;
     filePath?: string;  // For uploaded components
     modelIdentifier: string;
-    fmiVersion: '2.0' | '3.0';
-    fmiType: 'Co-Simulation' | 'Model Exchange' | 'Co-Simulation & Model Exchange';
+    fmiVersion: string;
+    fmiType: string;
     linkedElements: string[];  // IDs of linked editor elements
     uploadDate: string;
     isUserUploaded: boolean;
     requirements?: RequirementType[];  // Requirements from FMU modelDescription.xml
+    filename?: string;
+    domain?: string;
+    oemName?: string;
+    oemShortCode?: string;
+    downloadUrl?: string;
+    downloadAssets?: string[];
+    variableCount?: number;
+    inputCount?: number;
+    outputCount?: number;
+    parameterCount?: number;
+    variables?: FMIVariableType[];
+    catalogSource?: 'api' | 'mock' | 'upload';
 }
 
 export interface FMIVariableType {

@@ -1,4 +1,7 @@
   <script lang="ts">
+      import { downloadTorsionalAnalysisPdf } from '$lib/analysis/torsionalAnalysisReportPdf';
+      import { currentEdges, currentNodes, componentLinks, fmiComponents, systems, currentSystemMeta } from '$lib/stores/stores.svelte';
+
       interface Props {
           onclose: () => void;
       }
@@ -9,13 +12,16 @@
       let selectedStandardTests = $state<Set<string>>(new Set());
       let customScenarios = $state<Array<{id: string, name: string, actions: Array<{time: string, action:
   string}>}>>([]);
+      let isRunningAnalysis = $state(false);
+      let analysisError = $state('');
+      let analysisResult = $state<any>(null);
 
       // Mock data for standard test scenarios
       const standardTestCategories = [
           {
               name: "Mechanical Tests",
               tests: [
-                  { id: "vib-1", name: "Standard Vibration Test (ISO 10816)", description: "Vibration severity testing for rotating machinery" },
+                  { id: "torsional-vibration", name: "Torsional Vibration Analysis", description: "OpenTorsion modal analysis of the linked propulsion drivetrain" },
                   { id: "vib-2", name: "Shock Test (IEC 60068-2-27)", description: "Mechanical shock resistance test" },
                   { id: "vib-3", name: "Random Vibration (MIL-STD-810)", description: "Environmental vibration testing" }
               ]
@@ -61,6 +67,96 @@
               scenario.actions.push({ time: "", action: "" });
               customScenarios = customScenarios;
           }
+      }
+
+      async function applySelectedTests() {
+          analysisError = '';
+          if (selectedStandardTests.has('torsional-vibration')) {
+              await runTorsionalVibrationAnalysis();
+              return;
+          }
+          analysisError = 'Select Torsional Vibration Analysis to run the demo analysis.';
+      }
+
+      async function runTorsionalVibrationAnalysis() {
+          isRunningAnalysis = true;
+          analysisError = '';
+          analysisResult = null;
+          try {
+              const response = await fetch('/api/analysis/torsional-vibration', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({
+                      nodes: collectAnalysisNodes(),
+                      edges: $currentEdges.map(edge => ({
+                          id: edge.id,
+                          source: edge.source,
+                          target: edge.target,
+                          sourceHandle: edge.sourceHandle,
+                          targetHandle: edge.targetHandle
+                      }))
+                  })
+              });
+              const body = await response.json();
+              if (!response.ok || body.ok === false) {
+                  throw new Error(body.message || 'Torsional vibration analysis failed');
+              }
+              analysisResult = {
+                  ...body,
+                  generatedAt: new Date().toISOString(),
+                  sourceSystemName: $currentSystemMeta.name || 'Design Stage'
+              };
+          } catch (error) {
+              analysisError = error instanceof Error ? error.message : 'Torsional vibration analysis failed';
+          } finally {
+              isRunningAnalysis = false;
+          }
+      }
+
+      function downloadAnalysisReport() {
+          if (!analysisResult) return;
+          try {
+              downloadTorsionalAnalysisPdf(analysisResult, {
+                  systemName: $currentSystemMeta.name || 'Design Stage',
+                  generatedAt: analysisResult.generatedAt
+              });
+          } catch (error) {
+              analysisError = error instanceof Error ? error.message : 'Failed to generate PDF report';
+          }
+      }
+
+      function collectAnalysisNodes(nodes?: any[], seenSubsystems = new Set<string>()): any[] {
+          const collected: any[] = [];
+          const sourceNodes = nodes ?? $currentNodes;
+          for (const node of sourceNodes) {
+              if (node.id === 'root') continue;
+              const element = (node.data as any)?.element;
+              if (element?.type === 'system' && element.subsystemId && !seenSubsystems.has(element.subsystemId)) {
+                  seenSubsystems.add(element.subsystemId);
+                  const subsystem = $systems.find(system => system.id === element.subsystemId);
+                  if (subsystem) {
+                      collected.push(...collectAnalysisNodes(subsystem.nodes, seenSubsystems));
+                  }
+                  continue;
+              }
+
+              if (node.type !== 'Element') continue;
+              const fmuId = $componentLinks[node.id] || element?.fmiComponentId || '';
+              const fmu = fmuId ? $fmiComponents.find(component => component.id === fmuId) : null;
+              collected.push({
+                  id: node.id,
+                  name: String((node.data as any)?.name || ''),
+                  position: node.position,
+                  mass: element?.mass ?? (node.data as any)?.mass ?? null,
+                  metadata: element?.metadata || (node.data as any)?.metadata || [],
+                  fmuId,
+                  fmuName: fmu?.name || element?.fmiBinding?.fmuName || '',
+                  oemName: fmu?.oemName || element?.fmiBinding?.oemName || '',
+                  oemShortCode: fmu?.oemShortCode || element?.fmiBinding?.oemShortCode || '',
+                  partName: element?.fmiBinding?.partName || ''
+              });
+          }
+          return collected;
       }
   </script>
 
@@ -116,6 +212,59 @@
                           </div>
                       {/each}
                   </div>
+                  {#if analysisError}
+                      <div class="analysis-message error">{analysisError}</div>
+                  {/if}
+                  {#if analysisResult}
+                      <div class="analysis-result">
+                          <div class="analysis-result-header">
+                              <div>
+                                  <h4>Torsional Vibration Analysis</h4>
+                                  <p>{analysisResult.summary}</p>
+                              </div>
+                              <div class="analysis-header-actions">
+                                  <span class="analysis-engine">{analysisResult.engine}</span>
+                                  <button class="report-btn" onclick={downloadAnalysisReport}>Download PDF</button>
+                              </div>
+                          </div>
+                          <div class="analysis-grid">
+                              <div>
+                                  <span>Components</span>
+                                  <strong>{analysisResult.model.component_count}</strong>
+                              </div>
+                              <div>
+                                  <span>Shafts</span>
+                                  <strong>{analysisResult.model.shaft_count}</strong>
+                              </div>
+                              <div>
+                                  <span>First mode</span>
+                                  <strong>{analysisResult.natural_frequencies_hz[0] ?? 'n/a'} Hz</strong>
+                              </div>
+                          </div>
+                          <div class="analysis-table">
+                              <div class="analysis-table-row head">
+                                  <span>Mode</span>
+                                  <span>Frequency</span>
+                                  <span>Critical speed</span>
+                              </div>
+                              {#each analysisResult.natural_frequencies_hz as frequency, index}
+                                  <div class="analysis-table-row">
+                                      <span>{index + 1}</span>
+                                      <span>{frequency} Hz</span>
+                                      <span>{analysisResult.critical_speeds_rpm[index]} rpm</span>
+                                  </div>
+                              {/each}
+                          </div>
+                          <div class="analysis-components">
+                              {#each analysisResult.model.components as component}
+                                  <span>{component.name}{component.oem ? ` (${component.oem})` : ''}</span>
+                              {/each}
+                          </div>
+                          {#if analysisResult.warnings?.length}
+                              <div class="analysis-message warn">{analysisResult.warnings.join(' ')}</div>
+                          {/if}
+                      </div>
+                  {/if}
               {:else}
                   <div class="custom-scenarios">
                       <div class="custom-header">
@@ -176,7 +325,9 @@
 
           <div class="popover-footer">
               <button class="cancel-btn" onclick={onclose}>Cancel</button>
-              <button class="apply-btn">Apply Test Scenarios</button>
+              <button class="apply-btn" disabled={isRunningAnalysis} onclick={applySelectedTests}>
+                  {isRunningAnalysis ? 'Running...' : 'Run Selected'}
+              </button>
           </div>
       </div>
   </div>
@@ -330,6 +481,147 @@
           margin-top: 2px;
       }
 
+      .analysis-result {
+          border: 1px solid rgba(59, 130, 246, 0.25);
+          border-radius: 8px;
+          background: #f8fbff;
+          padding: 14px;
+          margin-top: 16px;
+      }
+
+      .analysis-result-header {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 12px;
+      }
+
+      .analysis-result-header h4 {
+          margin: 0 0 4px 0;
+          font-size: 15px;
+      }
+
+      .analysis-result-header p {
+          margin: 0;
+          color: rgba(0, 0, 0, 0.6);
+          font-size: 13px;
+      }
+
+      .analysis-header-actions {
+          display: flex;
+          align-items: flex-start;
+          justify-content: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
+          min-width: 150px;
+      }
+
+      .analysis-engine {
+          border-radius: 999px;
+          background: #dbeafe;
+          color: #1d4ed8;
+          height: fit-content;
+          padding: 4px 8px;
+          font-size: 12px;
+          font-weight: 600;
+      }
+
+      .report-btn {
+          border: 1px solid #bfdbfe;
+          background: #ffffff;
+          color: #1d4ed8;
+          border-radius: 4px;
+          padding: 4px 8px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+      }
+
+      .report-btn:hover {
+          background: #eff6ff;
+      }
+
+      .analysis-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          margin-bottom: 12px;
+      }
+
+      .analysis-grid div {
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 6px;
+          background: white;
+          padding: 8px;
+      }
+
+      .analysis-grid span {
+          display: block;
+          color: rgba(0, 0, 0, 0.55);
+          font-size: 12px;
+          margin-bottom: 3px;
+      }
+
+      .analysis-grid strong {
+          font-size: 15px;
+      }
+
+      .analysis-table {
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 6px;
+          background: white;
+          overflow: hidden;
+      }
+
+      .analysis-table-row {
+          display: grid;
+          grid-template-columns: 0.6fr 1fr 1fr;
+          gap: 8px;
+          padding: 7px 9px;
+          font-size: 13px;
+          border-top: 1px solid rgba(0, 0, 0, 0.06);
+      }
+
+      .analysis-table-row.head {
+          border-top: 0;
+          background: rgba(0, 0, 0, 0.03);
+          font-weight: 600;
+      }
+
+      .analysis-components {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 10px;
+      }
+
+      .analysis-components span {
+          border-radius: 999px;
+          background: white;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          padding: 4px 8px;
+          font-size: 12px;
+      }
+
+      .analysis-message {
+          border-radius: 6px;
+          padding: 9px 10px;
+          font-size: 13px;
+          margin-top: 12px;
+      }
+
+      .analysis-message.error {
+          background: #fef2f2;
+          color: #991b1b;
+          border: 1px solid #fecaca;
+      }
+
+      .analysis-message.warn {
+          background: #fffbeb;
+          color: #92400e;
+          border: 1px solid #fde68a;
+      }
+
       .custom-header {
           display: flex;
           justify-content: space-between;
@@ -465,6 +757,11 @@
           background-color: var(--main-dark-color);
           border: none;
           color: white;
+      }
+
+      .apply-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
       }
 
       .apply-btn:hover {

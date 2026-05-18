@@ -69,6 +69,21 @@
         }
         else {return data.name;}
     });
+    let linkedFmuId = $derived($componentLinks[id] || data.element.fmiComponentId || '');
+    let linkedFmu = $derived(linkedFmuId ? $fmiComponents.find(component => component.id === linkedFmuId) : null);
+    let linkedFmuLabel = $derived(
+        linkedFmu?.name ||
+        data.element.fmiBinding?.fmuName ||
+        linkedFmuId ||
+        'Unknown FMU'
+    );
+    let linkedFmuSource = $derived(
+        linkedFmu?.oemShortCode ||
+        linkedFmu?.oemName ||
+        data.element.fmiBinding?.oemShortCode ||
+        data.element.fmiBinding?.oemName ||
+        'OEM'
+    );
 
     // svelte-ignore state_referenced_locally
     let inputName = $state(currentName);
@@ -264,11 +279,15 @@
             </div>
         </div>
         
-        {#if $componentLinks[id]}
-            <div class="fmi-indicator" title="FMI: {$fmiComponents.find(c => c.id === $componentLinks[id])?.name || 'Unknown'}">
+        {#if linkedFmuId}
+            <div class="fmi-indicator" title="FMU: {linkedFmuLabel} ({linkedFmuSource})">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
                 </svg>
+            </div>
+            <div class="fmi-badge" title="Linked FMU: {linkedFmuLabel}">
+                <span>FMU</span>
+                <strong>{linkedFmuSource}</strong>
             </div>
         {/if}
 
@@ -454,6 +473,36 @@
         width: 14px;
         height: 14px;
         color: white;
+    }
+
+    .fmi-badge {
+        position: absolute;
+        top: 44px;
+        right: 10px;
+        max-width: 82px;
+        border: 1px solid #bfdbfe;
+        border-radius: 6px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        padding: 3px 6px;
+        font-size: 10px;
+        line-height: 1.2;
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .fmi-badge span {
+        font-weight: 600;
+    }
+
+    .fmi-badge strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .custom-menu {
         position: absolute;

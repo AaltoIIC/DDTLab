@@ -61,7 +61,19 @@ export interface ElementDataType {
     type: 'system' | 'component';
     VSSoClass: string | null;
     connectors: ConnectorType[];
+    metadata?: Array<{ key: string; value: string }>;
+    mass?: number | string;
     fmiComponentId?: string;
+    fmiBinding?: {
+        sourceNodeId: string;
+        requestId: string;
+        responseId: string;
+        fmuId: string;
+        fmuName: string | null;
+        oemName: string | null;
+        oemShortCode: string | null;
+        partName?: string | null;
+    };
 }
 
 export interface HistoryEntryType {

@@ -190,7 +190,10 @@
 
         try {
             const catalogComponents = await fetchCatalogFmuComponents();
-            fmiComponents.set(catalogComponents);
+            const catalogIds = new Set(catalogComponents.map(component => component.id));
+            const linkedFmuIds = new Set(Object.values($componentLinks));
+            const existingLinkedComponents = $fmiComponents.filter(component => linkedFmuIds.has(component.id) && !catalogIds.has(component.id));
+            fmiComponents.set([...catalogComponents, ...existingLinkedComponents]);
             catalogLastLoadedCount = catalogComponents.length;
         } catch (error) {
             catalogError = error instanceof Error ? error.message : 'Failed to load FMU catalog';

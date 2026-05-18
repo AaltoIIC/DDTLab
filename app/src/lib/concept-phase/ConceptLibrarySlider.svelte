@@ -14,15 +14,15 @@
 
     let { isOpen = false, onClose }: Props = $props();
     
-    let componentLibraryExpanded = $state(false);
+    let componentLibraryExpanded = $state(true);
     let designLibraryExpanded = $state(false);
     let isDragging = $state(false);
     let searchTerm = $state('');
     let designSearchTerm = $state('');
     
     // Track expanded state for categories
-    let expandedCategories: Set<string> = $state(new Set());
-    let expandedSubcategories: Set<string> = $state(new Set());
+    let expandedCategories: Set<string> = $state(new Set(['vessel-systems']));
+    let expandedSubcategories: Set<string> = $state(new Set(['powertrain-examples']));
     let expandedDesignCategories: Set<string> = $state(new Set(['commercial', 'passenger', 'specialized']));
     
     // Design library filters

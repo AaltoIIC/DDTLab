@@ -28,6 +28,16 @@ import _ from 'lodash';
 import ConceptTemplateSlider from '$lib/concept-phase/ConceptTemplateSlider.svelte';
 import { packageViewStack, type PackageView } from '$lib/concept-phase/packageStore';
 
+export type ConceptFmuBinding = {
+    sourceNodeId: string;
+    requestId: string;
+    responseId: string;
+    fmuId: string;
+    fmuName: string | null;
+    oemName: string | null;
+    oemShortCode: string | null;
+    partName?: string | null;
+};
 
 // Helper variable for root node
 export const rootNode = {
@@ -123,7 +133,7 @@ export const setCurrentSystem = (id: string) => {
     }
 }
 
-export const convertToDesign = () => {
+export const convertToDesign = (fmuBindingsBySourceNodeId: Record<string, ConceptFmuBinding> = {}) => {
 
     // Get the root context
     const stack = get(packageViewStack);
@@ -134,7 +144,7 @@ export const convertToDesign = () => {
     const newRootName = generateName(`${get(currentSystemMeta).name} (Design Stage)`, get(systems).map(s => s.name));
 
     // Deep recursive conversion
-    const converted = recursiveSystemBuilder(rootNodes, rootEdges, newRootId);
+    const converted = recursiveSystemBuilder(rootNodes, rootEdges, newRootId, fmuBindingsBySourceNodeId);
 
     // Create the root system for the design stage
     const designRootSystem: SystemType = {
@@ -151,13 +161,47 @@ export const convertToDesign = () => {
     }
 
     saveSystem(designRootSystem);
+    componentLinks.update(links => ({ ...links, ...converted.componentLinks }));
+    mergeBoundFmiComponents(fmuBindingsBySourceNodeId, converted.componentLinks);
 };
 
-const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: string): { nodes: Node[], edges: Edge[] } => {
+const recursiveSystemBuilder = (
+    nodes: Node[],
+    edges: Edge[],
+    parentSystemId: string,
+    fmuBindingsBySourceNodeId: Record<string, ConceptFmuBinding>
+): { nodes: Node[], edges: Edge[], componentLinks: Record<string, string> } => {
     // Helper function for extracting handle names in the cocnept stage
     const extractHandleName = (handleId: string, type: '-input-' | '-output-') => {
         const num = handleId.indexOf(type) + type.length;
         return handleId.substring(num);
+    };
+
+    const uniqueById = <T extends { id: string }>(items: T[]): T[] => {
+        return Array.from(new Map(items.map(item => [item.id, item])).values());
+    };
+
+    const packageInside = (node: Node): { nodes: Node[], inEdges: Edge[], boundaryEdges: Edge[] } => {
+        const insideData = node.data?.insideData as any;
+        const insideNodes = Array.isArray(insideData?.nodes) ? insideData.nodes as Node[] : [];
+        const parentedNodes = nodes.filter(candidate => candidate.parentId === node.id);
+        const nestedNodes = uniqueById([...insideNodes, ...parentedNodes]);
+        const nestedNodeIds = new Set(nestedNodes.map(n => n.id));
+
+        const storedInEdges = Array.isArray(insideData?.inEdges)
+            ? insideData.inEdges as Edge[]
+            : Array.isArray(insideData?.edges)
+                ? insideData.edges as Edge[]
+                : [];
+        const derivedInEdges = edges.filter(edge => nestedNodeIds.has(edge.source) && nestedNodeIds.has(edge.target));
+        const storedBoundaryEdges = Array.isArray(insideData?.boundaryEdges) ? insideData.boundaryEdges as Edge[] : [];
+        const derivedBoundaryEdges = edges.filter(edge => nestedNodeIds.has(edge.source) !== nestedNodeIds.has(edge.target));
+
+        return {
+            nodes: nestedNodes,
+            inEdges: uniqueById([...storedInEdges, ...derivedInEdges]),
+            boundaryEdges: uniqueById([...storedBoundaryEdges, ...derivedBoundaryEdges])
+        };
     };
     
     
@@ -166,10 +210,10 @@ const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: st
     var edgesInPackages: any = [];
     nodes.forEach(node => {
         if (node.type === 'package') {
-        const internalNodes = (node.data.insideData as any)?.nodes || [];
+        const internalNodes = packageInside(node).nodes;
         nodesInPackages.push(internalNodes.map((n: Node) => n.id));
 
-        const internalEdges = (node.data.insideData as any)?.inEdges || [];
+        const internalEdges = packageInside(node).inEdges;
         edgesInPackages.push(internalEdges.map((e: Edge) => e.id));
         }
     })
@@ -203,9 +247,9 @@ const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: st
         }
         else {
             var counter = 1;
-            const inData = node.data?.insideData as any
-            const inNodeIds = (inData.nodes as Node[]).map(n => n.id);
-            (inData?.boundaryEdges as Edge[] || []).forEach(edge => {
+            const inData = packageInside(node);
+            const inNodeIds = inData.nodes.map(n => n.id);
+            (inData.boundaryEdges || []).forEach(edge => {
                 if (inNodeIds.includes(edge.target)) {
                     connectors.push({
                         name: `p-Connector (${counter})`,
@@ -245,20 +289,27 @@ const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: st
         }
 
 
-        if (node.type === 'package' || (node.data.nodes as any).length) {
+        const childNodes = Array.isArray(node.data?.nodes) ? node.data.nodes as Node[] : [];
+        const childEdges = Array.isArray(node.data?.edges) ? node.data.edges as Edge[] : [];
+        const hasNestedChildren = childNodes.length > 0;
+
+        if (node.type === 'package' || hasNestedChildren) {
             const newSubsystemId = generateId(get(systems).map(s => s.id));
+            const packageData = node.type === 'package' ? packageInside(node) : null;
             
             // Convert children recursively
             const internal = node.type === 'package' 
             ? recursiveSystemBuilder(
-                (node.data?.insideData as any)?.nodes || [],
-                (node.data?.insideData as any)?.inEdges || [],
-                newSubsystemId
+                packageData?.nodes || [],
+                packageData?.inEdges || [],
+                newSubsystemId,
+                fmuBindingsBySourceNodeId
             )
             : recursiveSystemBuilder(
-                (node.data?.nodes as any) || [], 
-                (node.data?.edges as any) || [], 
-                newSubsystemId
+                childNodes, 
+                childEdges, 
+                newSubsystemId,
+                fmuBindingsBySourceNodeId
             );
 
             // Create the new System entry
@@ -305,18 +356,23 @@ const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: st
                 position: node.position
             };
         }
+        const fmuBinding = fmuBindingsBySourceNodeId[node.id];
         return {
 
             id: `d-${node.id}`,
             type: 'Element', 
-            data: { 
-                name: node.data.declaredName as string,
-                element: {
-                    type: 'component',
-                    VSSoClass: null,
-                    connectors: connectors,
-                }
-            },
+                data: { 
+                    name: node.data.declaredName as string,
+                    element: {
+                        type: 'component',
+                        VSSoClass: null,
+                        connectors: connectors,
+                        metadata: Array.isArray(node.data?.metadata) ? _.cloneDeep(node.data.metadata) : [],
+                        mass: node.data?.mass,
+                        fmiComponentId: fmuBinding?.fmuId,
+                        fmiBinding: fmuBinding
+                    }
+                },
             dragHandle: '.element-node-inner',
             parentId: 'root',
             measured: {
@@ -326,6 +382,15 @@ const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: st
             position: node.position     
         };
     });
+
+    const convertedComponentLinks = convertedNodes.reduce((links, node) => {
+        const sourceNodeId = node.id.startsWith('d-') ? node.id.slice(2) : '';
+        const binding = sourceNodeId ? fmuBindingsBySourceNodeId[sourceNodeId] : undefined;
+        if (binding?.fmuId) {
+            links[node.id] = binding.fmuId;
+        }
+        return links;
+    }, {} as Record<string, string>);
 
     const convertedEdges = filteredEdges.map(edge => {
 
@@ -375,8 +440,64 @@ const recursiveSystemBuilder = (nodes: Node[], edges: Edge[], parentSystemId: st
         return newBaseEdge;
     });
 
-    return { nodes: convertedNodes, edges: convertedEdges };
+    const nestedComponentLinks = convertedNodes.reduce((links, node) => {
+        const subsystemId = (node.data?.element as SubsystemDataType | undefined)?.subsystemId;
+        if (!subsystemId) return links;
+        const subsystem = getSystem(subsystemId);
+        if (!subsystem) return links;
+        for (const subsystemNode of subsystem.nodes) {
+            const sourceNodeId = subsystemNode.id.startsWith('d-') ? subsystemNode.id.slice(2) : '';
+            const binding = sourceNodeId ? fmuBindingsBySourceNodeId[sourceNodeId] : undefined;
+            if (binding?.fmuId) {
+                links[subsystemNode.id] = binding.fmuId;
+            }
+        }
+        return links;
+    }, {} as Record<string, string>);
+
+    return { nodes: convertedNodes, edges: convertedEdges, componentLinks: { ...nestedComponentLinks, ...convertedComponentLinks } };
 };
+
+function mergeBoundFmiComponents(bindingsBySourceNodeId: Record<string, ConceptFmuBinding>, links: Record<string, string>) {
+    const linkedFmuIds = new Set(Object.values(links));
+    const bindings = Object.values(bindingsBySourceNodeId).filter(binding => linkedFmuIds.has(binding.fmuId));
+    if (!bindings.length) return;
+
+    fmiComponents.update(components => {
+        const existingIds = new Set(components.map(component => component.id));
+        const additions: FMIComponentType[] = [];
+        for (const binding of bindings) {
+            if (existingIds.has(binding.fmuId)) continue;
+            additions.push({
+                id: binding.fmuId,
+                name: binding.fmuName || binding.fmuId,
+                category: inferFmiCategory(binding.fmuName || binding.partName || ''),
+                description: `OEM response${binding.oemName ? ` from ${binding.oemName}` : ''}`,
+                modelIdentifier: binding.fmuName || binding.fmuId,
+                fmiVersion: 'unknown',
+                fmiType: 'FMU',
+                linkedElements: Object.entries(links).filter(([, fmuId]) => fmuId === binding.fmuId).map(([nodeId]) => nodeId),
+                uploadDate: new Date().toISOString(),
+                isUserUploaded: false,
+                oemName: binding.oemName ?? undefined,
+                oemShortCode: binding.oemShortCode ?? undefined,
+                catalogSource: 'api'
+            });
+            existingIds.add(binding.fmuId);
+        }
+        return additions.length ? [...components, ...additions] : components;
+    });
+}
+
+function inferFmiCategory(name: string): FMIComponentType['category'] {
+    const value = name.toLowerCase();
+    if (value.includes('motor')) return 'motors';
+    if (value.includes('propeller')) return 'propellers';
+    if (value.includes('engine')) return 'engines';
+    if (value.includes('sensor')) return 'sensors';
+    if (value.includes('controller') || value.includes('converter')) return 'controllers';
+    return 'other';
+}
 
 export const removeSystem = (id: string) => {
     function inner(id: string, allSystems: SystemType[]): SystemType[] {

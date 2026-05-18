@@ -3,9 +3,11 @@ import {
     Ship, Package
 } from '@lucide/svelte';
 
-// Import the commercial vessel component
+// Import reusable concept-stage component examples
 import {
-    commercialVesselPowertrain
+    basicPowertrain,
+    commercialVesselPowertrain,
+    motorShaftPropellerDemo
 } from './simpleComponentLibrary';
 
 export const componentCategories: ComponentCategory[] = [
@@ -16,15 +18,31 @@ export const componentCategories: ComponentCategory[] = [
         icon: Ship,
         subcategories: [
             {
-                id: 'commercial-vessels',
-                name: 'Commercial Vessels',
+                id: 'powertrain-examples',
+                name: 'Powertrain Examples',
                 components: [
+                    {
+                        id: 'motor-shaft-propeller-demo',
+                        name: 'Simple Electric Propulsion Train',
+                        description: 'Three-component motor, shaft, and propeller template for torsional vibration analysis',
+                        categoryId: 'vessel-systems',
+                        subcategoryId: 'powertrain-examples',
+                        template: motorShaftPropellerDemo
+                    },
+                    {
+                        id: 'basic-powertrain',
+                        name: 'Powertrain',
+                        description: 'Compact case study with battery, converter, motor, shaft, and propeller',
+                        categoryId: 'vessel-systems',
+                        subcategoryId: 'powertrain-examples',
+                        template: basicPowertrain
+                    },
                     {
                         id: 'commercial-vessel-powertrain',
                         name: 'Commercial Vessel Powertrain',
                         description: 'Complete powertrain system including engine, gearbox, shaft, and propeller',
                         categoryId: 'vessel-systems',
-                        subcategoryId: 'commercial-vessels',
+                        subcategoryId: 'powertrain-examples',
                         template: commercialVesselPowertrain
                     }
                 ]

@@ -5,13 +5,28 @@
     import ConceptualStageEditor from './ConceptualStageEditor.svelte';
     import ConceptualStageSidebar from './ConceptualStageSidebar.svelte';
     import PackageBreadcrumb from './PackageBreadcrumb.svelte';
-    import { currentSystemMeta, currentNodes, currentEdges, convertToDesign, removeOtherSystems } from '$lib/stores/stores.svelte';
+    import {
+        currentSystemMeta,
+        currentNodes,
+        currentEdges,
+        convertToDesign as convertConceptToDesign,
+        removeOtherSystems,
+        type ConceptFmuBinding
+    } from '$lib/stores/stores.svelte';
     import { currentPackageView, packageViewStack, navigateToRoot, navigateToPackage } from './packageStore';
     import type { PackageView } from './packageStore';
     import { onMount, onDestroy } from 'svelte';
     import { get } from 'svelte/store';
-    import { Save, CircleQuestionMark, Repeat } from '@lucide/svelte';
+    import { Save, CircleQuestionMark, Repeat, Send } from '@lucide/svelte';
     import { saveTemplate } from '$lib/stores/stores.svelte';
+    import {
+        createAnalysisRequest,
+        fetchAnalysisRequestStatuses,
+        type AnalysisRequestStatusView,
+        type AnalysisRequestParameter,
+        type AnalysisRequestPartPayload,
+        type CreateAnalysisRequestPayload
+    } from '$lib/analysis/analysisRequestApi';
     import Tour from '$lib/Tour.svelte';
     import { type Driver, type DriveStep } from "driver.js";
     import _ from 'lodash';
@@ -21,6 +36,35 @@
     let templateName = $state('');
     let templateDescription = $state('');
     let previousViewStack: PackageView[] = [];
+    let showAnalysisRequestDialog = $state(false);
+    let analysisRequesterOrg = $state('RMC');
+    let analysisRequesterName = $state('RMC');
+    let analysisTitle = $state('');
+    let analysisNotes = $state('');
+    let analysisTargetOems = $state<string[]>(['ABB', 'KM']);
+    let analysisRequestBusy = $state(false);
+    let analysisRequestError = $state('');
+    let analysisStatuses = $state<AnalysisRequestStatusView[]>([]);
+    let analysisStatusLoading = $state(false);
+    let analysisStatusError = $state('');
+    let analysisStatusPoll: ReturnType<typeof setInterval> | undefined;
+    let analysisStatusSystemId = $state('');
+
+    type AnalysisPartTracking = AnalysisRequestStatusView['parts'][number] & {
+        request_id: string;
+        request_title: string;
+        target_label: string;
+        request_updated_at: string;
+    };
+
+    const analysisAggregate = $derived(buildAnalysisAggregate(analysisStatuses));
+    const missingAnalysisParts = $derived(analysisAggregate.missingParts);
+    const analysisConversionBlocked = $derived(Boolean(analysisStatuses.length && !analysisAggregate.complete));
+
+    const analysisOemOptions = [
+        { label: 'ABB', value: 'ABB' },
+        { label: 'Kongsberg', value: 'KM' }
+    ];
 
     let driver: Driver | undefined = $state();
     let startTour = $state(false);
@@ -254,6 +298,85 @@
             notification.show = false;
         }, 3000);
     }
+
+    async function loadAnalysisStatuses(systemId = $currentSystemMeta.id) {
+        if (!systemId) {
+            analysisStatuses = [];
+            return;
+        }
+
+        analysisStatusLoading = true;
+        analysisStatusError = '';
+        try {
+            analysisStatuses = await fetchAnalysisRequestStatuses(systemId);
+        } catch (error) {
+            analysisStatusError = error instanceof Error ? error.message : 'Failed to load OEM response status';
+        } finally {
+            analysisStatusLoading = false;
+        }
+    }
+
+    function buildAnalysisAggregate(statuses: AnalysisRequestStatusView[]) {
+        const partEntries: AnalysisPartTracking[] = statuses.flatMap((status) => {
+            const targetLabel = status.targets
+                .map((target) => target.oem?.short_code || target.oem?.name || 'OEM')
+                .join(', ') || 'OEM';
+
+            return status.parts.map((part) => ({
+                ...part,
+                request_id: status.id,
+                request_title: status.title,
+                target_label: targetLabel,
+                request_updated_at: status.updated_at
+            }));
+        });
+
+        const respondedPartCount = partEntries.filter((part) => part.responded).length;
+        return {
+            partEntries,
+            requestedPartCount: partEntries.length,
+            respondedPartCount,
+            complete: partEntries.length > 0 && respondedPartCount === partEntries.length,
+            missingParts: partEntries.filter((part) => !part.responded)
+        };
+    }
+
+    function handleConvertToDesign() {
+        if (analysisConversionBlocked) {
+            const missingNames = missingAnalysisParts.map((part) => `${part.name} (${part.target_label})`).slice(0, 3).join(', ');
+            const suffix = missingAnalysisParts.length > 3 ? ` and ${missingAnalysisParts.length - 3} more` : '';
+            showNotification(`Waiting for OEM responses: ${missingNames}${suffix}`, 'error');
+            return;
+        }
+
+        convertConceptToDesign(analysisStatuses.length ? fmuBindingsFromStatuses(analysisStatuses) : {});
+        if (analysisAggregate.complete) {
+            showNotification('Design stage created with OEM FMU links', 'success');
+        }
+    }
+
+    function fmuBindingsFromStatuses(statuses: AnalysisRequestStatusView[]): Record<string, ConceptFmuBinding> {
+        const bindings: Record<string, ConceptFmuBinding> = {};
+
+        for (const status of [...statuses].reverse()) {
+            for (const part of status.parts) {
+                const response = part.responses[0];
+                if (!response) continue;
+                bindings[part.source_node_id] = {
+                    sourceNodeId: part.source_node_id,
+                    requestId: status.id,
+                    responseId: response.id,
+                    fmuId: response.fmu_id,
+                    fmuName: response.fmu_name,
+                    oemName: response.oem_name,
+                    oemShortCode: response.oem_short_code,
+                    partName: part.name
+                };
+            }
+        }
+
+        return bindings;
+    }
     
     // Clear the package view stack when component mounts (start at root)
     onMount(() => {
@@ -271,6 +394,19 @@
             firstTimeOpen = false;
             startTour = false;
         }
+
+        void loadAnalysisStatuses();
+        analysisStatusPoll = setInterval(() => {
+            void loadAnalysisStatuses();
+        }, 5000);
+    });
+
+    $effect(() => {
+        const systemId = $currentSystemMeta.id;
+        if (systemId && systemId !== analysisStatusSystemId) {
+            analysisStatusSystemId = systemId;
+            void loadAnalysisStatuses(systemId);
+        }
     });
     
     // Clean up when leaving the editor
@@ -286,6 +422,9 @@
         if (driver) {
             driver.destroy();
             driver = undefined;
+        }
+        if (analysisStatusPoll) {
+            clearInterval(analysisStatusPoll);
         }
         startTour = false;
         firstTimeOpen = false;
@@ -392,6 +531,120 @@
         // Clear the stored stack
         previousViewStack = [];
     }
+
+    function openAnalysisRequestDialog() {
+        const parts = collectAnalysisParts();
+        analysisTitle = `${$currentSystemMeta.name || 'System'} torsional vibration analysis`;
+        analysisNotes = parts.length
+            ? `${parts.length} selected concept item${parts.length === 1 ? '' : 's'} included.`
+            : '';
+        analysisRequestError = '';
+        showAnalysisRequestDialog = true;
+    }
+
+    function closeAnalysisRequestDialogFromOverlay(event: MouseEvent) {
+        if (event.target === event.currentTarget) {
+            showAnalysisRequestDialog = false;
+        }
+    }
+
+    async function submitAnalysisRequest() {
+        const parts = collectAnalysisParts();
+        if (parts.length === 0) {
+            analysisRequestError = 'Add or select at least one concept part before requesting analysis.';
+            return;
+        }
+        if (analysisTargetOems.length === 0) {
+            analysisRequestError = 'Select at least one OEM.';
+            return;
+        }
+
+        const payload: CreateAnalysisRequestPayload = {
+            requester_name: analysisRequesterName,
+            requester_org: analysisRequesterOrg,
+            title: analysisTitle || `${$currentSystemMeta.name || 'System'} torsional vibration analysis`,
+            analysis_type: 'torsional_vibration',
+            target_oem_short_codes: analysisTargetOems,
+            source_system_id: $currentSystemMeta.id,
+            source_system_name: $currentSystemMeta.name,
+            source_stage: 'concept',
+            source_snapshot_json: {
+                system: $currentSystemMeta,
+                packageView: get(currentPackageView),
+                nodes: get(currentNodes),
+                edges: get(currentEdges)
+            },
+            parts,
+            notes: analysisNotes
+        };
+
+        analysisRequestBusy = true;
+        analysisRequestError = '';
+        try {
+            const created = await createAnalysisRequest(payload);
+            showAnalysisRequestDialog = false;
+            showNotification(`Analysis request ${created.id.slice(0, 8)} sent`, 'success');
+            await loadAnalysisStatuses();
+        } catch (error) {
+            analysisRequestError = error instanceof Error ? error.message : 'Failed to send analysis request';
+        } finally {
+            analysisRequestBusy = false;
+        }
+    }
+
+    function collectAnalysisParts(): AnalysisRequestPartPayload[] {
+        const conceptNodes = get(currentNodes).filter((node) => ['part', 'item'].includes(String(node.type)));
+        const selectedNodes = conceptNodes.filter((node) => node.selected);
+        const nodes = selectedNodes.length > 0 ? selectedNodes : conceptNodes;
+
+        return nodes.map((node) => {
+            const data = node.data as Record<string, any>;
+            return {
+                id: String(node.id),
+                source_node_id: String(node.id),
+                name: String(data.declaredName || data.name || node.id),
+                role: String(node.type || 'part'),
+                sysml_type: String(node.type || 'part'),
+                definition: typeof data.definition === 'string' && data.definition ? data.definition : null,
+                comment: typeof data.comment === 'string' && data.comment ? data.comment : null,
+                parameters: nodeParameters(data),
+                interfaces: [
+                    ...nodePorts(data.inputs, 'input'),
+                    ...nodePorts(data.outputs, 'output')
+                ]
+            };
+        });
+    }
+
+    function nodeParameters(data: Record<string, any>): AnalysisRequestParameter[] {
+        const parameters: AnalysisRequestParameter[] = [];
+        if (typeof data.mass === 'number' && Number.isFinite(data.mass)) {
+            parameters.push({ name: 'mass', value: data.mass, unit: 'kg', source: 'mass' });
+        }
+
+        if (Array.isArray(data.metadata)) {
+            for (const item of data.metadata) {
+                if (!item?.key) continue;
+                parameters.push({
+                    name: String(item.key),
+                    value: item.value ?? null,
+                    unit: null,
+                    source: 'metadata'
+                });
+            }
+        }
+
+        return parameters;
+    }
+
+    function nodePorts(value: unknown, type: 'input' | 'output') {
+        if (!Array.isArray(value)) return [];
+        return value.map((port) => ({
+            name: String(port?.name || 'port'),
+            interfaceType: typeof port?.interfaceType === 'string' ? port.interfaceType : null,
+            type
+        }));
+    }
 </script>
 
 <div class="conceptual-layout">
@@ -405,9 +658,13 @@
                     <Save size={16} />
                     Save as Template
                 </button>
-                <button class="stage-btn" onclick={convertToDesign}>
+                <button class="stage-btn" class:blocked={analysisConversionBlocked} onclick={handleConvertToDesign}>
                     <Repeat size={16} />
                     Convert to Design
+                </button>
+                <button class="stage-btn" onclick={openAnalysisRequestDialog}>
+                    <Send size={16} />
+                    Request Analysis
                 </button>
                 <div class="stage-indicator">
                     Conceptual Stage
@@ -425,6 +682,29 @@
             </div>
         </div>
         
+        {#if analysisStatuses.length || analysisStatusError}
+            <div class="analysis-status {analysisAggregate.complete ? 'ready' : 'pending'}">
+                {#if analysisStatuses.length}
+                    <div class="analysis-status-header">
+                        <strong>OEM responses</strong>
+                        <span>{analysisAggregate.respondedPartCount}/{analysisAggregate.requestedPartCount} requested component responses ready</span>
+                        <span>{analysisStatuses.length} request{analysisStatuses.length === 1 ? '' : 's'} tracked</span>
+                        {#if analysisStatusLoading}<span>Refreshing...</span>{/if}
+                    </div>
+                    <div class="analysis-status-parts">
+                        {#each analysisAggregate.partEntries as part (`${part.request_id}-${part.id}`)}
+                            <span class="analysis-part {part.responded ? 'ready' : 'pending'}">
+                                {part.name} ({part.target_label}): {part.responded ? `${part.responses.map((response) => response.oem_short_code ?? response.oem_name ?? 'OEM').join(', ')} responded` : 'waiting'}
+                            </span>
+                        {/each}
+                    </div>
+                {/if}
+                {#if analysisStatusError}
+                    <div class="analysis-status-error">{analysisStatusError}</div>
+                {/if}
+            </div>
+        {/if}
+
         <PackageBreadcrumb />
         
         <ConceptualStageEditor bind:this={conceptEditor} />
@@ -461,6 +741,55 @@
                 <button class="save-btn" onclick={confirmSaveTemplate}>Save Template</button>
             </div>
         </div>
+    </div>
+{/if}
+
+<!-- svelte-ignore a11y_click_events_have_key_events-->
+<!-- svelte-ignore a11y_no_static_element_interactions-->
+{#if showAnalysisRequestDialog}
+    <div class="dialog-overlay" onclick={closeAnalysisRequestDialogFromOverlay}>
+        <form class="dialog analysis-dialog" onsubmit={(event) => { event.preventDefault(); submitAnalysisRequest(); }}>
+            <h3>Request Analysis</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="analysis-requester-org">Requester Company</label>
+                    <input id="analysis-requester-org" type="text" bind:value={analysisRequesterOrg} />
+                </div>
+                <div class="form-group">
+                    <label for="analysis-requester-name">Requester Name</label>
+                    <input id="analysis-requester-name" type="text" bind:value={analysisRequesterName} />
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="analysis-title">Title</label>
+                <input id="analysis-title" type="text" bind:value={analysisTitle} />
+            </div>
+            <div class="form-group">
+                <div class="form-label">Companies</div>
+                <div class="checkbox-row">
+                    {#each analysisOemOptions as option}
+                        <label class="checkbox-label">
+                            <input type="checkbox" bind:group={analysisTargetOems} value={option.value} />
+                            {option.label}
+                        </label>
+                    {/each}
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="analysis-notes">Notes</label>
+                <textarea id="analysis-notes" bind:value={analysisNotes} rows="3"></textarea>
+            </div>
+            <div class="request-summary">
+                {collectAnalysisParts().length} component{collectAnalysisParts().length === 1 ? '' : 's'} will be sent with mass, metadata, and port interfaces.
+            </div>
+            {#if analysisRequestError}
+                <div class="request-error">{analysisRequestError}</div>
+            {/if}
+            <div class="dialog-buttons">
+                <button type="button" class="cancel-btn" onclick={() => (showAnalysisRequestDialog = false)}>Cancel</button>
+                <button class="save-btn" disabled={analysisRequestBusy}>{analysisRequestBusy ? 'Sending...' : 'Send Request'}</button>
+            </div>
+        </form>
     </div>
 {/if}
 
@@ -545,6 +874,60 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);       
     }
 
+    .stage-btn.blocked {
+        background: #7f1d1d;
+    }
+
+    .stage-btn.blocked:hover {
+        background: #991b1b;
+    }
+
+    .analysis-status {
+        border-bottom: 1px solid #e5e7eb;
+        padding: 10px 20px;
+        background: #fff7ed;
+    }
+
+    .analysis-status.ready {
+        background: #ecfdf5;
+    }
+
+    .analysis-status-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #111827;
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+    .analysis-status-parts {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .analysis-part {
+        border: 1px solid #fed7aa;
+        border-radius: 999px;
+        background: #ffedd5;
+        color: #9a3412;
+        padding: 4px 9px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .analysis-part.ready {
+        border-color: #bbf7d0;
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .analysis-status-error {
+        color: #991b1b;
+        font-size: 12px;
+    }
+
     #help-btn {
         border: none;
         background: none;
@@ -584,6 +967,16 @@
         max-width: 90vw;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     }
+
+    .analysis-dialog {
+        width: 540px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
     
     .dialog h3 {
         margin: 0 0 20px 0;
@@ -596,7 +989,8 @@
         margin-bottom: 16px;
     }
     
-    .form-group label {
+    .form-group label,
+    .form-label {
         display: block;
         margin-bottom: 6px;
         font-size: 14px;
@@ -618,6 +1012,42 @@
     .form-group textarea:focus {
         outline: none;
         border-color: #374151;
+    }
+
+    .checkbox-row {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .checkbox-label {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 6px;
+        margin: 0 !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        color: #111827 !important;
+    }
+
+    .request-summary {
+        border: 1px solid #dbeafe;
+        border-radius: 6px;
+        background: #eff6ff;
+        color: #1e40af;
+        padding: 10px 12px;
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+
+    .request-error {
+        border: 1px solid #fecaca;
+        border-radius: 6px;
+        background: #fef2f2;
+        color: #991b1b;
+        padding: 10px 12px;
+        font-size: 13px;
+        margin-bottom: 16px;
     }
     
     .dialog-buttons {

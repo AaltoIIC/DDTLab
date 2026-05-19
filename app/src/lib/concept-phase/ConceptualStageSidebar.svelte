@@ -172,10 +172,10 @@
 <style>
     .sidebar {
         position: fixed;
-        top: 110px;
+        top: var(--concept-sidebar-top, 110px);
         left: 15px;
         width: 68px;
-        height: 520px;
+        height: min(520px, calc(100vh - var(--concept-sidebar-top, 110px) - 20px));
         background-color: white;
         border: var(--main-border);
         border-radius: var(--main-border-radius);

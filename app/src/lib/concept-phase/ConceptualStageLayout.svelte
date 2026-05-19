@@ -9,7 +9,9 @@
         currentSystemMeta,
         currentNodes,
         currentEdges,
+        analysisReports,
         convertToDesign as convertConceptToDesign,
+        markAnalysisReportShared,
         removeOtherSystems,
         type ConceptFmuBinding
     } from '$lib/stores/stores.svelte';
@@ -22,11 +24,14 @@
     import {
         createAnalysisRequest,
         fetchAnalysisRequestStatuses,
+        shareAnalysisReport,
         type AnalysisRequestStatusView,
         type AnalysisRequestParameter,
         type AnalysisRequestPartPayload,
         type CreateAnalysisRequestPayload
     } from '$lib/analysis/analysisRequestApi';
+    import { base64ToBytes, downloadPdfBytes } from '$lib/analysis/analysisReportFiles';
+    import type { AnalysisReportRecord } from '$lib/types/types';
     import Tour from '$lib/Tour.svelte';
     import { type Driver, type DriveStep } from "driver.js";
     import _ from 'lodash';
@@ -49,6 +54,8 @@
     let analysisStatusError = $state('');
     let analysisStatusPoll: ReturnType<typeof setInterval> | undefined;
     let analysisStatusSystemId = $state('');
+    let sharingReportId = $state('');
+    let shareReportError = $state('');
 
     type AnalysisPartTracking = AnalysisRequestStatusView['parts'][number] & {
         request_id: string;
@@ -60,6 +67,11 @@
     const analysisAggregate = $derived(buildAnalysisAggregate(analysisStatuses));
     const missingAnalysisParts = $derived(analysisAggregate.missingParts);
     const analysisConversionBlocked = $derived(Boolean(analysisStatuses.length && !analysisAggregate.complete));
+    const conceptAnalysisReports = $derived(
+        $analysisReports
+            .filter((report) => report.sourceConceptSystemId === $currentSystemMeta.id)
+            .sort((a, b) => b.generatedAt.localeCompare(a.generatedAt))
+    );
 
     const analysisOemOptions = [
         { label: 'ABB', value: 'ABB' },
@@ -377,6 +389,69 @@
 
         return bindings;
     }
+
+    function downloadConceptReport(report: AnalysisReportRecord) {
+        downloadPdfBytes(base64ToBytes(report.pdfBase64), report.filename);
+    }
+
+    async function shareConceptReport(report: AnalysisReportRecord) {
+        const requestIds = reportRequestIds(report);
+        if (!requestIds.length) {
+            shareReportError = 'No OEM request is linked to this report.';
+            showNotification(shareReportError, 'error');
+            return;
+        }
+        const sharedIds = new Set(report.sharedRequestIds ?? []);
+        const targetRequestIds = requestIds.filter((requestId) => !sharedIds.has(requestId));
+        if (!targetRequestIds.length) {
+            showNotification('Analysis report is already shared with all linked OEMs', 'success');
+            return;
+        }
+
+        sharingReportId = report.id;
+        shareReportError = '';
+        try {
+            const pdfBytes = base64ToBytes(report.pdfBase64);
+            await Promise.all(targetRequestIds.map((requestId) => shareAnalysisReport(requestId, {
+                title: report.title,
+                filename: report.filename,
+                pdfBytes,
+                message: `Integrator shared ${report.title} from ${report.designSystemName}.`,
+                analysisType: report.analysisType,
+                generatedAt: report.generatedAt,
+                sourceSystemId: report.sourceConceptSystemId,
+                sourceSystemName: report.sourceConceptSystemName,
+                designSystemId: report.designSystemId,
+                designSystemName: report.designSystemName
+            })));
+            markAnalysisReportShared(report.id, targetRequestIds);
+            showNotification('Analysis report shared with OEMs', 'success');
+            await loadAnalysisStatuses();
+        } catch (error) {
+            shareReportError = error instanceof Error ? error.message : 'Failed to share analysis report';
+            showNotification(shareReportError, 'error');
+        } finally {
+            sharingReportId = '';
+        }
+    }
+
+    function reportRequestIds(report: AnalysisReportRecord) {
+        const ids = [...report.requestIds, ...analysisStatuses.map((status) => status.id)];
+        return Array.from(new Set(ids.filter(Boolean)));
+    }
+
+    function reportSharedWithAllLinkedRequests(report: AnalysisReportRecord) {
+        const requestIds = reportRequestIds(report);
+        if (!requestIds.length) return false;
+        const sharedIds = new Set(report.sharedRequestIds ?? []);
+        return requestIds.every((id) => sharedIds.has(id));
+    }
+
+    function formatReportDate(value: string | null | undefined) {
+        if (!value) return '';
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+    }
     
     // Clear the package view stack when component mounts (start at root)
     onMount(() => {
@@ -647,7 +722,7 @@
     }
 </script>
 
-<div class="conceptual-layout">
+<div class="conceptual-layout" class:has-analysis-panel={Boolean(analysisStatuses.length || conceptAnalysisReports.length || analysisStatusError)}>
     <ConceptualStageSidebar />
     
     <div class="main-content">
@@ -682,7 +757,7 @@
             </div>
         </div>
         
-        {#if analysisStatuses.length || analysisStatusError}
+        {#if analysisStatuses.length || conceptAnalysisReports.length || analysisStatusError}
             <div class="analysis-status {analysisAggregate.complete ? 'ready' : 'pending'}">
                 {#if analysisStatuses.length}
                     <div class="analysis-status-header">
@@ -697,6 +772,41 @@
                                 {part.name} ({part.target_label}): {part.responded ? `${part.responses.map((response) => response.oem_short_code ?? response.oem_name ?? 'OEM').join(', ')} responded` : 'waiting'}
                             </span>
                         {/each}
+                    </div>
+                {/if}
+                {#if conceptAnalysisReports.length}
+                    <div class="analysis-reports">
+                        <div class="analysis-status-header">
+                            <strong>Analysis reports</strong>
+                            <span>{conceptAnalysisReports.length} PDF result{conceptAnalysisReports.length === 1 ? '' : 's'} from generated design stage models</span>
+                        </div>
+                        <div class="analysis-report-list">
+                            {#each conceptAnalysisReports as report (report.id)}
+                                <div class="analysis-report-row">
+                                    <div class="analysis-report-main">
+                                        <strong>{report.title}</strong>
+                                        <span>{report.designSystemName} - {formatReportDate(report.generatedAt)}</span>
+                                        <span>{report.oemShortCodes.length ? `Linked OEMs: ${report.oemShortCodes.join(', ')}` : 'No linked OEM request'}</span>
+                                        {#if report.sharedAt}
+                                            <span>Shared {formatReportDate(report.sharedAt)}</span>
+                                        {/if}
+                                    </div>
+                                    <div class="analysis-report-actions">
+                                        <button class="report-action-btn" onclick={() => downloadConceptReport(report)}>Download PDF</button>
+                                        <button
+                                            class="report-action-btn primary"
+                                            disabled={sharingReportId === report.id || reportSharedWithAllLinkedRequests(report)}
+                                            onclick={() => shareConceptReport(report)}
+                                        >
+                                            {sharingReportId === report.id ? 'Sharing...' : reportSharedWithAllLinkedRequests(report) ? 'Shared' : 'Share with OEMs'}
+                                        </button>
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
+                        {#if shareReportError}
+                            <div class="analysis-status-error">{shareReportError}</div>
+                        {/if}
                     </div>
                 {/if}
                 {#if analysisStatusError}
@@ -808,11 +918,16 @@
 
 <style>
     .conceptual-layout {
+        --concept-sidebar-top: 110px;
         width: 100vw;
         height: 100vh;
         display: flex;
         overflow: hidden;
         position: relative;
+    }
+
+    .conceptual-layout.has-analysis-panel {
+        --concept-sidebar-top: 300px;
     }
     
     .main-content {
@@ -905,6 +1020,69 @@
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
+    }
+
+    .analysis-reports {
+        margin-top: 10px;
+    }
+
+    .analysis-report-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .analysis-report-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid #dbeafe;
+        border-radius: 6px;
+        background: #ffffff;
+        padding: 9px 10px;
+    }
+
+    .analysis-report-main {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        font-size: 12px;
+        color: #4b5563;
+    }
+
+    .analysis-report-main strong {
+        color: #111827;
+        font-size: 13px;
+    }
+
+    .analysis-report-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .report-action-btn {
+        border: 1px solid #bfdbfe;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #1d4ed8;
+        padding: 5px 9px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .report-action-btn.primary {
+        background: #1d4ed8;
+        color: #ffffff;
+    }
+
+    .report-action-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
     }
 
     .analysis-part {

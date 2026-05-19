@@ -45,7 +45,31 @@ export interface SystemType extends SystemMetaType {
     itemDefinitions: ItemDefinition[];
     packages: PackageTemplate[];
     parentSystemId?: string | null;
+    sourceConceptSystemId?: string | null;
+    sourceConceptSystemName?: string | null;
+    sourceAnalysisRequestIds?: string[];
     stage?: 'concept' | 'design';
+}
+
+export interface AnalysisReportRecord {
+    id: string;
+    analysisType: 'torsional_vibration';
+    title: string;
+    summary: string;
+    engine: string;
+    filename: string;
+    pdfBase64: string;
+    fileSizeBytes: number;
+    generatedAt: string;
+    sourceConceptSystemId: string;
+    sourceConceptSystemName: string;
+    designSystemId: string;
+    designSystemName: string;
+    requestIds: string[];
+    oemNames: string[];
+    oemShortCodes: string[];
+    sharedRequestIds?: string[];
+    sharedAt?: string | null;
 }
 
 export interface ConnectorType {

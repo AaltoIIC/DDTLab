@@ -478,7 +478,8 @@ export const motorShaftPropellerDemo: SimpleComponent = {
       {
         id: 'part-permanent-magnet-motor',
         type: 'part',
-        position: { x: 100, y: 120 },
+        position: { x: 360, y: 440 },
+        measured: { width: 600, height: 360 },
         data: {
           declaredName: 'Permanent Magnet Motor',
           definition: 'Permanent Magnet Motor',
@@ -508,7 +509,8 @@ export const motorShaftPropellerDemo: SimpleComponent = {
       {
         id: 'part-propeller-shaft-demo',
         type: 'part',
-        position: { x: 380, y: 120 },
+        position: { x: 1240, y: 440 },
+        measured: { width: 600, height: 360 },
         data: {
           declaredName: 'Propeller Shaft',
           definition: 'Marine Propeller Shaft',
@@ -537,7 +539,8 @@ export const motorShaftPropellerDemo: SimpleComponent = {
       {
         id: 'part-fixed-pitch-propeller-demo',
         type: 'part',
-        position: { x: 660, y: 120 },
+        position: { x: 2120, y: 440 },
+        measured: { width: 600, height: 360 },
         data: {
           declaredName: 'Fixed Pitch Propeller',
           definition: 'Fixed Pitch Propeller',

@@ -82,8 +82,34 @@ export type AnalysisRequestStatusView = {
 	updated_at: string;
 };
 
+export type ShareAnalysisReportPayload = {
+	title: string;
+	filename: string;
+	pdfBytes: Uint8Array;
+	message?: string | null;
+	analysisType: string;
+	generatedAt: string;
+	sourceSystemId: string;
+	sourceSystemName: string;
+	designSystemId: string;
+	designSystemName: string;
+};
+
 export function getAnalysisRequestApiBaseUrl(): string {
 	return (env.PUBLIC_ANALYSIS_REQUEST_API_URL || DEFAULT_ANALYSIS_REQUEST_API_URL).replace(/\/+$/, '');
+}
+
+async function readErrorMessage(response: Response): Promise<string> {
+	const fallback = `${response.status} ${response.statusText}`;
+	const text = await response.text().catch(() => '');
+	if (!text) return fallback;
+
+	try {
+		const body = JSON.parse(text);
+		return body.detail ?? body.message ?? text;
+	} catch {
+		return text;
+	}
 }
 
 export async function createAnalysisRequest(payload: CreateAnalysisRequestPayload): Promise<{ id: string }> {
@@ -96,14 +122,7 @@ export async function createAnalysisRequest(payload: CreateAnalysisRequestPayloa
 	});
 
 	if (!response.ok) {
-		let message = `${response.status} ${response.statusText}`;
-		try {
-			const body = await response.json();
-			message = body.detail ?? body.message ?? message;
-		} catch {
-			message = await response.text();
-		}
-		throw new Error(message);
+		throw new Error(await readErrorMessage(response));
 	}
 
 	return (await response.json()) as { id: string };
@@ -114,15 +133,33 @@ export async function fetchAnalysisRequestStatuses(sourceSystemId: string): Prom
 	const response = await fetch(`${getAnalysisRequestApiBaseUrl()}/api/analysis-requests/status?source_system_id=${encodeURIComponent(sourceSystemId)}`);
 
 	if (!response.ok) {
-		let message = `${response.status} ${response.statusText}`;
-		try {
-			const body = await response.json();
-			message = body.detail ?? body.message ?? message;
-		} catch {
-			message = await response.text();
-		}
-		throw new Error(message);
+		throw new Error(await readErrorMessage(response));
 	}
 
 	return (await response.json()) as AnalysisRequestStatusView[];
+}
+
+export async function shareAnalysisReport(requestId: string, payload: ShareAnalysisReportPayload): Promise<{ id: string }> {
+	const form = new FormData();
+	form.set('file', new Blob([payload.pdfBytes], { type: 'application/pdf' }), payload.filename);
+	form.set('title', payload.title);
+	form.set('filename', payload.filename);
+	form.set('analysis_type', payload.analysisType);
+	form.set('generated_at', payload.generatedAt);
+	form.set('source_system_id', payload.sourceSystemId);
+	form.set('source_system_name', payload.sourceSystemName);
+	form.set('design_system_id', payload.designSystemId);
+	form.set('design_system_name', payload.designSystemName);
+	if (payload.message) form.set('message', payload.message);
+
+	const response = await fetch(`${getAnalysisRequestApiBaseUrl()}/api/analysis-requests/${encodeURIComponent(requestId)}/reports`, {
+		method: 'POST',
+		body: form
+	});
+
+	if (!response.ok) {
+		throw new Error(await readErrorMessage(response));
+	}
+
+	return (await response.json()) as { id: string };
 }

@@ -53,7 +53,7 @@ export function downloadTorsionalAnalysisPdf(result: TorsionalAnalysisResult, op
 	const url = URL.createObjectURL(blob);
 	const link = document.createElement('a');
 	link.href = url;
-	link.download = options.filename || defaultFilename(options.systemName || result.sourceSystemName);
+	link.download = options.filename || defaultTorsionalAnalysisFilename(options.systemName || result.sourceSystemName);
 	document.body.appendChild(link);
 	link.click();
 	link.remove();
@@ -336,7 +336,7 @@ function formatMetadata(metadata?: MetadataPair[]): string {
 		.join(' | ');
 }
 
-function defaultFilename(systemName?: string) {
+export function defaultTorsionalAnalysisFilename(systemName?: string) {
 	const prefix = clean(systemName || 'design-stage')
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, '-')

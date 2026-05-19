@@ -13,6 +13,7 @@ import {
     type ItemDefinition,
     type PackageTemplate,
     type ConnectorType,
+    type AnalysisReportRecord,
 } from '../types/types';
 import {    
     type Node,
@@ -66,6 +67,7 @@ export const customDataTypes = persistentStore<string[]>('customDataTypes', []);
 export const customVSSoVariables = persistentStore<string[]>('customVSSoVariables', []);
 
 export const systems = persistentStore<SystemType[]>('systems', []);
+export const analysisReports = persistentStore<AnalysisReportRecord[]>('analysisReports', []);
 
 export const templates = persistentStore<ConceptTemplate[]>('conceptTemplates', []);
 
@@ -99,6 +101,9 @@ export const saveCurrentSystem = () => {
         itemDefinitions: get(currentItemDefinitions),
         packages: get(currentPackages),
         parentSystemId: currentSystem?.parentSystemId || null,
+        sourceConceptSystemId: currentSystem?.sourceConceptSystemId || null,
+        sourceConceptSystemName: currentSystem?.sourceConceptSystemName || null,
+        sourceAnalysisRequestIds: currentSystem?.sourceAnalysisRequestIds || [],
         stage: currentSystem?.stage || 'design',
     });
 }
@@ -136,6 +141,13 @@ export const setCurrentSystem = (id: string) => {
 export const convertToDesign = (fmuBindingsBySourceNodeId: Record<string, ConceptFmuBinding> = {}) => {
 
     // Get the root context
+    const sourceConceptSystemId = get(currentSystemMeta).id;
+    const sourceConceptSystemName = get(currentSystemMeta).name;
+    const sourceAnalysisRequestIds = Array.from(new Set(
+        Object.values(fmuBindingsBySourceNodeId)
+            .map(binding => binding.requestId)
+            .filter((requestId): requestId is string => Boolean(requestId))
+    ));
     const stack = get(packageViewStack);
     const rootLevel = stack.length > 0 ? stack[0] : null;
     const rootNodes = rootLevel ? rootLevel.nodes : get(currentNodes);
@@ -157,13 +169,37 @@ export const convertToDesign = (fmuBindingsBySourceNodeId: Record<string, Concep
         partDefinitions: [],
         itemDefinitions: [],
         packages: [],
+        sourceConceptSystemId,
+        sourceConceptSystemName,
+        sourceAnalysisRequestIds,
         stage: 'design'
     }
 
     saveSystem(designRootSystem);
     componentLinks.update(links => ({ ...links, ...converted.componentLinks }));
     mergeBoundFmiComponents(fmuBindingsBySourceNodeId, converted.componentLinks);
+    return newRootId;
 };
+
+export const upsertAnalysisReport = (report: AnalysisReportRecord) => {
+    analysisReports.update((reports) => {
+        const next = [report, ...reports.filter((item) => item.id !== report.id)];
+        return next.slice(0, 20);
+    });
+}
+
+export const markAnalysisReportShared = (reportId: string, requestIds: string[]) => {
+    analysisReports.update((reports) => reports.map((report) => {
+        if (report.id !== reportId) return report;
+        const existingIds = new Set(report.sharedRequestIds ?? []);
+        for (const id of requestIds) existingIds.add(id);
+        return {
+            ...report,
+            sharedRequestIds: Array.from(existingIds),
+            sharedAt: new Date().toISOString()
+        };
+    }));
+}
 
 const recursiveSystemBuilder = (
     nodes: Node[],

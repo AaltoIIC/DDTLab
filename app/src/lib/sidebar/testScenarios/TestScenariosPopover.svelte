@@ -1,6 +1,8 @@
   <script lang="ts">
-      import { downloadTorsionalAnalysisPdf } from '$lib/analysis/torsionalAnalysisReportPdf';
-      import { currentEdges, currentNodes, componentLinks, fmiComponents, systems, currentSystemMeta } from '$lib/stores/stores.svelte';
+      import { bytesToBase64 } from '$lib/analysis/analysisReportFiles';
+      import { buildTorsionalAnalysisPdf, defaultTorsionalAnalysisFilename, downloadTorsionalAnalysisPdf } from '$lib/analysis/torsionalAnalysisReportPdf';
+      import { currentEdges, currentNodes, componentLinks, fmiComponents, systems, currentSystemMeta, upsertAnalysisReport } from '$lib/stores/stores.svelte';
+      import type { AnalysisReportRecord } from '$lib/types/types';
 
       interface Props {
           onclose: () => void;
@@ -83,11 +85,12 @@
           analysisError = '';
           analysisResult = null;
           try {
+              const analysisNodes = collectAnalysisNodes();
               const response = await fetch('/api/analysis/torsional-vibration', {
                   method: 'POST',
                   headers: { 'content-type': 'application/json' },
                   body: JSON.stringify({
-                      nodes: collectAnalysisNodes(),
+                      nodes: analysisNodes,
                       edges: $currentEdges.map(edge => ({
                           id: edge.id,
                           source: edge.source,
@@ -106,6 +109,7 @@
                   generatedAt: new Date().toISOString(),
                   sourceSystemName: $currentSystemMeta.name || 'Design Stage'
               };
+              saveCompletedAnalysisReport(analysisResult, analysisNodes);
           } catch (error) {
               analysisError = error instanceof Error ? error.message : 'Torsional vibration analysis failed';
           } finally {
@@ -123,6 +127,46 @@
           } catch (error) {
               analysisError = error instanceof Error ? error.message : 'Failed to generate PDF report';
           }
+      }
+
+      function saveCompletedAnalysisReport(result: any, analysisNodes: any[]) {
+          const designSystem = $systems.find(system => system.id === $currentSystemMeta.id);
+          const sourceConceptSystemId = designSystem?.sourceConceptSystemId || designSystem?.parentSystemId || '';
+          if (!sourceConceptSystemId || designSystem?.stage !== 'design') return;
+
+          const sourceConceptSystemName = designSystem.sourceConceptSystemName || $systems.find(system => system.id === sourceConceptSystemId)?.name || 'Concept Stage';
+          const generatedAt = result.generatedAt || new Date().toISOString();
+          const filename = defaultTorsionalAnalysisFilename($currentSystemMeta.name || 'design-stage');
+          const pdfBytes = buildTorsionalAnalysisPdf(result, {
+              systemName: $currentSystemMeta.name || 'Design Stage',
+              generatedAt,
+              filename
+          });
+          const report: AnalysisReportRecord = {
+              id: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              analysisType: 'torsional_vibration',
+              title: 'Torsional Vibration Analysis',
+              summary: String(result.summary || 'Computed torsional vibration analysis.'),
+              engine: String(result.engine || 'OpenTorsion'),
+              filename,
+              pdfBase64: bytesToBase64(pdfBytes),
+              fileSizeBytes: pdfBytes.byteLength,
+              generatedAt,
+              sourceConceptSystemId,
+              sourceConceptSystemName,
+              designSystemId: $currentSystemMeta.id,
+              designSystemName: $currentSystemMeta.name || 'Design Stage',
+              requestIds: uniqueStrings([...(designSystem.sourceAnalysisRequestIds ?? []), ...analysisNodes.map(node => node.requestId)]),
+              oemNames: uniqueStrings(analysisNodes.map(node => node.oemName)),
+              oemShortCodes: uniqueStrings(analysisNodes.map(node => node.oemShortCode)),
+              sharedRequestIds: [],
+              sharedAt: null
+          };
+          upsertAnalysisReport(report);
+      }
+
+      function uniqueStrings(values: unknown[]): string[] {
+          return Array.from(new Set(values.filter((value): value is string => typeof value === 'string' && value.trim().length > 0).map(value => value.trim())));
       }
 
       function collectAnalysisNodes(nodes?: any[], seenSubsystems = new Set<string>()): any[] {
@@ -153,7 +197,9 @@
                   fmuName: fmu?.name || element?.fmiBinding?.fmuName || '',
                   oemName: fmu?.oemName || element?.fmiBinding?.oemName || '',
                   oemShortCode: fmu?.oemShortCode || element?.fmiBinding?.oemShortCode || '',
-                  partName: element?.fmiBinding?.partName || ''
+                  partName: element?.fmiBinding?.partName || '',
+                  requestId: element?.fmiBinding?.requestId || '',
+                  responseId: element?.fmiBinding?.responseId || ''
               });
           }
           return collected;

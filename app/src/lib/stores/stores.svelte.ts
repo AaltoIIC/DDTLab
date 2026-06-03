@@ -14,6 +14,9 @@ import {
     type PackageTemplate,
     type ConnectorType,
     type AnalysisReportRecord,
+    type TemplateSimulationResultRecord,
+    type TemplateSimulationSeries,
+    type TemplateSimulationSimpleVariable,
 } from '../types/types';
 import {    
     type Node,
@@ -68,6 +71,7 @@ export const customVSSoVariables = persistentStore<string[]>('customVSSoVariable
 
 export const systems = persistentStore<SystemType[]>('systems', []);
 export const analysisReports = persistentStore<AnalysisReportRecord[]>('analysisReports', []);
+export const templateSimulationResults = persistentStore<TemplateSimulationResultRecord[]>('templateSimulationResults', []);
 
 export const templates = persistentStore<ConceptTemplate[]>('conceptTemplates', []);
 
@@ -186,6 +190,137 @@ export const upsertAnalysisReport = (report: AnalysisReportRecord) => {
         const next = [report, ...reports.filter((item) => item.id !== report.id)];
         return next.slice(0, 20);
     });
+}
+
+export const upsertTemplateSimulationResult = (record: TemplateSimulationResultRecord) => {
+    templateSimulationResults.update((results) => {
+        const existing = results.find((item) => item.id === record.id || item.jobId === record.jobId);
+        const merged: TemplateSimulationResultRecord = {
+            ...existing,
+            ...record,
+            createdAt: existing?.createdAt || record.createdAt,
+            series: mergeTemplateSimulationSeries(existing?.series || [], record.series || [])
+        };
+        const next = [merged, ...results.filter((item) => item.id !== merged.id && item.jobId !== merged.jobId)];
+        return next.slice(0, 20);
+    });
+}
+
+export const toTemplateSimulationResultRecord = (
+    payload: Record<string, any>,
+    designSystemId: string,
+    designSystemName: string,
+    existing?: TemplateSimulationResultRecord | null
+): TemplateSimulationResultRecord => {
+    const now = new Date().toISOString();
+    const jobId = String(payload.jobId || existing?.jobId || '');
+    const existingIds = get(templateSimulationResults).map((result) => result.id);
+
+    return {
+        id: String(payload.id || existing?.id || jobId || generateId(existingIds)),
+        jobId,
+        status: String(payload.status || existing?.status || 'UNKNOWN'),
+        message: stringOrUndefined(payload.message) ?? existing?.message,
+        launcherStatus: stringOrUndefined(payload.launcherStatus) ?? existing?.launcherStatus,
+        modelId: stringOrUndefined(payload.modelId) ?? existing?.modelId,
+        modelUrl: stringOrUndefined(payload.modelUrl) ?? existing?.modelUrl,
+        resultFile: stringOrUndefined(payload.resultFile) ?? existing?.resultFile,
+        files: normalizeStringArray(payload.files, existing?.files),
+        hdf5Files: normalizeStringArray(payload.hdf5Files, existing?.hdf5Files),
+        variables: normalizeStringArray(payload.variables, existing?.variables),
+        simpleVariables: normalizeSimpleVariables(payload.simpleVariables, existing?.simpleVariables),
+        variablesByFile: normalizeVariablesByFile(payload.variablesByFile) ?? existing?.variablesByFile,
+        series: normalizeTemplateSeries(payload.series, existing?.series),
+        createdAt: String(payload.createdAt || existing?.createdAt || now),
+        updatedAt: String(payload.updatedAt || now),
+        designSystemId,
+        designSystemName
+    };
+}
+
+const mergeTemplateSimulationSeries = (
+    existingSeries: TemplateSimulationSeries[],
+    incomingSeries: TemplateSimulationSeries[]
+): TemplateSimulationSeries[] => {
+    const merged = new Map<string, TemplateSimulationSeries>();
+    for (const series of existingSeries) {
+        merged.set(templateSeriesKey(series), series);
+    }
+    for (const series of incomingSeries) {
+        merged.set(templateSeriesKey(series), series);
+    }
+    return Array.from(merged.values());
+}
+
+const templateSeriesKey = (series: TemplateSimulationSeries) => {
+    return String(series.id || series.name || Math.random());
+}
+
+const normalizeStringArray = (value: unknown, fallback: string[] = []): string[] => {
+    if (!Array.isArray(value)) return fallback;
+    return value.map((item) => String(item));
+}
+
+const normalizeSimpleVariables = (
+    value: unknown,
+    fallback: TemplateSimulationSimpleVariable[] = []
+): TemplateSimulationSimpleVariable[] => {
+    if (!Array.isArray(value)) return fallback;
+    return value
+        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+        .map((item) => ({
+            ...item,
+            id: String(item.id || item.name || ''),
+            name: String(item.name || item.id || ''),
+            type: item.type ? String(item.type) : undefined
+        }))
+        .filter((item) => item.id.length > 0);
+}
+
+const normalizeVariablesByFile = (value: unknown): Record<string, string[]> | undefined => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    return Object.fromEntries(
+        Object.entries(value as Record<string, unknown>).map(([file, variables]) => [
+            file,
+            normalizeStringArray(variables)
+        ])
+    );
+}
+
+const normalizeTemplateSeries = (
+    value: unknown,
+    fallback: TemplateSimulationSeries[] = []
+): TemplateSimulationSeries[] => {
+    if (!Array.isArray(value)) return fallback;
+    return value
+        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+        .map((item) => ({
+            id: stringOrUndefined(item.id),
+            name: stringOrUndefined(item.name),
+            type: stringOrUndefined(item.type),
+            t: normalizeNumberArray(item.t),
+            value: normalizeNumberArray(item.value),
+            first: numberOrNull(item.first),
+            last: numberOrNull(item.last),
+            min: numberOrNull(item.min),
+            max: numberOrNull(item.max)
+        }));
+}
+
+const normalizeNumberArray = (value: unknown): number[] => {
+    if (!Array.isArray(value)) return [];
+    return value
+        .map((item) => Number(item))
+        .filter((item) => Number.isFinite(item));
+}
+
+const stringOrUndefined = (value: unknown): string | undefined => {
+    return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+const numberOrNull = (value: unknown): number | null => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
 }
 
 export const markAnalysisReportShared = (reportId: string, requestIds: string[]) => {
@@ -379,6 +514,7 @@ const recursiveSystemBuilder = (
                         type: 'system',
                         VSSoClass: null,
                         connectors: connectors,
+                        metadata: Array.isArray(node.data?.metadata) ? _.cloneDeep(node.data.metadata) : [],
                         subsystemId: newSubsystemId,
                         hasSubsystems: true,
                     }

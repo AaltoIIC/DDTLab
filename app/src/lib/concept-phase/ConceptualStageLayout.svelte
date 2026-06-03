@@ -1,5 +1,6 @@
 <script lang="ts">
     import { createBubbler, stopPropagation } from 'svelte/legacy';
+    import { goto } from '$app/navigation';
 
     const bubble = createBubbler();
     import ConceptualStageEditor from './ConceptualStageEditor.svelte';
@@ -56,6 +57,7 @@
     let analysisStatusSystemId = $state('');
     let sharingReportId = $state('');
     let shareReportError = $state('');
+    let isConvertingToDesign = $state(false);
 
     type AnalysisPartTracking = AnalysisRequestStatusView['parts'][number] & {
         request_id: string;
@@ -361,9 +363,22 @@
             return;
         }
 
-        convertConceptToDesign(analysisStatuses.length ? fmuBindingsFromStatuses(analysisStatuses) : {});
-        if (analysisAggregate.complete) {
-            showNotification('Design stage created with OEM FMU links', 'success');
+        isConvertingToDesign = true;
+        setTimeout(() => {
+            isConvertingToDesign = false;
+        }, 500);
+
+        try {
+            const designSystemId = convertConceptToDesign(analysisStatuses.length ? fmuBindingsFromStatuses(analysisStatuses) : {});
+            if (analysisAggregate.complete) {
+                showNotification('Design stage created with OEM FMU links', 'success');
+            }
+            setTimeout(() => {
+                goto(`/editor/${designSystemId}`);
+            }, 160);
+        } catch (error) {
+            isConvertingToDesign = false;
+            showNotification(error instanceof Error ? error.message : 'Failed to convert concept to design', 'error');
         }
     }
 
@@ -733,9 +748,14 @@
                     <Save size={16} />
                     Save as Template
                 </button>
-                <button class="stage-btn" class:blocked={analysisConversionBlocked} onclick={handleConvertToDesign}>
+                <button
+                    class="stage-btn"
+                    class:blocked={analysisConversionBlocked}
+                    class:flash={isConvertingToDesign}
+                    onclick={handleConvertToDesign}
+                >
                     <Repeat size={16} />
-                    Convert to Design
+                    {isConvertingToDesign ? 'Converting...' : 'Convert to Design'}
                 </button>
                 <button class="stage-btn" onclick={openAnalysisRequestDialog}>
                     <Send size={16} />
@@ -987,6 +1007,13 @@
         background: #374151;
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);       
+    }
+
+    .stage-btn.flash,
+    .stage-btn.flash:hover {
+        background: #1d4ed8;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+        transform: translateY(-1px);
     }
 
     .stage-btn.blocked {
@@ -1298,7 +1325,7 @@
         color: #991b1b;
         border: 1px solid #fecaca;
     }
-    
+
     @keyframes slideIn {
         from {
             transform: translateX(100%);

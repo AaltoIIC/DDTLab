@@ -47,10 +47,7 @@ export function instantiateSimpleComponent(
     position,
     width: packageWidth,
     height: packageHeight,
-    style: {
-      width: packageWidth,
-      height: packageHeight
-    },
+    style: `width: ${packageWidth}px; height: ${packageHeight}px;`,
     data: {
       ...component.data,
       id: generateUniqueId(component.data.id),

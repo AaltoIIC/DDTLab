@@ -25,12 +25,14 @@
     import Tooltip from "$lib/Tooltip.svelte";
     import type { SubsystemDataType } from "$lib/types/types";
     import JSZip from 'jszip';  
+    import SimulationResultsPopover from './results/SimulationResultsPopover.svelte';
 
     let isReqsOpen = $state(false);
     let isAddDropdownOpen = $state(false);
     let isDownloadDropdownOpen = $state(false);
     let isUploadDropdownOpen = $state(false);
     let isTestScenariosOpen = $state(false);
+    let isResultsOpen = $state(false);
     let isFMIOpen = $state(false);
 
     let ttlFileInput: HTMLInputElement;
@@ -402,6 +404,14 @@
             </svg>
             </button>
         </Tooltip>
+        <Tooltip text="Simulation Results" position="right">
+            <button class="menu-option" aria-label="Simulation Results"
+                onclick={() => {isResultsOpen = !isResultsOpen}}>
+                <svg class="option-icon results {isResultsOpen ? 'active' : ''}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 19.5h16.5M5.25 16.5l3.75-4.5 3 2.25 5.25-7.5M6.75 7.5h.008M10.5 7.5h.008M14.25 7.5h.008" />
+                </svg>
+            </button>
+        </Tooltip>
         <Tooltip text="FMI Components" position="right">
             <button class="menu-option" aria-label="FMI Components"
                 onclick={() => {isFMIOpen = !isFMIOpen}}>
@@ -481,6 +491,7 @@
   {#if isTestScenariosOpen}
       <TestScenariosPopover onclose={() => isTestScenariosOpen = false} />
   {/if}
+<SimulationResultsPopover bind:isOpen={isResultsOpen} />
 <FMIComponentsPopover bind:isOpen={isFMIOpen} />
 <style>
     .main-sidebar {
@@ -560,6 +571,9 @@
     }
     .option-icon.req.active {
         stroke-width: 1.5;
+    }
+    .option-icon.results.active {
+        stroke-width: 1.8;
     }
     .bottom-buttons .option-icon {
         color: rgba(255, 255, 255, 0.9);

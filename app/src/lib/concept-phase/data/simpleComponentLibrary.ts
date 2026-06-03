@@ -460,26 +460,54 @@ export const basicPowertrain: SimpleComponent = {
   }
 };
 
-// Minimal three-component drivetrain for the OpenTorsion demo
+// Minimal drive, motor, shaft, and propeller drivetrain for the OpenTorsion demo
 export const motorShaftPropellerDemo: SimpleComponent = {
   id: 'motor-shaft-propeller-demo',
   name: 'Simple Electric Propulsion Train',
   type: 'package',
   data: {
     declaredName: 'Simple Electric Propulsion Train',
-    comment: 'Three-component motor, shaft, and propeller model for torsional vibration analysis',
+    comment: 'Drive, motor, shaft, and propeller model for torsional vibration analysis',
     id: 'PKG-MOTOR-SHAFT-PROP-DEMO',
     metadata: [
-      { key: 'caseStudy', value: 'Motor Shaft Propeller Demo' },
+      { key: 'caseStudy', value: 'Drive Motor Shaft Propeller Demo' },
       { key: 'analysisType', value: 'torsional_vibration' },
-      { key: 'modelForm', value: 'motor_inertia-shaft_stiffness-propeller_inertia' }
+      { key: 'modelForm', value: 'drive_converter-motor_inertia-shaft_stiffness-propeller_inertia' }
     ],
     nodes: [
       {
+        id: 'part-propulsion-drive-demo',
+        type: 'part',
+        position: { x: 360, y: 520 },
+        measured: { width: 760, height: 420 },
+        data: {
+          declaredName: 'Propulsion Drive',
+          definition: 'Variable Frequency Drive',
+          comment: 'Power electronics driver and inverter feeding the permanent magnet motor',
+          id: 'PRT-PROPULSION-DRIVE-DEMO-001',
+          mass: 900,
+          metadata: [
+            { key: 'preferredOEM', value: 'ABB' },
+            { key: 'ratedPower', value: '1000kW' },
+            { key: 'dcLinkVoltage', value: '900V' },
+            { key: 'outputVoltage', value: '690VAC' },
+            { key: 'outputFrequencyRange', value: '0-80Hz' },
+            { key: 'controlMode', value: 'vector_control' },
+            { key: 'efficiency', value: '98%' }
+          ],
+          inputs: [],
+          outputs: [{
+            id: 'port-ac-power-out',
+            name: 'ac_power',
+            interfaceType: 'electrical'
+          }]
+        }
+      },
+      {
         id: 'part-permanent-magnet-motor',
         type: 'part',
-        position: { x: 360, y: 440 },
-        measured: { width: 600, height: 360 },
+        position: { x: 1260, y: 520 },
+        measured: { width: 760, height: 420 },
         data: {
           declaredName: 'Permanent Magnet Motor',
           definition: 'Permanent Magnet Motor',
@@ -509,8 +537,8 @@ export const motorShaftPropellerDemo: SimpleComponent = {
       {
         id: 'part-propeller-shaft-demo',
         type: 'part',
-        position: { x: 1240, y: 440 },
-        measured: { width: 600, height: 360 },
+        position: { x: 2120, y: 520 },
+        measured: { width: 760, height: 420 },
         data: {
           declaredName: 'Propeller Shaft',
           definition: 'Marine Propeller Shaft',
@@ -539,8 +567,8 @@ export const motorShaftPropellerDemo: SimpleComponent = {
       {
         id: 'part-fixed-pitch-propeller-demo',
         type: 'part',
-        position: { x: 2120, y: 440 },
-        measured: { width: 600, height: 360 },
+        position: { x: 2980, y: 520 },
+        measured: { width: 760, height: 420 },
         data: {
           declaredName: 'Fixed Pitch Propeller',
           definition: 'Fixed Pitch Propeller',
@@ -569,6 +597,18 @@ export const motorShaftPropellerDemo: SimpleComponent = {
     ],
     edges: [
       {
+        id: 'edge-demo-drive-motor',
+        source: 'part-propulsion-drive-demo',
+        target: 'part-permanent-magnet-motor',
+        sourceHandle: 'part-propulsion-drive-demo-output-ac_power',
+        targetHandle: 'part-permanent-magnet-motor-input-ac_power',
+        type: 'default',
+        data: {
+          compatibility: 'direct',
+          connectionType: 'flow'
+        }
+      },
+      {
         id: 'edge-demo-motor-shaft',
         source: 'part-permanent-magnet-motor',
         target: 'part-propeller-shaft-demo',
@@ -591,6 +631,249 @@ export const motorShaftPropellerDemo: SimpleComponent = {
           compatibility: 'direct',
           connectionType: 'flow'
         }
+      }
+    ],
+    inputs: [],
+    outputs: []
+  }
+};
+
+// Exact concept-stage representation of python-client/templates/model.ssp.
+// The design-stage cloud runner uses the templateSimulation metadata to run the repo SSP.
+export const simanticsSspCloudTemplate: SimpleComponent = {
+  id: 'simantics-ssp-cloud-template',
+  name: 'Motor System',
+  type: 'package',
+  data: {
+    declaredName: 'Motor System',
+    comment: 'Motor system example mapped to python-client/templates/model.ssp and test.scl',
+    id: 'PKG-SIMANTICS-SSP-CLOUD-TEMPLATE',
+    metadata: [
+      { key: 'templateSimulation', value: 'simantics-ssp-cloud-template' },
+      { key: 'sspTemplateModel', value: 'python-client/templates/model.ssp' },
+      { key: 'sspTemplateScript', value: 'python-client/templates/test.scl' },
+      { key: 'sspSystemStructure', value: 'Demo/Root' },
+      { key: 'analysisType', value: 'cloud_ssp_simulation' },
+      { key: 'productName', value: 'Simantics SSP Studio' },
+      { key: 'productVersion', value: '0.0.7' }
+    ],
+    nodes: [
+      {
+        id: 'ssp-trapezoid-command',
+        type: 'part',
+        position: { x: 80, y: 160 },
+        measured: { width: 600, height: 360 },
+        data: {
+          declaredName: 'Modelica_Blocks_Sources_Trapezoid',
+          definition: 'Modelica Trapezoid Source FMU',
+          comment: 'Speed command source from the template SSP',
+          id: 'PRT-SSP-TRAPEZOID-001',
+          mass: 0,
+          metadata: [
+            { key: 'sspComponentName', value: 'Modelica_Blocks_Sources_Trapezoid' },
+            { key: 'fmuSource', value: 'resources/0001_replaceModelica_Blocks_Sources_Trapezoid.fmu' },
+            { key: 'amplitude', value: '60' },
+            { key: 'period', value: '120s' },
+            { key: 'rising', value: '10s' },
+            { key: 'width', value: '30s' },
+            { key: 'startTime', value: '0s' }
+          ],
+          inputs: [],
+          outputs: [{ id: 'port-y', name: 'y', interfaceType: 'signal' }]
+        }
+      },
+      {
+        id: 'ssp-vf-controller',
+        type: 'part',
+        position: { x: 600, y: 160 },
+        measured: { width: 600, height: 360 },
+        data: {
+          declaredName: 'Codes_VfController',
+          definition: 'V/f Controller FMU',
+          comment: 'Controller FMU receiving the trapezoid command',
+          id: 'PRT-SSP-VF-CONTROLLER-001',
+          mass: 0,
+          metadata: [
+            { key: 'sspComponentName', value: 'Codes_VfController' },
+            { key: 'fmuSource', value: 'resources/0002_replaceCodes_VfController.fmu' },
+            { key: 'VNominal', value: '4000V' },
+            { key: 'fNominal', value: '60Hz' }
+          ],
+          inputs: [{ id: 'port-u', name: 'u', interfaceType: 'signal' }],
+          outputs: [
+            { id: 'port-y1', name: 'y[1]', interfaceType: 'electrical' },
+            { id: 'port-y2', name: 'y[2]', interfaceType: 'electrical' }
+          ]
+        }
+      },
+      {
+        id: 'ssp-motor-flexible-shaft',
+        type: 'part',
+        position: { x: 1120, y: 160 },
+        measured: { width: 600, height: 360 },
+        data: {
+          declaredName: 'Codes_MotorWithFlexibleShaft2_FMU',
+          definition: 'Motor With Flexible Shaft FMU',
+          comment: 'Motor FMU from the template SSP',
+          id: 'PRT-SSP-MOTOR-FLEX-SHAFT-001',
+          mass: 0,
+          metadata: [
+            { key: 'sspComponentName', value: 'Codes_MotorWithFlexibleShaft2_FMU' },
+            { key: 'fmuSource', value: 'resources/0003_replaceCodes_MotorWithFlexibleShaft2_FMU.fmu' },
+            { key: 'motor.J1', value: '52.5kg.m2' },
+            { key: 'motor.J2', value: '1.5kg.m2' },
+            { key: 'motor.k12', value: '3400000N.m/rad' },
+            { key: 'motor.Rs', value: '0.24141V/A' },
+            { key: 'motor.Rr', value: '0.28808V/A' }
+          ],
+          inputs: [
+            { id: 'port-us1', name: 'us[1]', interfaceType: 'electrical' },
+            { id: 'port-us2', name: 'us[2]', interfaceType: 'electrical' },
+            { id: 'port-w', name: 'w', interfaceType: 'mechanical' },
+            { id: 'port-a', name: 'a', interfaceType: 'mechanical' }
+          ],
+          outputs: [{ id: 'port-tau', name: 'tau', interfaceType: 'mechanical' }]
+        }
+      },
+      {
+        id: 'ssp-drivetrain',
+        type: 'part',
+        position: { x: 1640, y: 160 },
+        measured: { width: 600, height: 360 },
+        data: {
+          declaredName: 'Codes_Drivetrain2_FMU',
+          definition: 'Drivetrain FMU',
+          comment: 'Compressor, coupling, and flywheel drivetrain FMU',
+          id: 'PRT-SSP-DRIVETRAIN-001',
+          mass: 0,
+          metadata: [
+            { key: 'sspComponentName', value: 'Codes_Drivetrain2_FMU' },
+            { key: 'fmuSource', value: 'resources/0004_replaceCodes_Drivetrain2_FMU.fmu' },
+            { key: 'Compressor.k', value: '8400000' },
+            { key: 'Coupling.k', value: '47000' },
+            { key: 'Coupling.c', value: '11000' },
+            { key: 'Flywheel.k', value: '7600000' }
+          ],
+          inputs: [
+            { id: 'port-tau-in', name: 'tau_in', interfaceType: 'mechanical' },
+            { id: 'port-w-out-in', name: 'w_out', interfaceType: 'mechanical' },
+            { id: 'port-a-out-in', name: 'a_out', interfaceType: 'mechanical' }
+          ],
+          outputs: [
+            { id: 'port-w-in-out', name: 'w_in', interfaceType: 'mechanical' },
+            { id: 'port-tau-out', name: 'tau_out', interfaceType: 'mechanical' },
+            { id: 'port-a-in-out', name: 'a_in', interfaceType: 'mechanical' }
+          ]
+        }
+      },
+      {
+        id: 'ssp-load',
+        type: 'part',
+        position: { x: 2160, y: 160 },
+        measured: { width: 600, height: 360 },
+        data: {
+          declaredName: 'Codes_Load2_FMU',
+          definition: 'Load FMU',
+          comment: 'Template load FMU',
+          id: 'PRT-SSP-LOAD-001',
+          mass: 0,
+          metadata: [
+            { key: 'sspComponentName', value: 'Codes_Load2_FMU' },
+            { key: 'fmuSource', value: 'resources/0005_replaceCodes_Load2_FMU.fmu' },
+            { key: 'load.J', value: '40' },
+            { key: 'load.K1', value: '0' },
+            { key: 'load.K2', value: '200' },
+            { key: 'load.T', value: '0' }
+          ],
+          inputs: [{ id: 'port-tau', name: 'tau', interfaceType: 'mechanical' }],
+          outputs: [
+            { id: 'port-w', name: 'w', interfaceType: 'mechanical' },
+            { id: 'port-a', name: 'a', interfaceType: 'mechanical' }
+          ]
+        }
+      }
+    ],
+    edges: [
+      {
+        id: 'edge-ssp-trapezoid-controller',
+        source: 'ssp-trapezoid-command',
+        target: 'ssp-vf-controller',
+        sourceHandle: 'ssp-trapezoid-command-output-y',
+        targetHandle: 'ssp-vf-controller-input-u',
+        type: 'default',
+        data: { compatibility: 'direct', connectionType: 'flow' }
+      },
+      {
+        id: 'edge-ssp-controller-motor-us1',
+        source: 'ssp-vf-controller',
+        target: 'ssp-motor-flexible-shaft',
+        sourceHandle: 'ssp-vf-controller-output-y[1]',
+        targetHandle: 'ssp-motor-flexible-shaft-input-us[1]',
+        type: 'default',
+        data: { compatibility: 'direct', connectionType: 'flow' }
+      },
+      {
+        id: 'edge-ssp-controller-motor-us2',
+        source: 'ssp-vf-controller',
+        target: 'ssp-motor-flexible-shaft',
+        sourceHandle: 'ssp-vf-controller-output-y[2]',
+        targetHandle: 'ssp-motor-flexible-shaft-input-us[2]',
+        type: 'default',
+        data: { compatibility: 'direct', connectionType: 'flow' }
+      },
+      {
+        id: 'edge-ssp-motor-drivetrain-tau',
+        source: 'ssp-motor-flexible-shaft',
+        target: 'ssp-drivetrain',
+        sourceHandle: 'ssp-motor-flexible-shaft-output-tau',
+        targetHandle: 'ssp-drivetrain-input-tau_in',
+        type: 'default',
+        data: { compatibility: 'direct', connectionType: 'flow' }
+      },
+      {
+        id: 'edge-ssp-drivetrain-motor-w',
+        source: 'ssp-drivetrain',
+        target: 'ssp-motor-flexible-shaft',
+        sourceHandle: 'ssp-drivetrain-output-w_in',
+        targetHandle: 'ssp-motor-flexible-shaft-input-w',
+        type: 'default',
+        data: { compatibility: 'direct', connectionType: 'flow' }
+      },
+      {
+        id: 'edge-ssp-drivetrain-motor-a',
+        source: 'ssp-drivetrain',
+        target: 'ssp-motor-flexible-shaft',
+        sourceHandle: 'ssp-drivetrain-output-a_in',
+        targetHandle: 'ssp-motor-flexible-shaft-input-a',
+        type: 'default',
+        data: { compatibility: 'direct', connectionType: 'flow' }
+      },
+      {
+        id: 'edge-ssp-drivetrain-load-tau',
+        source: 'ssp-drivetrain',
+        target: 'ssp-load',
+        sourceHandle: 'ssp-drivetrain-output-tau_out',
+        targetHandle: 'ssp-load-input-tau',
+        type: 'default',
+        data: { compatibility: 'direct', connectionType: 'flow' }
+      },
+      {
+        id: 'edge-ssp-load-drivetrain-w',
+        source: 'ssp-load',
+        target: 'ssp-drivetrain',
+        sourceHandle: 'ssp-load-output-w',
+        targetHandle: 'ssp-drivetrain-input-w_out',
+        type: 'default',
+        data: { compatibility: 'direct', connectionType: 'flow' }
+      },
+      {
+        id: 'edge-ssp-load-drivetrain-a',
+        source: 'ssp-load',
+        target: 'ssp-drivetrain',
+        sourceHandle: 'ssp-load-output-a',
+        targetHandle: 'ssp-drivetrain-input-a_out',
+        type: 'default',
+        data: { compatibility: 'direct', connectionType: 'flow' }
       }
     ],
     inputs: [],

@@ -1,7 +1,18 @@
   <script lang="ts">
+      import { onDestroy } from 'svelte';
       import { bytesToBase64 } from '$lib/analysis/analysisReportFiles';
       import { buildTorsionalAnalysisPdf, defaultTorsionalAnalysisFilename, downloadTorsionalAnalysisPdf } from '$lib/analysis/torsionalAnalysisReportPdf';
-      import { currentEdges, currentNodes, componentLinks, fmiComponents, systems, currentSystemMeta, upsertAnalysisReport } from '$lib/stores/stores.svelte';
+      import {
+          currentEdges,
+          currentNodes,
+          componentLinks,
+          fmiComponents,
+          systems,
+          currentSystemMeta,
+          upsertAnalysisReport,
+          toTemplateSimulationResultRecord,
+          upsertTemplateSimulationResult
+      } from '$lib/stores/stores.svelte';
       import type { AnalysisReportRecord } from '$lib/types/types';
 
       interface Props {
@@ -17,6 +28,12 @@
       let isRunningAnalysis = $state(false);
       let analysisError = $state('');
       let analysisResult = $state<any>(null);
+      let isRunningTemplateSimulation = $state(false);
+      let templateSimulationError = $state('');
+      let templateSimulationResult = $state<any>(null);
+      let templateSimulationPoll: ReturnType<typeof setInterval> | undefined;
+      let templateSimulationDesignContext = $state<{ id: string; name: string } | null>(null);
+      const templateSimulationId = 'simantics-ssp-cloud-template';
 
       // Mock data for standard test scenarios
       const standardTestCategories = [
@@ -24,6 +41,7 @@
               name: "Mechanical Tests",
               tests: [
                   { id: "torsional-vibration", name: "Torsional Vibration Analysis", description: "OpenTorsion modal analysis of the linked propulsion drivetrain" },
+                  { id: "ssp-template-cloud", name: "SSP Template Cloud Simulation", description: "Runs the fixed python-client template SSP on the Simantics cloud launcher" },
                   { id: "vib-2", name: "Shock Test (IEC 60068-2-27)", description: "Mechanical shock resistance test" },
                   { id: "vib-3", name: "Random Vibration (MIL-STD-810)", description: "Environmental vibration testing" }
               ]
@@ -73,11 +91,16 @@
 
       async function applySelectedTests() {
           analysisError = '';
+          templateSimulationError = '';
+          if (selectedStandardTests.has('ssp-template-cloud')) {
+              await runTemplateSimulation();
+              return;
+          }
           if (selectedStandardTests.has('torsional-vibration')) {
               await runTorsionalVibrationAnalysis();
               return;
           }
-          analysisError = 'Select Torsional Vibration Analysis to run the demo analysis.';
+          analysisError = 'Select a runnable test scenario.';
       }
 
       async function runTorsionalVibrationAnalysis() {
@@ -115,6 +138,127 @@
           } finally {
               isRunningAnalysis = false;
           }
+      }
+
+      async function runTemplateSimulation() {
+          isRunningTemplateSimulation = true;
+          templateSimulationError = '';
+          templateSimulationResult = null;
+          clearTemplateSimulationPoll();
+
+          try {
+              if (!hasTemplateSimulationBinding()) {
+                  templateSimulationError = 'This design model is not linked to python-client/templates/model.ssp. Start from the Motor System example in the concept library, then convert to design.';
+                  return;
+              }
+
+              templateSimulationDesignContext = {
+                  id: $currentSystemMeta.id,
+                  name: $currentSystemMeta.name || 'Design Stage'
+              };
+
+              const response = await fetch('/api/simulation/template-run', { method: 'POST' });
+              const body = await response.json();
+              if (!response.ok || body.ok === false) {
+                  throw new Error(body.message || 'Failed to launch SSP template simulation');
+              }
+              templateSimulationResult = body;
+              saveTemplateSimulationResult(body, templateSimulationDesignContext);
+              if (body.jobId) {
+                  startTemplateSimulationPoll(body.jobId, templateSimulationDesignContext);
+              }
+          } catch (error) {
+              templateSimulationError = error instanceof Error ? error.message : 'Failed to launch SSP template simulation';
+          } finally {
+              isRunningTemplateSimulation = false;
+          }
+      }
+
+      function startTemplateSimulationPoll(jobId: string, context = templateSimulationDesignContext) {
+          clearTemplateSimulationPoll();
+          refreshTemplateSimulation(jobId, context);
+          templateSimulationPoll = setInterval(() => refreshTemplateSimulation(jobId, context), 4000);
+      }
+
+      async function refreshTemplateSimulation(jobId = templateSimulationResult?.jobId, context = templateSimulationDesignContext) {
+          if (!jobId) return;
+
+          try {
+              const response = await fetch(`/api/simulation/template-run?jobId=${encodeURIComponent(jobId)}`);
+              const body = await response.json();
+              if (!response.ok || body.ok === false) {
+                  throw new Error(body.message || 'Failed to refresh SSP template simulation');
+              }
+              templateSimulationResult = body;
+              saveTemplateSimulationResult(body, context);
+
+              if (isTemplateSimulationComplete(body)) {
+                  clearTemplateSimulationPoll();
+              }
+          } catch (error) {
+              templateSimulationError = error instanceof Error ? error.message : 'Failed to refresh SSP template simulation';
+              clearTemplateSimulationPoll();
+          }
+      }
+
+      function saveTemplateSimulationResult(body: Record<string, any>, context = templateSimulationDesignContext) {
+          if (!body?.jobId) return;
+          const designContext = context || {
+              id: $currentSystemMeta.id,
+              name: $currentSystemMeta.name || 'Design Stage'
+          };
+          upsertTemplateSimulationResult(
+              toTemplateSimulationResultRecord(body, designContext.id, designContext.name)
+          );
+      }
+
+      function clearTemplateSimulationPoll() {
+          if (templateSimulationPoll) {
+              clearInterval(templateSimulationPoll);
+              templateSimulationPoll = undefined;
+          }
+      }
+
+      function isTemplateSimulationComplete(result: any) {
+          const status = String(result?.status || '').toUpperCase();
+          return ['SUCCESS', 'ERROR', 'TERMINATED', 'RESULTS_AVAILABLE'].includes(status);
+      }
+
+      function formatListCount(values: unknown[] | undefined, singular: string) {
+          const count = Array.isArray(values) ? values.length : 0;
+          return `${count} ${singular}${count === 1 ? '' : 's'}`;
+      }
+
+      function formatMetric(value: unknown) {
+          return typeof value === 'number' && Number.isFinite(value)
+              ? value.toLocaleString(undefined, { maximumFractionDigits: Math.abs(value) >= 100 ? 1 : 3 })
+              : 'n/a';
+      }
+
+      function hasTemplateSimulationBinding(nodes = $currentNodes, seenSubsystems = new Set<string>()): boolean {
+          for (const node of nodes) {
+              const metadata = [
+                  ...(((node.data as any)?.metadata || []) as Array<{ key?: string; value?: string }>),
+                  ...((((node.data as any)?.element?.metadata || []) as Array<{ key?: string; value?: string }>))
+              ];
+
+              if (metadata.some(entry =>
+                  String(entry.key || '').toLowerCase() === 'templatesimulation' &&
+                  String(entry.value || '') === templateSimulationId
+              )) {
+                  return true;
+              }
+
+              const subsystemId = (node.data as any)?.element?.subsystemId;
+              if (subsystemId && !seenSubsystems.has(subsystemId)) {
+                  seenSubsystems.add(subsystemId);
+                  const subsystem = $systems.find(system => system.id === subsystemId);
+                  if (subsystem && hasTemplateSimulationBinding(subsystem.nodes, seenSubsystems)) {
+                      return true;
+                  }
+              }
+          }
+          return false;
       }
 
       function downloadAnalysisReport() {
@@ -204,13 +348,17 @@
           }
           return collected;
       }
+
+      onDestroy(() => {
+          clearTemplateSimulationPoll();
+      });
   </script>
 
   <div class="popover-wrapper" onclick={onclose}>
       <div class="popover-content test-scenarios-popover" onclick={(e) => e.stopPropagation()}>
           <div class="popover-header">
               <h3>Test Scenarios</h3>
-              <button class="close-button" onclick={onclose}>
+              <button class="close-button" onclick={onclose} aria-label="Close test scenarios">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -311,6 +459,75 @@
                           {/if}
                       </div>
                   {/if}
+                  {#if templateSimulationError}
+                      <div class="analysis-message error">{templateSimulationError}</div>
+                  {/if}
+                  {#if templateSimulationResult}
+                      <div class="analysis-result">
+                          <div class="analysis-result-header">
+                              <div>
+                                  <h4>SSP Template Cloud Simulation</h4>
+                                  <p>{templateSimulationResult.message || 'Template simulation job submitted.'}</p>
+                              </div>
+                              <div class="analysis-header-actions">
+                                  <span class="analysis-engine">{templateSimulationResult.status || 'PENDING'}</span>
+                                  <button class="report-btn" onclick={() => refreshTemplateSimulation()}>Refresh</button>
+                              </div>
+                          </div>
+                          <div class="analysis-grid">
+                              <div>
+                                  <span>Job</span>
+                                  <strong>{templateSimulationResult.jobId?.slice(0, 12) || 'n/a'}</strong>
+                              </div>
+                              <div>
+                                  <span>Result files</span>
+                                  <strong>{formatListCount(templateSimulationResult.files, 'file')}</strong>
+                              </div>
+                              <div>
+                                  <span>Variables</span>
+                                  <strong>{formatListCount(templateSimulationResult.variables, 'variable')}</strong>
+                              </div>
+                              <div>
+                                  <span>Series sample</span>
+                                  <strong>{formatListCount(templateSimulationResult.series, 'trace')}</strong>
+                              </div>
+                          </div>
+                          {#if templateSimulationResult.files?.length}
+                              <div class="analysis-components">
+                                  {#each templateSimulationResult.files as file}
+                                      <span>{file}</span>
+                                  {/each}
+                              </div>
+                          {/if}
+                          {#if templateSimulationResult.variables?.length}
+                              <div class="template-variable-list">
+                                  {#each templateSimulationResult.variables.slice(0, 80) as variable}
+                                      <span>{variable}</span>
+                                  {/each}
+                              </div>
+                          {/if}
+                          {#if templateSimulationResult.series?.length}
+                              <div class="template-series-table">
+                                  <div class="template-series-row head">
+                                      <span>Variable</span>
+                                      <span>First</span>
+                                      <span>Last</span>
+                                      <span>Min</span>
+                                      <span>Max</span>
+                                  </div>
+                                  {#each templateSimulationResult.series as series}
+                                      <div class="template-series-row">
+                                          <span>{series.name}</span>
+                                          <span>{formatMetric(series.first)}</span>
+                                          <span>{formatMetric(series.last)}</span>
+                                          <span>{formatMetric(series.min)}</span>
+                                          <span>{formatMetric(series.max)}</span>
+                                      </div>
+                                  {/each}
+                              </div>
+                          {/if}
+                      </div>
+                  {/if}
               {:else}
                   <div class="custom-scenarios">
                       <div class="custom-header">
@@ -371,8 +588,8 @@
 
           <div class="popover-footer">
               <button class="cancel-btn" onclick={onclose}>Cancel</button>
-              <button class="apply-btn" disabled={isRunningAnalysis} onclick={applySelectedTests}>
-                  {isRunningAnalysis ? 'Running...' : 'Run Selected'}
+              <button class="apply-btn" disabled={isRunningAnalysis || isRunningTemplateSimulation} onclick={applySelectedTests}>
+                  {isRunningAnalysis || isRunningTemplateSimulation ? 'Running...' : 'Run Selected'}
               </button>
           </div>
       </div>
@@ -647,6 +864,55 @@
           border: 1px solid rgba(0, 0, 0, 0.08);
           padding: 4px 8px;
           font-size: 12px;
+      }
+
+      .template-variable-list {
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 6px;
+          background: white;
+          display: grid;
+          gap: 4px;
+          max-height: 180px;
+          margin-top: 10px;
+          overflow-y: auto;
+          padding: 8px;
+      }
+
+      .template-variable-list span {
+          color: rgba(0, 0, 0, 0.72);
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+          font-size: 12px;
+          overflow-wrap: anywhere;
+      }
+
+      .template-series-table {
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 6px;
+          background: white;
+          margin-top: 10px;
+          overflow: hidden;
+      }
+
+      .template-series-row {
+          display: grid;
+          grid-template-columns: minmax(190px, 1fr) repeat(4, 70px);
+          gap: 8px;
+          padding: 7px 9px;
+          border-top: 1px solid rgba(0, 0, 0, 0.06);
+          font-size: 12px;
+      }
+
+      .template-series-row:first-child {
+          border-top: 0;
+      }
+
+      .template-series-row.head {
+          background: rgba(0, 0, 0, 0.03);
+          font-weight: 600;
+      }
+
+      .template-series-row span:first-child {
+          overflow-wrap: anywhere;
       }
 
       .analysis-message {

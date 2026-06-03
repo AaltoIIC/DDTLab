@@ -7,7 +7,8 @@ import {
 import {
     basicPowertrain,
     commercialVesselPowertrain,
-    motorShaftPropellerDemo
+    motorShaftPropellerDemo,
+    simanticsSspCloudTemplate
 } from './simpleComponentLibrary';
 
 export const componentCategories: ComponentCategory[] = [
@@ -22,9 +23,17 @@ export const componentCategories: ComponentCategory[] = [
                 name: 'Powertrain Examples',
                 components: [
                     {
+                        id: 'simantics-ssp-cloud-template',
+                        name: 'Motor System',
+                        description: 'Motor system example backed by python-client/templates/model.ssp for cloud simulation',
+                        categoryId: 'vessel-systems',
+                        subcategoryId: 'powertrain-examples',
+                        template: simanticsSspCloudTemplate
+                    },
+                    {
                         id: 'motor-shaft-propeller-demo',
                         name: 'Simple Electric Propulsion Train',
-                        description: 'Three-component motor, shaft, and propeller template for torsional vibration analysis',
+                        description: 'Drive, permanent magnet motor, shaft, and propeller template for torsional vibration analysis',
                         categoryId: 'vessel-systems',
                         subcategoryId: 'powertrain-examples',
                         template: motorShaftPropellerDemo

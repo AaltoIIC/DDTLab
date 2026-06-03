@@ -72,6 +72,46 @@ export interface AnalysisReportRecord {
     sharedAt?: string | null;
 }
 
+export interface TemplateSimulationSimpleVariable {
+    id: string;
+    name: string;
+    type?: string;
+    [key: string]: unknown;
+}
+
+export interface TemplateSimulationSeries {
+    id?: string;
+    name?: string;
+    type?: string;
+    t: number[];
+    value: number[];
+    first?: number | null;
+    last?: number | null;
+    min?: number | null;
+    max?: number | null;
+}
+
+export interface TemplateSimulationResultRecord {
+    id: string;
+    jobId: string;
+    status: string;
+    message?: string;
+    launcherStatus?: string;
+    modelId?: string;
+    modelUrl?: string;
+    resultFile?: string;
+    files: string[];
+    hdf5Files: string[];
+    variables: string[];
+    simpleVariables: TemplateSimulationSimpleVariable[];
+    variablesByFile?: Record<string, string[]>;
+    series: TemplateSimulationSeries[];
+    createdAt: string;
+    updatedAt: string;
+    designSystemId: string;
+    designSystemName: string;
+}
+
 export interface ConnectorType {
     name: string;
     VSSoClass: string | null;

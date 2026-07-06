@@ -52,9 +52,10 @@
     let analysisRequestError = $state('');
     let analysisStatuses = $state<AnalysisRequestStatusView[]>([]);
     let analysisStatusLoading = $state(false);
-    let analysisStatusError = $state('');
     let analysisStatusPoll: ReturnType<typeof setInterval> | undefined;
     let analysisStatusSystemId = $state('');
+    let consecutivePollFailures = $state(0);
+    const MAX_POLL_FAILURES_BEFORE_STOP = 3;
     let sharingReportId = $state('');
     let shareReportError = $state('');
     let isConvertingToDesign = $state(false);
@@ -93,7 +94,7 @@
                 description:
                     `<p>The <strong>concept stage</strong> is where the <em>initial, rough design</em> of a system takes shape. Our Concept Stage Editor is built on the <strong>SysML v2</strong> modeling language standard. </p>
                     <p>In this tour, you'll learn the essentials of SysML modeling and discover how to use our interface to create your own system concept.</p>`,
-                side: "over",  // Use 'over' to center the popover
+                side: "top",
                 align: 'center'
             }
         },
@@ -320,11 +321,22 @@
         }
 
         analysisStatusLoading = true;
-        analysisStatusError = '';
         try {
             analysisStatuses = await fetchAnalysisRequestStatuses(systemId);
-        } catch (error) {
-            analysisStatusError = error instanceof Error ? error.message : 'Failed to load OEM response status';
+            consecutivePollFailures = 0;
+            if (!analysisStatusPoll) {
+                analysisStatusPoll = setInterval(() => {
+                    void loadAnalysisStatuses();
+                }, 5000);
+            }
+        } catch (_error) {
+            consecutivePollFailures += 1;
+            if (consecutivePollFailures >= MAX_POLL_FAILURES_BEFORE_STOP) {
+                if (analysisStatusPoll) {
+                    clearInterval(analysisStatusPoll);
+                    analysisStatusPoll = undefined;
+                }
+            }
         } finally {
             analysisStatusLoading = false;
         }
@@ -737,7 +749,7 @@
     }
 </script>
 
-<div class="conceptual-layout" class:has-analysis-panel={Boolean(analysisStatuses.length || conceptAnalysisReports.length || analysisStatusError)}>
+<div class="conceptual-layout" class:has-analysis-panel={Boolean(analysisStatuses.length || conceptAnalysisReports.length)}>
     <ConceptualStageSidebar />
     
     <div class="main-content">
@@ -777,7 +789,7 @@
             </div>
         </div>
         
-        {#if analysisStatuses.length || conceptAnalysisReports.length || analysisStatusError}
+        {#if analysisStatuses.length || conceptAnalysisReports.length}
             <div class="analysis-status {analysisAggregate.complete ? 'ready' : 'pending'}">
                 {#if analysisStatuses.length}
                     <div class="analysis-status-header">
@@ -829,9 +841,7 @@
                         {/if}
                     </div>
                 {/if}
-                {#if analysisStatusError}
-                    <div class="analysis-status-error">{analysisStatusError}</div>
-                {/if}
+
             </div>
         {/if}
 

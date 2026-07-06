@@ -29,4 +29,9 @@ declare module 'node:path' {
 declare const process: {
 	cwd(): string;
 	env: Record<string, string | undefined>;
+	platform: string;
 };
+
+declare module 'node:os' {
+	export function tmpdir(): string;
+}

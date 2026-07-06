@@ -111,7 +111,7 @@
     <div
         class="slider-overlay {isDragging ? 'dragging' : ''}"
         onclick={handleClose}
-        transition:fade={{ duration:200 }}
+        transition:fade={{ duration: 200 }}
     ></div>
     <div id="def-slider" class="slider-panel" transition:slide={{ duration: 300, axis: 'x' }}>
         <div class="slider-header">

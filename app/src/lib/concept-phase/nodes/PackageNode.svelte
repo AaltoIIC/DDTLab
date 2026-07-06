@@ -89,7 +89,7 @@
             const { inNodes, inEdges, outEdges } = getInsideData(false);
             
             // Only update if the content has actually changed to prevent render loops
-            const currentData = data.insideData;
+            const currentData = data.insideData || { nodes: [], inEdges: [], boundaryEdges: [] };
             const currentFingerprint = [
                 (currentData.nodes || []).map(n => n.id).join(','),
                 (currentData.inEdges || []).map(e => e.id).join(','),

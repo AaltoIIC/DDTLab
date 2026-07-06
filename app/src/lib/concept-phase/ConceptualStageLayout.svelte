@@ -279,7 +279,7 @@
                             <li>Use a <strong>Binding Connection</strong> to show that two usages represent the same instance.</li> 
                         </ul>
                     </p> `, 
-                side: "over", 
+                side: "top", 
                 align: "center",
             }
         },

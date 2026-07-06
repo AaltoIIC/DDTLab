@@ -1,6 +1,6 @@
 <script lang="ts">
     import { ChevronRight, X, Search, Package, Folder, FolderOpen, Ship, Anchor, Fuel, Zap, Wind } from '@lucide/svelte';
-    import { slide } from 'svelte/transition';
+    import { slide, fade } from 'svelte/transition';
     import { componentCategories, searchComponents } from './data/hierarchicalComponentLibrary';
     import type { ComponentCategory, LibraryComponent } from './types/componentLibrary';
     import { shipDesigns, shipDesignCategories } from './data/shipDesignLibrary';
@@ -20,14 +20,14 @@
     let searchTerm = $state('');
     let designSearchTerm = $state('');
     
-    // Track expanded state for categories
-    let expandedCategories: Set<string> = $state(new Set(['vessel-systems']));
-    let expandedSubcategories: Set<string> = $state(new Set(['powertrain-examples']));
-    let expandedDesignCategories: Set<string> = $state(new Set(['commercial', 'passenger', 'specialized']));
+    // Track expanded state for categories (using Record for reliable Svelte 5 reactivity)
+    let expandedCategories: Record<string, boolean> = $state({ 'vessel-systems': true });
+    let expandedSubcategories: Record<string, boolean> = $state({ 'powertrain-examples': true });
+    let expandedDesignCategories: Record<string, boolean> = $state({ 'commercial': true, 'passenger': true, 'specialized': true });
     
     // Design library filters
-    let selectedPowertrainTypes: Set<ShipPowertrainType> = $state(new Set());
-    let selectedShipTypes: Set<ShipType> = $state(new Set());
+    let selectedPowertrainTypes: Partial<Record<ShipPowertrainType, boolean>> = $state({});
+    let selectedShipTypes: Partial<Record<ShipType, boolean>> = $state({});
     
     // Search results
     let searchResults = $derived(searchTerm ? searchComponents(searchTerm) : []);
@@ -39,12 +39,15 @@
             design.name.toLowerCase().includes(designSearchTerm.toLowerCase()) ||
             design.description.toLowerCase().includes(designSearchTerm.toLowerCase()) ||
             design.tags?.some(tag => tag.toLowerCase().includes(designSearchTerm.toLowerCase()));
+        
+        const anyPowertrainSelected = Object.values(selectedPowertrainTypes).some(Boolean);
+        const anyShipTypeSelected = Object.values(selectedShipTypes).some(Boolean);
             
-        const matchesPowertrain = selectedPowertrainTypes.size === 0 || 
-            selectedPowertrainTypes.has(design.powertrainType);
+        const matchesPowertrain = !anyPowertrainSelected || 
+            selectedPowertrainTypes[design.powertrainType];
             
-        const matchesShipType = selectedShipTypes.size === 0 || 
-            selectedShipTypes.has(design.shipType);
+        const matchesShipType = !anyShipTypeSelected || 
+            selectedShipTypes[design.shipType];
             
         return matchesSearch && matchesPowertrain && matchesShipType;
     }));
@@ -81,21 +84,11 @@
     }
     
     function toggleCategory(categoryId: string) {
-        if (expandedCategories.has(categoryId)) {
-            expandedCategories.delete(categoryId);
-        } else {
-            expandedCategories.add(categoryId);
-        }
-        expandedCategories = expandedCategories;
+        expandedCategories[categoryId] = !expandedCategories[categoryId];
     }
     
     function toggleSubcategory(subcategoryId: string) {
-        if (expandedSubcategories.has(subcategoryId)) {
-            expandedSubcategories.delete(subcategoryId);
-        } else {
-            expandedSubcategories.add(subcategoryId);
-        }
-        expandedSubcategories = expandedSubcategories;
+        expandedSubcategories[subcategoryId] = !expandedSubcategories[subcategoryId];
     }
     
     function handleDragStart(event: DragEvent, component: LibraryComponent) {
@@ -119,58 +112,41 @@
     }
     
     function expandAll() {
+        const cats: Record<string, boolean> = {};
+        const subs: Record<string, boolean> = {};
         componentCategories.forEach(category => {
-            expandedCategories.add(category.id);
+            cats[category.id] = true;
             if (category.subcategories) {
                 category.subcategories.forEach(sub => {
-                    expandedSubcategories.add(sub.id);
+                    subs[sub.id] = true;
                 });
             }
         });
-        expandedCategories = expandedCategories;
-        expandedSubcategories = expandedSubcategories;
+        expandedCategories = cats;
+        expandedSubcategories = subs;
     }
     
     function collapseAll() {
-        expandedCategories.clear();
-        expandedSubcategories.clear();
-        expandedCategories = expandedCategories;
-        expandedSubcategories = expandedSubcategories;
+        expandedCategories = {};
+        expandedSubcategories = {};
     }
     
     function toggleDesignCategory(categoryId: string) {
-        if (expandedDesignCategories.has(categoryId)) {
-            expandedDesignCategories.delete(categoryId);
-        } else {
-            expandedDesignCategories.add(categoryId);
-        }
-        expandedDesignCategories = expandedDesignCategories;
+        expandedDesignCategories[categoryId] = !expandedDesignCategories[categoryId];
     }
     
     function togglePowertrainFilter(type: ShipPowertrainType) {
-        if (selectedPowertrainTypes.has(type)) {
-            selectedPowertrainTypes.delete(type);
-        } else {
-            selectedPowertrainTypes.add(type);
-        }
-        selectedPowertrainTypes = selectedPowertrainTypes;
+        selectedPowertrainTypes[type] = !selectedPowertrainTypes[type];
     }
     
     function toggleShipTypeFilter(type: ShipType) {
-        if (selectedShipTypes.has(type)) {
-            selectedShipTypes.delete(type);
-        } else {
-            selectedShipTypes.add(type);
-        }
-        selectedShipTypes = selectedShipTypes;
+        selectedShipTypes[type] = !selectedShipTypes[type];
     }
     
     function clearDesignFilters() {
         designSearchTerm = '';
-        selectedPowertrainTypes.clear();
-        selectedShipTypes.clear();
-        selectedPowertrainTypes = selectedPowertrainTypes;
-        selectedShipTypes = selectedShipTypes;
+        selectedPowertrainTypes = {};
+        selectedShipTypes = {};
     }
     
     function formatPowertrainType(type: ShipPowertrainType): string {
@@ -188,7 +164,7 @@
     <div 
         class="slider-overlay {isDragging ? 'dragging' : ''}" 
         onclick={onClose} 
-        transition:slide={{ duration: 300, axis: 'x' }}
+        transition:fade={{ duration: 200 }}
     ></div>
     <div class="slider-panel" transition:slide={{ duration: 300, axis: 'x' }}>
         <div class="slider-header">
@@ -202,23 +178,26 @@
             <!-- Component Library Section -->
             <div class="library-section">
                 <button class="library-header" onclick={toggleComponentLibrary}>
+                    <span class="chevron {componentLibraryExpanded ? 'expanded' : ''}">
                     <ChevronRight 
                         size={16} 
-                        class="chevron {componentLibraryExpanded ? 'expanded' : ''}"
                     />
+                    </span>
                     <span>Component Library</span>
                 </button>
                 {#if componentLibraryExpanded}
                     <div class="library-content" transition:slide={{ duration: 200 }}>
                         <!-- Search Bar -->
                         <div class="search-container">
-                            <Search size={16} class="search-icon" />
-                            <input
-                                type="text"
-                                class="search-input"
-                                placeholder="Search components..."
-                                bind:value={searchTerm}
-                            />
+                        <span class="search-icon">
+                            <Search size={16} />
+                        </span>
+                        <input
+                            type="text"
+                            class="search-input"
+                            placeholder="Search components..."
+                            bind:value={searchTerm}
+                        />
                         </div>
                         
                         <!-- Expand/Collapse All Buttons -->
@@ -262,10 +241,9 @@
                                             class="category-header"
                                             onclick={() => toggleCategory(category.id)}
                                         >
-                                            <ChevronRight 
-                                                size={14} 
-                                                class="chevron {expandedCategories.has(category.id) ? 'expanded' : ''}"
-                                            />
+                                        <span class="chevron {expandedCategories[category.id] ? 'expanded' : ''}">
+                                            <ChevronRight size={14} />
+                                        </span>
                                             {#if category.icon}
                                                 <category.icon size={16} />
                                             {:else}
@@ -274,7 +252,7 @@
                                             <span class="category-name">{category.name}</span>
                                         </button>
                                         
-                                        {#if expandedCategories.has(category.id) && category.subcategories}
+                                        {#if expandedCategories[category.id] && category.subcategories}
                                             <div class="subcategories" transition:slide={{ duration: 150 }}>
                                                 {#each category.subcategories as subcategory}
                                                     <div class="subcategory">
@@ -282,11 +260,10 @@
                                                             class="subcategory-header"
                                                             onclick={() => toggleSubcategory(subcategory.id)}
                                                         >
-                                                            <ChevronRight 
-                                                                size={12} 
-                                                                class="chevron {expandedSubcategories.has(subcategory.id) ? 'expanded' : ''}"
-                                                            />
-                                                            {#if expandedSubcategories.has(subcategory.id)}
+                                                        <span class="chevron {expandedSubcategories[subcategory.id] ? 'expanded' : ''}">
+                                                            <ChevronRight size={12}/>
+                                                        </span>
+                                                            {#if expandedSubcategories[subcategory.id]}
                                                                 <FolderOpen size={14} />
                                                             {:else}
                                                                 <Folder size={14} />
@@ -297,7 +274,7 @@
                                                             {/if}
                                                         </button>
                                                         
-                                                        {#if expandedSubcategories.has(subcategory.id) && subcategory.components}
+                                                        {#if expandedSubcategories[subcategory.id] && subcategory.components}
                                                             <div class="components" transition:slide={{ duration: 150 }}>
                                                                 {#each subcategory.components as component}
                                                                     <div 
@@ -328,24 +305,26 @@
             <!-- Design Library Section -->
             <div class="library-section">
                 <button class="library-header" onclick={toggleDesignLibrary}>
-                    <ChevronRight 
-                        size={16} 
-                        class="chevron {designLibraryExpanded ? 'expanded' : ''}"
-                    />
+                    <span class="chevron {designLibraryExpanded ? 'expanded' : ''}">                    
+                        <ChevronRight size={16} />
+                    </span>
                     <span>Design Library</span>
                 </button>
                 {#if designLibraryExpanded}
                     <div class="library-content" transition:slide={{ duration: 200 }}>
                         <!-- Search Bar -->
                         <div class="search-container">
-                            <Search size={16} class="search-icon" />
+
+                            <span class="search-icon">
+                                <Search size={16} />
+                            </span>
                             <input
                                 type="text"
                                 class="search-input"
                                 placeholder="Search ship designs..."
                                 bind:value={designSearchTerm}
                             />
-                            {#if designSearchTerm || selectedPowertrainTypes.size > 0 || selectedShipTypes.size > 0}
+                            {#if designSearchTerm || Object.values(selectedPowertrainTypes).some(Boolean) || Object.values(selectedShipTypes).some(Boolean)}
                                 <button class="clear-search-btn" onclick={clearDesignFilters}>
                                     <X size={14} />
                                 </button>
@@ -360,7 +339,7 @@
                                     {#each filterPowertrainTypes as type}
                                         <button
                                             class="filter-pill"
-                                            class:active={selectedPowertrainTypes.has(type)}
+                                            class:active={selectedPowertrainTypes[type]}
                                             onclick={() => togglePowertrainFilter(type)}
                                         >
                                             {formatPowertrainType(type)}
@@ -375,7 +354,7 @@
                                     {#each filterShipTypes as type}
                                         <button
                                             class="filter-pill"
-                                            class:active={selectedShipTypes.has(type)}
+                                            class:active={selectedShipTypes[type]}
                                             onclick={() => toggleShipTypeFilter(type)}
                                         >
                                             {formatShipType(type)}
@@ -393,16 +372,15 @@
                                         class="design-category-header"
                                         onclick={() => toggleDesignCategory(category.id)}
                                     >
-                                        <ChevronRight 
-                                            size={14} 
-                                            class="chevron {expandedDesignCategories.has(category.id) ? 'expanded' : ''}"
-                                        />
+                                        <span class="chevron {expandedDesignCategories[category.id] ? 'expanded' : ''}">
+                                            <ChevronRight size={14} />
+                                        </span>
                                         <Ship size={16} />
                                         <span class="category-name">{category.name}</span>
                                         <span class="design-count">({category.designs.length})</span>
                                     </button>
                                     
-                                    {#if expandedDesignCategories.has(category.id)}
+                                    {#if expandedDesignCategories[category.id]}
                                         <div class="designs" transition:slide={{ duration: 150 }}>
                                             {#each category.designs as design}
                                                 {@const SvelteComponent = powertrainIcons[design.powertrainType] || Anchor}

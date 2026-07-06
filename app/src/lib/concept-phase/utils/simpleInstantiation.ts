@@ -51,6 +51,11 @@ export function instantiateSimpleComponent(
     data: {
       ...component.data,
       id: generateUniqueId(component.data.id),
+      insideData: {
+        nodes: [],
+        inEdges: [],
+        boundaryEdges: []
+      },
       nodes: [],
       edges: [],
       metadata: [...(component.data.metadata || [])],

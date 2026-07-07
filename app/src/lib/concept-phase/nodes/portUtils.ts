@@ -51,6 +51,7 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
                     const newPort: Port = {
                         id: generatePortId(),
                         name: portName,
+                        description: '',
                         interfaceType: undefined
                     };
                     inputs.push(newPort);
@@ -115,6 +116,7 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
                     const newPort: Port = {
                         id: generatePortId(),
                         name: portName,
+                        description: '',
                         interfaceType: undefined
                     };
                     outputs.push(newPort);
@@ -162,6 +164,57 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
             }
             addToHistory();
         }
+    }
+
+    function updatePortInfo(type: 'input' | 'output', index: number, newName: string, newDescription: string) {
+        const nodes = get(currentNodes);
+        const node = nodes.find(n => n.id === nodeId);
+        if (!node) return;
+
+        const nodeData = node.data as T;
+        const ports = type === 'input' ? [...(nodeData.inputs || [])] : [...(nodeData.outputs || [])];
+        if (!ports[index]) return;
+
+        const oldName = ports[index].name;
+        ports[index] = {
+            ...ports[index],
+            name: newName,
+            description: newDescription
+        };
+
+        currentNodes.update(nodes => {
+            return nodes.map(node => {
+                if (node.id === nodeId) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            [type === 'input' ? 'inputs' : 'outputs']: ports
+                        }
+                    };
+                }
+                return node;
+            });
+        });
+
+        // Update edges if name changed
+        if (oldName !== newName) {
+            const oldHandleId = `${nodeId}-${type}-${oldName}`;
+            const newHandleId = `${nodeId}-${type}-${newName}`;
+            currentEdges.update(edges => {
+                return edges.map(edge => {
+                    if (edge.sourceHandle === oldHandleId) {
+                        return { ...edge, sourceHandle: newHandleId };
+                    }
+                    if (edge.targetHandle === oldHandleId) {
+                        return { ...edge, targetHandle: newHandleId };
+                    }
+                    return edge;
+                });
+            });
+        }
+
+        addToHistory();
     }
 
     function updatePortInterface(type: 'input' | 'output', index: number, interfaceType: string | undefined) {
@@ -223,6 +276,7 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
         removeInput,
         addOutput,
         removeOutput,
-        updatePortInterface
+        updatePortInterface,
+        updatePortInfo
     };
 }

@@ -3,7 +3,7 @@
 
     const bubble = createBubbler();
     import { Handle, Position } from '@xyflow/svelte';
-    import { Plus, Minus, Plug } from '@lucide/svelte';
+    import { Plus, Minus, Plug, Pencil } from '@lucide/svelte';
     import { onMount, tick } from 'svelte';
     import type { InterfaceCategory, Port } from '../interfaces';
     import { standardInterfaces, getInterfacesByCategory } from '../interfaces';
@@ -18,6 +18,7 @@
         onAdd: () => void;
         onRemove: (index: number) => void;
         onUpdateInterface: (index: number, interfaceType: string | undefined) => void;
+        onUpdatePort?: (index: number, name: string, description: string) => void;
     }
 
     let {
@@ -26,13 +27,12 @@
         type,
         onAdd,
         onRemove,
-        onUpdateInterface
+        onUpdateInterface,
+        onUpdatePort
     }: Props = $props();
     
     let position = $derived(type === 'input' ? Position.Left : Position.Right);
     let containerClass = $derived(type === 'input' ? 'handles-left' : 'handles-right');
-    let offset = $derived(type === 'input' ? -8 : -8);
-    let side = $derived(type === 'input' ? 'left' : 'right');
 
     // Force re-render when component mounts to ensure handles are registered
     let mounted = false;
@@ -108,6 +108,7 @@
     
     // Open interface selector and reset search
     async function openInterfaceSelector(index: number) {
+        showPortInfoEditor = null;
         showInterfaceSelector = showInterfaceSelector === index ? null : index;
         if (showInterfaceSelector === index) {
             searchQuery = ''; // Reset search when opening
@@ -141,6 +142,37 @@
             default: return '#6b7280';
         }
     }
+
+    // Port info editor state
+    let showPortInfoEditor: number | null = $state(null);
+    let tempPortName: string = $state('');
+    let tempPortDescription: string = $state('');
+    let portNameInputRef: HTMLInputElement | null = $state(null);
+
+    async function openPortInfoEditor(index: number, port: Port) {
+        showInterfaceSelector = null;
+        showPortInfoEditor = showPortInfoEditor === index ? null : index;
+        if (showPortInfoEditor === index) {
+            tempPortName = port.name;
+            tempPortDescription = port.description || '';
+            await tick();
+            portNameInputRef?.focus();
+            portNameInputRef?.select();
+        }
+    }
+
+    function applyPortInfo(index: number) {
+        if (onUpdatePort && tempPortName.trim()) {
+            onUpdatePort(index, tempPortName.trim(), tempPortDescription.trim());
+        }
+        showPortInfoEditor = null;
+    }
+
+    function cancelPortInfo() {
+        showPortInfoEditor = null;
+        tempPortName = '';
+        tempPortDescription = '';
+    }
 </script>
 
 <div class="handles-container {containerClass}">
@@ -163,12 +195,19 @@
                 {/if}
             </span>
             <button 
+                class="handle-edit"
+                onclick={stopPropagation(() => openPortInfoEditor(i, port))}
+                title="Edit port information"
+            >
+                <Pencil size={14} />
+            </button>
+            <button 
                 class="handle-interface" 
                 onclick={stopPropagation(() => openInterfaceSelector(i))}
                 title="Set interface type"
                 style="color: {getInterfaceColor(port.interfaceType)}"
             >
-                <Plug size={10} />
+                <Plug size={14} />
             </button>
             {#if ports.length > 0}
                 <button 
@@ -176,10 +215,63 @@
                     onclick={stopPropagation(() => onRemove(i))}
                     title="Remove {type}"
                 >
-                    <Minus size={10} />
+                    <Minus size={14} />
                 </button>
             {/if}
             
+            {#if showPortInfoEditor === i}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <div 
+                    class="port-info-editor"
+                    onclick={stopPropagation(bubble('click'))}
+                    onwheel={stopPropagation(bubble('wheel'))}
+                    use:clickOutside={() => showPortInfoEditor = null}
+                >
+                    <div class="port-info-header">Edit Port Information</div>
+                    <div class="port-info-body">
+                        <label class="port-info-field">
+                            <span class="field-label">Name</span>
+                            <input
+                                type="text"
+                                class="port-info-input"
+                                bind:value={tempPortName}
+                                bind:this={portNameInputRef}
+                                onkeydown={(e) => {
+                                    if (e.key === 'Enter') applyPortInfo(i);
+                                    if (e.key === 'Escape') cancelPortInfo();
+                                    stopPropagation(() => {});
+                                }}
+                                onclick={stopPropagation(() => {})}
+                            />
+                        </label>
+                        <label class="port-info-field">
+                            <span class="field-label">Description</span>
+                            <input
+                                type="text"
+                                class="port-info-input"
+                                bind:value={tempPortDescription}
+                                onkeydown={(e) => {
+                                    if (e.key === 'Enter') applyPortInfo(i);
+                                    if (e.key === 'Escape') cancelPortInfo();
+                                    stopPropagation(() => {});
+                                }}
+                                onclick={stopPropagation(() => {})}
+                                placeholder="Optional description..."
+                            />
+                        </label>
+                    </div>
+                    <div class="port-info-actions">
+                        <button class="port-info-btn cancel" onclick={() => cancelPortInfo()}>Cancel</button>
+                        <button
+                            class="port-info-btn apply"
+                            onclick={() => applyPortInfo(i)}
+                            disabled={!tempPortName.trim()}
+                        >Apply</button>
+                    </div>
+                </div>
+            {/if}
+
             {#if showInterfaceSelector === i}
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -357,31 +449,31 @@
 
     .handle-label {
         font-size: 10px;
-        color: #6b7280;
+        color: #374151;
         white-space: nowrap;
         opacity: 0;
         transition: opacity 0.2s;
         position: absolute;
         pointer-events: none;
+        z-index: 9999;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 2px;
+        background: white;
+        padding: 1px 6px;
+        border-radius: 3px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
-    .handles-left .handle-label {
-        left: 20px;
-    }
-
-    .handles-right .handle-label {
-        right: 20px;
+    .handle-group:hover .handle-label {
+        opacity: 1;
     }
     
     .interface-type {
         font-size: 9px;
         color: #9ca3af;
         display: block;
-    }
-
-    :global(.package-node:hover) .handle-label,
-    :global(.concept-node:hover) .handle-label {
-        opacity: 1;
     }
 
     .handle-add {
@@ -398,11 +490,13 @@
         opacity: 0;
     }
 
-    .handle-remove {
+    .handle-edit,
+    .handle-remove,
+    .handle-interface {
         background: white;
         border: 1px solid #e5e7eb;
         border-radius: 4px;
-        padding: 2px;
+        padding: 4px;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -423,17 +517,166 @@
         transform: translateX(50%);
     }
 
-
-    /* PACKAGE NODES NO LONGER SUPPORT PORTS
-    :global(.package-node:hover) .handle-add,
-    :global(.package-node:hover) .handle-remove,
-    :global(.package-node:hover) .handle-interface, */
     :global(.concept-node:hover) .handle-add,
+    :global(.concept-node:hover) .handle-edit,
     :global(.concept-node:hover) .handle-remove,
     :global(.concept-node:hover) .handle-interface {
         opacity: 1;
     }
+
+    /* ---- Button positions: edit | interface | remove ---- */    
+    .handles-left .handle-edit {
+        left: 22px;
+    }
+
+    .handles-right .handle-edit {
+        right: 22px;
+    }
+
+    .handles-left .handle-interface {
+        left: 48px;
+    }
+
+    .handles-right .handle-interface {
+        right: 48px;
+    }
+
+    .handles-left .handle-remove {
+        left: 74px;
+    }
+
+    .handles-right .handle-remove {
+        right: 74px;
+    }
+
+    .handle-add:hover {
+        background-color: #dbeafe;
+        border-color: #3b82f6;
+        color: #3b82f6;
+    }
     
+    .handle-edit:hover {
+        background-color: #f0f9ff;
+        border-color: #06b6d4;
+    }
+
+    .handle-interface:hover {
+        background-color: #f0f9ff;
+        border-color: #0ea5e9;
+    }
+
+    .handle-remove:hover {
+        background-color: #fee2e2;
+        border-color: #dc2626;
+        color: #dc2626;
+    }
+
+    /* ---- Port info editor dropdown ---- */
+    .port-info-editor {
+        position: absolute;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        z-index: 1000;
+        min-width: 220px;
+        overflow: hidden;
+    }
+
+    .handles-left .port-info-editor {
+        left: 70px;
+        top: -10px;
+    }
+
+    .handles-right .port-info-editor {
+        right: 70px;
+        top: -10px;
+    }
+
+    .port-info-header {
+        font-weight: 600;
+        font-size: 12px;
+        padding: 8px 12px;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        color: #111827;
+    }
+
+    .port-info-body {
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .port-info-field {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .port-info-field .field-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .port-info-input {
+        width: 100%;
+        padding: 5px 8px;
+        font-size: 11px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .port-info-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+
+    .port-info-actions {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+        padding: 8px 12px;
+        background: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .port-info-btn {
+        padding: 4px 10px;
+        font-size: 11px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .port-info-btn.cancel:hover {
+        background: #f3f4f6;
+    }
+
+    .port-info-btn.apply {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+
+    .port-info-btn.apply:hover:not(:disabled) {
+        background: #2563eb;
+    }
+
+    .port-info-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* ---- Interface selector (existing) ---- */
     .interface-selector {
         position: absolute;
         background: white;
@@ -449,12 +692,12 @@
     }
     
     .handles-left .interface-selector {
-        left: 60px;
+        left: 100px;
         top: -10px;
     }
     
     .handles-right .interface-selector {
-        right: 60px;
+        right: 100px;
         top: -10px;
     }
     
@@ -515,54 +758,6 @@
         background: #dbeafe;
         color: #1e40af;
         font-weight: 500;
-    }
-
-    .handle-add:hover {
-        background-color: #dbeafe;
-        border-color: #3b82f6;
-        color: #3b82f6;
-    }
-
-    .handles-left .handle-remove {
-        left: 35px;
-    }
-
-    .handles-right .handle-remove {
-        right: 35px;
-    }
-    
-    .handle-interface {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 4px;
-        padding: 2px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        opacity: 0;
-        position: absolute;
-        z-index: 10;
-    }
-    
-    .handles-left .handle-interface {
-        left: 20px;
-    }
-
-    .handles-right .handle-interface {
-        right: 20px;
-    }
-    
-    .handle-interface:hover {
-        background-color: #f0f9ff;
-        border-color: #0ea5e9;
-    }
-
-    .handle-remove:hover {
-        background-color: #fee2e2;
-        border-color: #dc2626;
-        color: #dc2626;
     }
 
     :global(.handle) {

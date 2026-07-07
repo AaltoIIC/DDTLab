@@ -35,6 +35,7 @@ export interface InterfaceDefinition {
 export interface Port {
   id: string;
   name: string;
+  description?: string;
   interfaceType?: string; // Reference to interface definition ID
 }
 

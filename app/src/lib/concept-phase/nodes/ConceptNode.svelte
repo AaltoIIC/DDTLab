@@ -139,7 +139,7 @@
     });
 
     // Create port handlers
-    const { addInput, removeInput, addOutput, removeOutput, updatePortInterface } = createPortHandlers<NodeData>(id);
+    const { addInput, removeInput, addOutput, removeOutput, updatePortInterface, updatePortInfo } = createPortHandlers<NodeData>(id);
     
     function handleUpdateInputInterface(index: number, interfaceType: string | undefined) {
         updatePortInterface('input', index, interfaceType);
@@ -147,6 +147,14 @@
     
     function handleUpdateOutputInterface(index: number, interfaceType: string | undefined) {
         updatePortInterface('output', index, interfaceType);
+    }
+
+    function handleUpdateInputPort(index: number, name: string, description: string) {
+        updatePortInfo('input', index, name, description);
+    }
+
+    function handleUpdateOutputPort(index: number, name: string, description: string) {
+        updatePortInfo('output', index, name, description);
     }
     
     // Update React Flow internals when data changes
@@ -362,6 +370,7 @@
         onAdd={addInput}
         onRemove={removeInput}
         onUpdateInterface={handleUpdateInputInterface}
+        onUpdatePort={handleUpdateInputPort}
     />
 
     <div class="header">
@@ -555,6 +564,7 @@
         onAdd={addOutput}
         onRemove={removeOutput}
         onUpdateInterface={handleUpdateOutputInterface}
+        onUpdatePort={handleUpdateOutputPort}
     />
     
     <Portal>

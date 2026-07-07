@@ -125,7 +125,7 @@
 
         try {
             const data = JSON.parse(jsonData);
-            console.log('Dropping data:', data);
+            // console.log('Dropping data:', data);
 
             // Get drop position - use the event target if flowContainer is not available
             const target = document.getElementById('conceptual-editor');
@@ -143,7 +143,7 @@
                 y: (event.clientY - rect.top - currentViewport.y) / currentViewport.zoom
             };
 
-            console.log('Drop position:', position);
+            // console.log('Drop position:', position);
 
             let newNodes: Node[] = [];
             let newEdges: Edge[] = [];
@@ -183,7 +183,7 @@
     let dropdownY = $state(0);
     
     function onConnect(params: Connection) {
-        console.log('Connection params:', params);
+        // console.log('Connection params:', params);
 
         const nodes = get(currentNodes);
         const sourceNode = nodes.find(n => n.id === params.source);
@@ -191,7 +191,7 @@
 
         // Check if source or target is a package node
         if (sourceNode?.type === 'package' || targetNode?.type === 'package') {
-            console.log('Cannot connect to/from package nodes');
+            // console.log('Cannot connect to/from package nodes');
             return; // Prevent connection
         }
 
@@ -199,11 +199,11 @@
         // Internal input ports can only have outgoing connections
         // Internal output ports can only have incoming connections
         if (sourceNode?.type === 'internalPort' && sourceNode.data.portType === 'output') {
-            console.log('Internal output ports can only receive connections, not send them');
+            // console.log('Internal output ports can only receive connections, not send them');
             return;
         }
         if (targetNode?.type === 'internalPort' && targetNode.data.portType === 'input') {
-            console.log('Internal input ports can only send connections, not receive them');
+            // console.log('Internal input ports can only send connections, not receive them');
             return;
         }
         
@@ -245,7 +245,7 @@
         const sourcePort = findPort(sourceNode, pendingConnection?.sourceHandle);
         const targetPort = findPort(targetNode, pendingConnection?.targetHandle);
         
-        console.log('Source port:', sourcePort, 'Target port:', targetPort);
+        // console.log('Source port:', sourcePort, 'Target port:', targetPort);
         
         let edgeData: any = { 
             compatibility: 'direct',
@@ -254,7 +254,7 @@
         
         if (sourcePort && targetPort) {
             const compatibility = checkCompatibility(sourcePort, targetPort);
-            console.log('Compatibility check:', compatibility);
+            // console.log('Compatibility check:', compatibility);
             
             edgeData = {
                 ...edgeData,
@@ -274,7 +274,7 @@
         );
         
         if (duplicateEdgeIndex !== -1) {
-            console.log('Updating existing edge with compatibility data');
+            // console.log('Updating existing edge with compatibility data');
             // Update the existing edge with compatibility data
             currentEdges.update(edges => {
                 const updatedEdges = [...edges];
@@ -322,7 +322,7 @@
 
 
   <div id="conceptual-editor" class="viewpoint-{$activeViewpoint}" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
-      <div class="flow-container" bind:this={flowContainer} onclick={() => console.log(JSON.stringify($currentNodes, null, 2) + JSON.stringify($currentEdges, null, 2)) /* TODO: Remove onclick later, just for debugging */}>
+      <div class="flow-container" bind:this={flowContainer} onclick={() => /* console.log(JSON.stringify($currentNodes, null, 2) + JSON.stringify($currentEdges, null, 2)) */ null /* TODO: Remove onclick later, just for debugging */}>
           <SvelteFlow
               nodes={currentNodes}
               edges={currentEdges}

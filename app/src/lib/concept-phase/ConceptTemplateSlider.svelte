@@ -110,9 +110,9 @@
 
         currentNodes.update(n => [...n, newNode]); 
         addToHistory(); // Track changes for undo/redo
-        currentNodes.subscribe(n => console.log('Total nodes:', n.length))();
-        console.log(JSON.stringify($currentEdges, null, 2));
-        console.log(JSON.stringify($currentNodes, null, 2));
+        // currentNodes.subscribe(n => console.log('Total nodes:', n.length))();
+        // console.log(JSON.stringify($currentEdges, null, 2));
+        // console.log(JSON.stringify($currentNodes, null, 2));
 
         onClose();
     }

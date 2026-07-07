@@ -38,12 +38,12 @@
 
     // Dispatch a custom event on click (so that it can be read in requirements tab)
     const dispatchCustomEvent = () => {
-        console.log('Dispatching connector-click:', {
+        /*console.log('Dispatching connector-click:', {
             connectorName,
             connectorVariable,
             elementName,
             type
-        });
+        });*/
         const event = new CustomEvent('connector-click', {
             detail: {
                 connectorName,

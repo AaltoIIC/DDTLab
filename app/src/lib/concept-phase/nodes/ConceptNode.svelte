@@ -246,7 +246,7 @@
         }
         
         // Navigate into this part
-        console.log('Opening part:', id, data);
+        // console.log('Opening part:', id, data);
         navigateToPackage(id, data.declaredName || 'Unnamed Part');            
     }
 

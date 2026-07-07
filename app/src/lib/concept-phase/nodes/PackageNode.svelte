@@ -197,7 +197,7 @@
         }
 
 
-        console.log(JSON.stringify(savedPackage, null, 2));
+        // console.log(JSON.stringify(savedPackage, null, 2));
         currentPackages.update(pkgs => [...pkgs, savedPackage]);
         addToHistory();
     }

@@ -80,7 +80,7 @@
             newDef.data.edges = data.edges;
 
             currentDefs.update(defs => [...defs, newDef]);
-            console.log(JSON.stringify(newDef, null, 2));
+            // console.log(JSON.stringify(newDef, null, 2));
             
             addToHistory(); 
             handleCloseDef();
@@ -131,7 +131,7 @@
             editedDef.data.edges = data.edges;
 
             updatedDefs[defIndex] = editedDef;
-            console.log(JSON.stringify(editedDef, null, 2));            
+            // console.log(JSON.stringify(editedDef, null, 2));            
             currentDefs.update(_ => updatedDefs)
 
             addToHistory(); 

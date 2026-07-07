@@ -578,7 +578,7 @@ const recursiveSystemBuilder = (
             const newSourceNode = convertedNodes.find(n => 
                 n.data.element.connectors.map(c => c.metadata).includes(edge.source));
             const newConnector = newSourceNode?.data.element.connectors.find(c => c.metadata === edge.source);
-            console.log(newConnector);
+            // console.log(newConnector);
             newBaseEdge = {...newBaseEdge,
                 source: newSourceNode!.id,
                 sourceHandle: `${newSourceNode!.id}.${newConnector!.name}`
@@ -587,9 +587,9 @@ const recursiveSystemBuilder = (
         if (nodesInPackages.flat().includes(edge.target)) {
             const newTargetNode = convertedNodes.find(n => 
                 n.data.element.connectors.map(c => c.metadata).includes(edge.target));
-            console.log(newTargetNode);
+            // console.log(newTargetNode);
             const newConnector = newTargetNode?.data.element.connectors.find(c => c.metadata === edge.target);
-            console.log(newConnector);
+            // console.log(newConnector);
             newBaseEdge = {...newBaseEdge,
                 target: newTargetNode!.id,
                 targetHandle: `${newTargetNode!.id}.${newConnector!.name}`
@@ -970,7 +970,7 @@ export function updateTemplate(id: string, updates: Partial<ConceptTemplate>) {
 }
 
 export function deleteTemplate(template: ConceptTemplate | PackageTemplate) {
-    console.log(template.type)
+    //console.log(template.type)
     if (template.type === 'package') {
         currentPackages.update(pkgs => pkgs.filter(p => p.id !== template.id));
     }

@@ -193,7 +193,7 @@
             currentNodes.update(n => [...n, newNode]);
             addToHistory();
 
-            console.log(JSON.stringify(newNode));
+            // console.log(JSON.stringify(newNode));
         }
     }
 

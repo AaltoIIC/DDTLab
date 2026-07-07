@@ -76,7 +76,7 @@
     }
 
     function handleDragStart(event: DragEvent, definition: SysMLDefinition) {
-        console.log(definition.data.nodes)
+        // console.log(definition.data.nodes)
         isDragging = true;
         event.dataTransfer!.effectAllowed = 'copy';
         event.dataTransfer!.setData('application/json', JSON.stringify({

@@ -9,7 +9,7 @@ export function instantiateSimpleComponent(
   component: any,
   position: { x: number; y: number }
 ): { nodes: Node[]; edges: Edge[] } {
-  console.log('Instantiating component:', component.name);
+  // console.log('Instantiating component:', component.name);
 
   // Generate new ID for the package
   const packageId = generateUniqueId(component.id);
@@ -70,7 +70,7 @@ export function instantiateSimpleComponent(
     }
   };
 
-  console.log('Created package:', instantiatedPackage);
+  // console.log('Created package:', instantiatedPackage);
 
   // Prepare all nodes including package
   const allNodes: Node[] = [instantiatedPackage];

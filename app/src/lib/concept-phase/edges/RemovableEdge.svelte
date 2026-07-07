@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { run } from 'svelte/legacy';
     import { fade } from 'svelte/transition';
     import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/svelte';
     import { currentEdges, addToHistory } from '$lib/stores/stores.svelte';
@@ -40,11 +39,6 @@
     
     let centerX = $derived((sourceX + targetX) / 2);
     let centerY = $derived((sourceY + targetY) / 2);
-    
-    // Determine edge color based on compatibility
-    run(() => {
-        console.log('Edge data:', id, data);
-    });
     
     // Determine edge color based on connection type and compatibility
     let strokeColor = $derived(

@@ -61,7 +61,6 @@
 </script>
 
 <div id="sidebar" class="sidebar">
-    <div class="top-buttons">
         <Tooltip text="Home" position="right">
             <button class="menu-option-logo" onclick={handleHomeClick}>
                 <div class="logo-cont">
@@ -147,7 +146,8 @@
                 <Weight class="option-icon" />
             </button>
         </Tooltip>
-    </div>
+
+        <div class="separator" style="margin-top: auto;"></div>
     <div class="bottom-buttons">
         <Tooltip text="Report Bug" position="right">
             <a href="https://github.com/AaltoIIC/DDTLab/issues"
@@ -175,7 +175,7 @@
         top: var(--concept-sidebar-top, 110px);
         left: 15px;
         width: 68px;
-        height: min(520px, calc(100vh - var(--concept-sidebar-top, 110px) - 20px));
+        height: calc(100vh - var(--concept-sidebar-top, 110px) - 20px);
         background-color: white;
         border: var(--main-border);
         border-radius: var(--main-border-radius);
@@ -183,30 +183,13 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-start;
         padding: 12px 0;
+        gap: 8px;
+        overflow-y: auto;
+        overflow-x: hidden;
         box-sizing: border-box;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .top-buttons {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 8px;
-    }
-
-    .bottom-buttons {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-end;
-        background-color: var(--main-dark-color);
-        border-radius: var(--main-border-radius);
-        width: 42px;
-        border-radius: 50px;
-        border: var(--main-border);
     }
 
     .menu-option {
@@ -240,7 +223,6 @@
         cursor: pointer;
         width: 42px;
         height: 42px;
-        margin-bottom: 12px;
         position: relative;
         display: flex;
         align-items: center;
@@ -269,11 +251,16 @@
         background-color: #374151;
     }
 
-    .separator {
-        width: 32px;
-        height: 1px;
-        background-color: #e5e7eb;
-        margin: 8px 0;
+    .bottom-buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        background-color: var(--main-dark-color);
+        border-radius: var(--main-border-radius);
+        width: 42px;
+        border-radius: 50px;
+        border: var(--main-border);
     }
 
     .bottom-buttons .option-icon {
@@ -281,4 +268,12 @@
         width: 20px;
         height: 20px;
     }
+
+    .separator {
+        width: 32px;
+        height: 1px;
+        background-color: #e5e7eb;
+        margin: 8px 0;
+    }
+
   </style>

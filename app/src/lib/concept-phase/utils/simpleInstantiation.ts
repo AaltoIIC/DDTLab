@@ -22,16 +22,16 @@ export function instantiateSimpleComponent(
     component.data.nodes.forEach((node: any) => {
       minX = Math.min(minX, node.position.x);
       minY = Math.min(minY, node.position.y);
-      // Assume a default node size if not specified
-      const nodeWidth = node.measured?.width || 200;
-      const nodeHeight = node.measured?.height || 100;
+      // Assume a default node size if not specified — concept nodes with metadata can be much larger
+      const nodeWidth = node.measured?.width || 300;
+      const nodeHeight = node.measured?.height || 250;
       maxX = Math.max(maxX, node.position.x + nodeWidth);
       maxY = Math.max(maxY, node.position.y + nodeHeight);
     });
   }
 
-  // Set package size with very generous padding
-  const padding = 150;
+  // Set package size with generous padding for large tiles
+  const padding = 120;
   let packageWidth = 800;
   let packageHeight = 600;
 
@@ -50,7 +50,7 @@ export function instantiateSimpleComponent(
     style: `width: ${packageWidth}px; height: ${packageHeight}px;`,
     data: {
       ...component.data,
-      id: generateUniqueId(component.data.id),
+      id: component.data.id ? generateUniqueId(component.data.id) : generateUniqueId(packageId),
       insideData: {
         nodes: [],
         inEdges: [],
@@ -80,7 +80,7 @@ export function instantiateSimpleComponent(
   const idMapping = new Map<string, string>();
 
   if (component.data.nodes && Array.isArray(component.data.nodes)) {
-    // Offset for positioning nodes relative to package top-left with padding
+    // Offset for translating template-internal coordinates to absolute canvas positions
     const offsetX = minX !== Infinity ? minX - padding : 0;
     const offsetY = minY !== Infinity ? minY - padding : 0;
 
@@ -88,13 +88,14 @@ export function instantiateSimpleComponent(
       const newNodeId = generateUniqueId(node.id);
       idMapping.set(node.id, newNodeId);
 
+      // Children are independent nodes at absolute world positions (not parent-relative).
+      // This avoids React Flow "parent node not found" warnings on delete.
       const childNode: Node = {
         id: newNodeId,
         type: node.type,
-        parentId: packageId,
         position: {
-          x: node.position.x - offsetX,
-          y: node.position.y - offsetY
+          x: position.x + node.position.x - offsetX,
+          y: position.y + node.position.y - offsetY
         },
         data: {
           ...node.data,

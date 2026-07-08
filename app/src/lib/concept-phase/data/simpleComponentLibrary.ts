@@ -48,12 +48,12 @@ export const commercialVesselPowertrain: SimpleComponent = {
           inputs: [{
             id: 'port-fuel-in',
             name: 'fuel',
-            interfaceType: 'fluid'
+            interfaceType: 'mdo'
           }],
           outputs: [{
             id: 'port-shaft-out',
             name: 'shaft',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }]
         }
       },
@@ -74,12 +74,12 @@ export const commercialVesselPowertrain: SimpleComponent = {
           inputs: [{
             id: 'port-shaft-in',
             name: 'shaft_in',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }],
           outputs: [{
             id: 'port-shaft-out',
             name: 'shaft_out',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }]
         }
       },
@@ -101,12 +101,12 @@ export const commercialVesselPowertrain: SimpleComponent = {
           inputs: [{
             id: 'port-shaft-in',
             name: 'shaft_in',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }],
           outputs: [{
             id: 'port-shaft-out',
             name: 'shaft_out',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }]
         }
       },
@@ -128,12 +128,12 @@ export const commercialVesselPowertrain: SimpleComponent = {
           inputs: [{
             id: 'port-shaft-in',
             name: 'shaft',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }],
           outputs: [{
             id: 'port-thrust',
             name: 'thrust',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }]
         }
       },
@@ -155,12 +155,12 @@ export const commercialVesselPowertrain: SimpleComponent = {
           inputs: [{
             id: 'port-fuel-in',
             name: 'fuel',
-            interfaceType: 'fluid'
+            interfaceType: 'mdo'
           }],
           outputs: [{
             id: 'port-power-out',
             name: 'power',
-            interfaceType: 'electrical'
+            interfaceType: 'iec-440v-60hz'
           }]
         }
       },
@@ -171,6 +171,7 @@ export const commercialVesselPowertrain: SimpleComponent = {
         position: { x: 100, y: 50 },
         data: {
           declaredName: 'Main Fuel Tank',
+          definition: 'Marine Fuel Tank',
           comment: 'Heavy fuel oil tank',
           id: 'ITM-FUEL-001',
           mass: 45000,
@@ -181,7 +182,7 @@ export const commercialVesselPowertrain: SimpleComponent = {
           outputs: [{
             id: 'port-fuel-out',
             name: 'fuel',
-            interfaceType: 'fluid'
+            interfaceType: 'mdo'
           }]
         }
       }
@@ -290,7 +291,7 @@ export const basicPowertrain: SimpleComponent = {
           outputs: [{
             id: 'port-dc-power-out',
             name: 'dc_power',
-            interfaceType: 'electrical'
+            interfaceType: 'dc-950v'
           }]
         }
       },
@@ -311,12 +312,12 @@ export const basicPowertrain: SimpleComponent = {
           inputs: [{
             id: 'port-dc-power-in',
             name: 'dc_power',
-            interfaceType: 'electrical'
+            interfaceType: 'dc-950v'
           }],
           outputs: [{
             id: 'port-ac-power-out',
             name: 'ac_power',
-            interfaceType: 'electrical'
+            interfaceType: 'iec-690v-60hz'
           }]
         }
       },
@@ -339,12 +340,12 @@ export const basicPowertrain: SimpleComponent = {
           inputs: [{
             id: 'port-ac-power-in',
             name: 'ac_power',
-            interfaceType: 'electrical'
+            interfaceType: 'iec-690v-60hz'
           }],
           outputs: [{
             id: 'port-shaft-out',
             name: 'shaft',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }]
         }
       },
@@ -367,12 +368,12 @@ export const basicPowertrain: SimpleComponent = {
           inputs: [{
             id: 'port-shaft-in',
             name: 'shaft_in',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }],
           outputs: [{
             id: 'port-shaft-out',
             name: 'shaft_out',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }]
         }
       },
@@ -395,12 +396,12 @@ export const basicPowertrain: SimpleComponent = {
           inputs: [{
             id: 'port-shaft-in',
             name: 'shaft',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }],
           outputs: [{
             id: 'port-thrust-out',
             name: 'thrust',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }]
         }
       }
@@ -499,7 +500,7 @@ export const motorShaftPropellerDemo: SimpleComponent = {
           outputs: [{
             id: 'port-ac-power-out',
             name: 'ac_power',
-            interfaceType: 'electrical'
+            interfaceType: 'iec-690v-60hz'
           }]
         }
       },
@@ -525,12 +526,12 @@ export const motorShaftPropellerDemo: SimpleComponent = {
           inputs: [{
             id: 'port-ac-power-in',
             name: 'ac_power',
-            interfaceType: 'electrical'
+            interfaceType: 'iec-690v-60hz'
           }],
           outputs: [{
             id: 'port-shaft-out',
             name: 'shaft',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }]
         }
       },
@@ -555,12 +556,12 @@ export const motorShaftPropellerDemo: SimpleComponent = {
           inputs: [{
             id: 'port-shaft-in',
             name: 'shaft_in',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }],
           outputs: [{
             id: 'port-shaft-out',
             name: 'shaft_out',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }]
         }
       },
@@ -585,12 +586,12 @@ export const motorShaftPropellerDemo: SimpleComponent = {
           inputs: [{
             id: 'port-shaft-in',
             name: 'shaft',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }],
           outputs: [{
             id: 'port-thrust-out',
             name: 'thrust',
-            interfaceType: 'mechanical'
+            interfaceType: 'propeller-drive-shaft'
           }]
         }
       }
@@ -679,7 +680,7 @@ export const simanticsSspCloudTemplate: SimpleComponent = {
             { key: 'startTime', value: '0s' }
           ],
           inputs: [],
-          outputs: [{ id: 'port-y', name: 'y', interfaceType: 'signal' }]
+          outputs: [{ id: 'port-y', name: 'y', interfaceType: 'nmea-0183' }]
         }
       },
       {
@@ -699,10 +700,10 @@ export const simanticsSspCloudTemplate: SimpleComponent = {
             { key: 'VNominal', value: '4000V' },
             { key: 'fNominal', value: '60Hz' }
           ],
-          inputs: [{ id: 'port-u', name: 'u', interfaceType: 'signal' }],
+          inputs: [{ id: 'port-u', name: 'u', interfaceType: 'nmea-0183' }],
           outputs: [
-            { id: 'port-y1', name: 'y[1]', interfaceType: 'electrical' },
-            { id: 'port-y2', name: 'y[2]', interfaceType: 'electrical' }
+            { id: 'port-y1', name: 'y[1]', interfaceType: 'iec-690v-60hz' },
+            { id: 'port-y2', name: 'y[2]', interfaceType: 'iec-690v-60hz' }
           ]
         }
       },
@@ -727,12 +728,12 @@ export const simanticsSspCloudTemplate: SimpleComponent = {
             { key: 'motor.Rr', value: '0.28808V/A' }
           ],
           inputs: [
-            { id: 'port-us1', name: 'us[1]', interfaceType: 'electrical' },
-            { id: 'port-us2', name: 'us[2]', interfaceType: 'electrical' },
-            { id: 'port-w', name: 'w', interfaceType: 'mechanical' },
-            { id: 'port-a', name: 'a', interfaceType: 'mechanical' }
+            { id: 'port-us1', name: 'us[1]', interfaceType: 'iec-690v-60hz' },
+            { id: 'port-us2', name: 'us[2]', interfaceType: 'iec-690v-60hz' },
+            { id: 'port-w', name: 'w', interfaceType: 'propeller-drive-shaft' },
+            { id: 'port-a', name: 'a', interfaceType: 'propeller-drive-shaft' }
           ],
-          outputs: [{ id: 'port-tau', name: 'tau', interfaceType: 'mechanical' }]
+          outputs: [{ id: 'port-tau', name: 'tau', interfaceType: 'propeller-drive-shaft' }]
         }
       },
       {
@@ -755,14 +756,14 @@ export const simanticsSspCloudTemplate: SimpleComponent = {
             { key: 'Flywheel.k', value: '7600000' }
           ],
           inputs: [
-            { id: 'port-tau-in', name: 'tau_in', interfaceType: 'mechanical' },
-            { id: 'port-w-out-in', name: 'w_out', interfaceType: 'mechanical' },
-            { id: 'port-a-out-in', name: 'a_out', interfaceType: 'mechanical' }
+            { id: 'port-tau-in', name: 'tau_in', interfaceType: 'propeller-drive-shaft' },
+            { id: 'port-w-out-in', name: 'w_out', interfaceType: 'propeller-drive-shaft' },
+            { id: 'port-a-out-in', name: 'a_out', interfaceType: 'propeller-drive-shaft' }
           ],
           outputs: [
-            { id: 'port-w-in-out', name: 'w_in', interfaceType: 'mechanical' },
-            { id: 'port-tau-out', name: 'tau_out', interfaceType: 'mechanical' },
-            { id: 'port-a-in-out', name: 'a_in', interfaceType: 'mechanical' }
+            { id: 'port-w-in-out', name: 'w_in', interfaceType: 'propeller-drive-shaft' },
+            { id: 'port-tau-out', name: 'tau_out', interfaceType: 'propeller-drive-shaft' },
+            { id: 'port-a-in-out', name: 'a_in', interfaceType: 'propeller-drive-shaft' }
           ]
         }
       },
@@ -785,10 +786,10 @@ export const simanticsSspCloudTemplate: SimpleComponent = {
             { key: 'load.K2', value: '200' },
             { key: 'load.T', value: '0' }
           ],
-          inputs: [{ id: 'port-tau', name: 'tau', interfaceType: 'mechanical' }],
+          inputs: [{ id: 'port-tau', name: 'tau', interfaceType: 'propeller-drive-shaft' }],
           outputs: [
-            { id: 'port-w', name: 'w', interfaceType: 'mechanical' },
-            { id: 'port-a', name: 'a', interfaceType: 'mechanical' }
+            { id: 'port-w', name: 'w', interfaceType: 'propeller-drive-shaft' },
+            { id: 'port-a', name: 'a', interfaceType: 'propeller-drive-shaft' }
           ]
         }
       }
@@ -879,9 +880,530 @@ export const simanticsSspCloudTemplate: SimpleComponent = {
     inputs: [],
     outputs: []
   }
+};// ── Maritime Cooling System (HT/LT fresh water + sea water circuits) ──
+export const maritimeCoolingSystem: SimpleComponent = {
+  id: 'maritime-cooling-system',
+  name: 'Maritime Cooling System',
+  type: 'package',
+  data: {
+    declaredName: 'Maritime Cooling System',
+    comment: 'HT/LT fresh water cooling circuits with central sea water heat exchanger',
+    id: 'PKG-MARITIME-COOLING',
+    metadata: [
+      { key: 'systemType', value: 'Cooling' },
+      { key: 'htCircuitTemp', value: '90°C' },
+      { key: 'ltCircuitTemp', value: '38°C' },
+      { key: 'coolingCapacity', value: '4500kW' }
+    ],
+    nodes: [
+      {
+        id: 'part-ht-pump',
+        type: 'part',
+        position: { x: 200, y: 250 },
+        data: {
+          declaredName: 'HT Fresh Water Pump',
+          definition: 'Centrifugal Pump',
+          comment: 'High-temperature circuit pump for main engine jacket water cooling',
+          id: 'PRT-HT-PUMP-001',
+          mass: 380,
+          metadata: [
+            { key: 'flowRate', value: '120m³/h' },
+            { key: 'head', value: '35m' },
+            { key: 'motorPower', value: '22kW' }
+          ],
+          inputs: [{ id: 'port-ht-water-in', name: 'ht_water_in', interfaceType: 'ht-water' }],
+          outputs: [{ id: 'port-ht-water-out', name: 'ht_water_out', interfaceType: 'ht-water' }]
+        }
+      },
+      {
+        id: 'part-lt-pump',
+        type: 'part',
+        position: { x: 200, y: 700 },
+        data: {
+          declaredName: 'LT Fresh Water Pump',
+          definition: 'Centrifugal Pump',
+          comment: 'Low-temperature circuit pump for charge air coolers and lubricating oil',
+          id: 'PRT-LT-PUMP-001',
+          mass: 420,
+          metadata: [
+            { key: 'flowRate', value: '180m³/h' },
+            { key: 'head', value: '30m' },
+            { key: 'motorPower', value: '30kW' }
+          ],
+          inputs: [{ id: 'port-lt-water-in', name: 'lt_water_in', interfaceType: 'lt-water' }],
+          outputs: [{ id: 'port-lt-water-out', name: 'lt_water_out', interfaceType: 'lt-water' }]
+        }
+      },
+      {
+        id: 'part-central-cooler',
+        type: 'part',
+        position: { x: 850, y: 475 },
+        data: {
+          declaredName: 'Central Cooler',
+          definition: 'Plate Heat Exchanger',
+          comment: 'Titanium plate heat exchanger — HT/LT fresh water cooled by sea water',
+          id: 'PRT-CENTRAL-COOLER-001',
+          mass: 2800,
+          metadata: [
+            { key: 'type', value: 'Plate' },
+            { key: 'material', value: 'Titanium' },
+            { key: 'capacity', value: '4500kW' },
+            { key: 'plates', value: '340' }
+          ],
+          inputs: [
+            { id: 'port-fw-ht-in', name: 'fw_ht_in', interfaceType: 'ht-water' },
+            { id: 'port-fw-lt-in', name: 'fw_lt_in', interfaceType: 'lt-water' },
+            { id: 'port-sw-in', name: 'sw_in', interfaceType: 'sw-water' }
+          ],
+          outputs: [
+            { id: 'port-fw-ht-out', name: 'fw_ht_out', interfaceType: 'ht-water' },
+            { id: 'port-fw-lt-out', name: 'fw_lt_out', interfaceType: 'lt-water' }
+          ]
+        }
+      },
+      {
+        id: 'part-sw-pump',
+        type: 'part',
+        position: { x: 1500, y: 475 },
+        data: {
+          declaredName: 'Sea Water Pump',
+          definition: 'Centrifugal Pump',
+          comment: 'Main sea water circulation pump feeding the central cooler',
+          id: 'PRT-SW-PUMP-001',
+          mass: 650,
+          metadata: [
+            { key: 'flowRate', value: '320m³/h' },
+            { key: 'head', value: '25m' },
+            { key: 'motorPower', value: '45kW' },
+            { key: 'material', value: 'Bronze' }
+          ],
+          inputs: [{ id: 'port-sw-in', name: 'sw_in', interfaceType: 'sw-water' }],
+          outputs: [{ id: 'port-sw-out', name: 'sw_out', interfaceType: 'sw-water' }]
+        }
+      },
+      {
+        id: 'part-expansion-tank',
+        type: 'part',
+        position: { x: 200, y: 1150 },
+        data: {
+          declaredName: 'FW Expansion Tank',
+          definition: 'Expansion Tank',
+          comment: 'Pressurised expansion tank for the fresh water circuits',
+          id: 'PRT-EXP-TANK-001',
+          mass: 180,
+          metadata: [
+            { key: 'volume', value: '800L' },
+            { key: 'preChargePressure', value: '1.5bar' }
+          ],
+          inputs: [{ id: 'port-exp-in', name: 'fw_return', interfaceType: 'ht-water' }],
+          outputs: [{ id: 'port-exp-out', name: 'fw_supply', interfaceType: 'ht-water' }]
+        }
+      },
+      {
+        id: 'item-sea-water',
+        type: 'item',
+        position: { x: 1500, y: 150 },
+        data: {
+          declaredName: 'Sea Water Inlet',
+          comment: 'Sea water intake from sea chest via strainer',
+          id: 'ITM-SW-INLET-001',
+          mass: 0,
+          metadata: [{ key: 'source', value: 'Sea Chest' }],
+          inputs: [],
+          outputs: [{ id: 'port-sw-supply', name: 'sea_water', interfaceType: 'sw-water' }]
+        }
+      }
+    ],
+    edges: [
+      { id: 'edge-sw-inlet-pump', source: 'item-sea-water', target: 'part-sw-pump', sourceHandle: 'item-sea-water-output-sea_water', targetHandle: 'part-sw-pump-input-sw_in', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-sw-pump-cooler', source: 'part-sw-pump', target: 'part-central-cooler', sourceHandle: 'part-sw-pump-output-sw_out', targetHandle: 'part-central-cooler-input-sw_in', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-ht-pump-cooler', source: 'part-ht-pump', target: 'part-central-cooler', sourceHandle: 'part-ht-pump-output-ht_water_out', targetHandle: 'part-central-cooler-input-fw_ht_in', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-lt-pump-cooler', source: 'part-lt-pump', target: 'part-central-cooler', sourceHandle: 'part-lt-pump-output-lt_water_out', targetHandle: 'part-central-cooler-input-fw_lt_in', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-cooler-expansion', source: 'part-central-cooler', target: 'part-expansion-tank', sourceHandle: 'part-central-cooler-output-fw_ht_out', targetHandle: 'part-expansion-tank-input-fw_return', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } }
+    ],
+    inputs: [],
+    outputs: []
+  }
 };
 
-// Keep these for backward compatibility but simplified
+// ── Ballast Water System ──
+export const ballastWaterSystem: SimpleComponent = {
+  id: 'ballast-water-system',
+  name: 'Ballast Water System',
+  type: 'package',
+  data: {
+    declaredName: 'Ballast Water System',
+    comment: 'IMO D-2 compliant ballast water management with treatment and tank control',
+    id: 'PKG-BALLAST-WATER',
+    metadata: [
+      { key: 'systemType', value: 'Ballast' },
+      { key: 'compliance', value: 'IMO D-2' },
+      { key: 'totalCapacity', value: '3200m³' },
+      { key: 'treatmentType', value: 'UV + Filtration' }
+    ],
+    nodes: [
+      {
+        id: 'part-ballast-pump',
+        type: 'part',
+        position: { x: 200, y: 300 },
+        data: {
+          declaredName: 'Ballast Water Pump',
+          definition: 'Centrifugal Pump',
+          comment: 'Main ballast pump for filling and stripping ballast tanks',
+          id: 'PRT-BALLAST-PUMP-001',
+          mass: 1200,
+          metadata: [
+            { key: 'flowRate', value: '500m³/h' },
+            { key: 'head', value: '25m' },
+            { key: 'motorPower', value: '75kW' }
+          ],
+          inputs: [{ id: 'port-bw-in', name: 'bw_in', interfaceType: 'sw-water' }],
+          outputs: [{ id: 'port-bw-out', name: 'bw_out', interfaceType: 'sw-water' }]
+        }
+      },
+      {
+        id: 'part-bwts',
+        type: 'part',
+        position: { x: 850, y: 300 },
+        data: {
+          declaredName: 'Ballast Water Treatment System',
+          definition: 'UV BWTS',
+          comment: 'UV-based ballast water treatment — 50 µm filtration + medium-pressure UV',
+          id: 'PRT-BWTS-001',
+          mass: 3400,
+          metadata: [
+            { key: 'type', value: 'UV' },
+            { key: 'filterMesh', value: '50µm' },
+            { key: 'uvDose', value: '300mJ/cm²' },
+            { key: 'treatmentCapacity', value: '500m³/h' }
+          ],
+          inputs: [{ id: 'port-bwts-in', name: 'untreated', interfaceType: 'sw-water' }],
+          outputs: [{ id: 'port-bwts-out', name: 'treated', interfaceType: 'sw-water' }]
+        }
+      },
+      {
+        id: 'part-valve-manifold',
+        type: 'part',
+        position: { x: 1500, y: 300 },
+        data: {
+          declaredName: 'Ballast Valve Manifold',
+          definition: 'Hydraulic Valve Manifold',
+          comment: 'Remote-operated manifold distributing ballast water to individual tanks',
+          id: 'PRT-VALVE-MANIFOLD-001',
+          mass: 850,
+          metadata: [
+            { key: 'valves', value: '12' },
+            { key: 'actuation', value: 'Hydraulic' },
+            { key: 'remoteControl', value: 'IAS integrated' }
+          ],
+          inputs: [{ id: 'port-vm-in', name: 'manifold_in', interfaceType: 'sw-water' }],
+          outputs: [{ id: 'port-vm-out', name: 'manifold_out', interfaceType: 'sw-water' }]
+        }
+      },
+      {
+        id: 'item-ballast-tank-group',
+        type: 'item',
+        position: { x: 2150, y: 300 },
+        data: {
+          declaredName: 'Ballast Tank Group',
+          comment: 'Set of segregated ballast tanks (fore peak, aft peak, double bottom, wing tanks)',
+          id: 'ITM-BALLAST-TANKS-001',
+          mass: 0,
+          metadata: [
+            { key: 'tankCount', value: '8' },
+            { key: 'totalVolume', value: '3200m³' }
+          ],
+          inputs: [{ id: 'port-tank-in', name: 'tank_fill', interfaceType: 'sw-water' }],
+          outputs: [{ id: 'port-tank-out', name: 'tank_strip', interfaceType: 'sw-water' }]
+        }
+      }
+    ],
+    edges: [
+      { id: 'edge-pump-bwts', source: 'part-ballast-pump', target: 'part-bwts', sourceHandle: 'part-ballast-pump-output-bw_out', targetHandle: 'part-bwts-input-untreated', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-bwts-manifold', source: 'part-bwts', target: 'part-valve-manifold', sourceHandle: 'part-bwts-output-treated', targetHandle: 'part-valve-manifold-input-manifold_in', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-manifold-tank', source: 'part-valve-manifold', target: 'item-ballast-tank-group', sourceHandle: 'part-valve-manifold-output-manifold_out', targetHandle: 'item-ballast-tank-group-input-tank_fill', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } }
+    ],
+    inputs: [],
+    outputs: []
+  }
+};
+
+// ── Ship HVAC & Ventilation System ──
+export const shipHvacSystem: SimpleComponent = {
+  id: 'ship-hvac-system',
+  name: 'Ship HVAC System',
+  type: 'package',
+  data: {
+    declaredName: 'Ship HVAC System',
+    comment: 'Accommodation and machinery space HVAC with chiller, air handlers, and fire dampers',
+    id: 'PKG-SHIP-HVAC',
+    metadata: [
+      { key: 'systemType', value: 'HVAC' },
+      { key: 'coolingCapacity', value: '850kW' },
+      { key: 'airFlow', value: '45000m³/h' },
+      { key: 'zones', value: '6' }
+    ],
+    nodes: [
+      {
+        id: 'part-chiller',
+        type: 'part',
+        position: { x: 200, y: 300 },
+        data: {
+          declaredName: 'Screw Chiller Unit',
+          definition: 'Marine Water Chiller',
+          comment: 'Twin-screw compressor chiller supplying chilled water to air handling units',
+          id: 'PRT-CHILLER-001',
+          mass: 2200,
+          metadata: [
+            { key: 'type', value: 'Screw' },
+            { key: 'capacity', value: '850kW' },
+            { key: 'refrigerant', value: 'R-513A' },
+            { key: 'chilledWaterTemp', value: '7/12°C' }
+          ],
+          inputs: [{ id: 'port-chw-return', name: 'chw_return', interfaceType: 'lt-water' }],
+          outputs: [{ id: 'port-chw-supply', name: 'chw_supply', interfaceType: 'lt-water' }]
+        }
+      },
+      {
+        id: 'part-ahu-bridge',
+        type: 'part',
+        position: { x: 850, y: 150 },
+        data: {
+          declaredName: 'Bridge AHU',
+          definition: 'Air Handling Unit',
+          comment: 'Bridge deck air handling unit — cooling, heating, and fresh air intake',
+          id: 'PRT-AHU-BRIDGE-001',
+          mass: 480,
+          metadata: [
+            { key: 'airFlow', value: '8000m³/h' },
+            { key: 'coolingCoil', value: 'Chilled Water' },
+            { key: 'filterClass', value: 'F7' }
+          ],
+          inputs: [
+            { id: 'port-ahu-b-chw', name: 'chw_in', interfaceType: 'lt-water' },
+            { id: 'port-ahu-b-fresh', name: 'fresh_air', interfaceType: 'work-air' }
+          ],
+          outputs: [{ id: 'port-ahu-b-supply', name: 'supply_air', interfaceType: 'work-air' }]
+        }
+      },
+      {
+        id: 'part-ahu-accommodation',
+        type: 'part',
+        position: { x: 850, y: 600 },
+        data: {
+          declaredName: 'Accommodation AHU',
+          definition: 'Air Handling Unit',
+          comment: 'Main accommodation air handling unit serving cabins and public spaces',
+          id: 'PRT-AHU-ACCOM-001',
+          mass: 720,
+          metadata: [
+            { key: 'airFlow', value: '22000m³/h' },
+            { key: 'coolingCoil', value: 'Chilled Water' },
+            { key: 'heatRecovery', value: 'Rotary Wheel 78%' }
+          ],
+          inputs: [
+            { id: 'port-ahu-a-chw', name: 'chw_in', interfaceType: 'lt-water' },
+            { id: 'port-ahu-a-fresh', name: 'fresh_air', interfaceType: 'work-air' }
+          ],
+          outputs: [{ id: 'port-ahu-a-supply', name: 'supply_air', interfaceType: 'work-air' }]
+        }
+      },
+      {
+        id: 'part-vent-fan',
+        type: 'part',
+        position: { x: 850, y: 1050 },
+        data: {
+          declaredName: 'Engine Room Vent Fan',
+          definition: 'Axial Ventilation Fan',
+          comment: 'Engine room supply and extraction fan set with fire dampers',
+          id: 'PRT-VENT-FAN-001',
+          mass: 350,
+          metadata: [
+            { key: 'airFlow', value: '15000m³/h' },
+            { key: 'motorPower', value: '11kW' },
+            { key: 'fireRated', value: 'A-60' }
+          ],
+          inputs: [{ id: 'port-vent-fresh', name: 'fresh_air', interfaceType: 'work-air' }],
+          outputs: [{ id: 'port-vent-supply', name: 'vent_air', interfaceType: 'work-air' }]
+        }
+      },
+      {
+        id: 'item-fresh-air',
+        type: 'item',
+        position: { x: 200, y: 800 },
+        data: {
+          declaredName: 'Fresh Air Intake',
+          comment: 'Weather-tight fresh air intake with mist eliminator and bird screen',
+          id: 'ITM-FRESH-AIR-001',
+          mass: 0,
+          metadata: [{ key: 'intakeType', value: 'Weather-Tight Louvre' }],
+          inputs: [],
+          outputs: [{ id: 'port-air-supply', name: 'fresh_air', interfaceType: 'work-air' }]
+        }
+      }
+    ],
+    edges: [
+      { id: 'edge-chiller-ahu-b', source: 'part-chiller', target: 'part-ahu-bridge', sourceHandle: 'part-chiller-output-chw_supply', targetHandle: 'part-ahu-bridge-input-chw_in', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-chiller-ahu-a', source: 'part-chiller', target: 'part-ahu-accommodation', sourceHandle: 'part-chiller-output-chw_supply', targetHandle: 'part-ahu-accommodation-input-chw_in', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-fresh-ahu-b', source: 'item-fresh-air', target: 'part-ahu-bridge', sourceHandle: 'item-fresh-air-output-fresh_air', targetHandle: 'part-ahu-bridge-input-fresh_air', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-fresh-ahu-a', source: 'item-fresh-air', target: 'part-ahu-accommodation', sourceHandle: 'item-fresh-air-output-fresh_air', targetHandle: 'part-ahu-accommodation-input-fresh_air', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-fresh-vent', source: 'item-fresh-air', target: 'part-vent-fan', sourceHandle: 'item-fresh-air-output-fresh_air', targetHandle: 'part-vent-fan-input-fresh_air', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } }
+    ],
+    inputs: [],
+    outputs: []
+  }
+};
+
+// ── Navigation & Bridge System ──
+export const navigationBridgeSystem: SimpleComponent = {
+  id: 'navigation-bridge-system',
+  name: 'Navigation & Bridge System',
+  type: 'package',
+  data: {
+    declaredName: 'Navigation & Bridge System',
+    comment: 'Integrated bridge system with X/S-band radars, ECDIS, GPS, gyrocompass, and autopilot',
+    id: 'PKG-NAV-BRIDGE',
+    metadata: [
+      { key: 'systemType', value: 'Navigation' },
+      { key: 'compliance', value: 'SOLAS Ch.V' },
+      { key: 'bridgeClass', value: 'IBS (Integrated Bridge System)' }
+    ],
+    nodes: [
+      {
+        id: 'part-xband-radar',
+        type: 'part',
+        position: { x: 200, y: 150 },
+        data: {
+          declaredName: 'X-Band Radar',
+          definition: 'Marine Radar',
+          comment: '9.4 GHz X-band radar for high-resolution short-range navigation and collision avoidance',
+          id: 'PRT-XBAND-RADAR-001',
+          mass: 65,
+          metadata: [
+            { key: 'frequency', value: '9.4GHz (X-band)' },
+            { key: 'range', value: '24NM' },
+            { key: 'antennaType', value: '6ft Open Array' }
+          ],
+          inputs: [{ id: 'port-radar-pps', name: 'trigger_sync', interfaceType: 'nmea-0183' }],
+          outputs: [{ id: 'port-radar-video', name: 'radar_video', interfaceType: 'nmea-0183' }]
+        }
+      },
+      {
+        id: 'part-sband-radar',
+        type: 'part',
+        position: { x: 200, y: 600 },
+        data: {
+          declaredName: 'S-Band Radar',
+          definition: 'Marine Radar',
+          comment: '3.0 GHz S-band radar for long-range detection in heavy sea clutter',
+          id: 'PRT-SBAND-RADAR-001',
+          mass: 85,
+          metadata: [
+            { key: 'frequency', value: '3.0GHz (S-band)' },
+            { key: 'range', value: '72NM' },
+            { key: 'antennaType', value: '12ft Open Array' }
+          ],
+          inputs: [{ id: 'port-sradar-pps', name: 'trigger_sync', interfaceType: 'nmea-0183' }],
+          outputs: [{ id: 'port-sradar-video', name: 'radar_video', interfaceType: 'nmea-0183' }]
+        }
+      },
+      {
+        id: 'part-gps-receiver',
+        type: 'part',
+        position: { x: 850, y: 150 },
+        data: {
+          declaredName: 'Dual GPS/GNSS Receiver',
+          definition: 'GNSS Receiver',
+          comment: 'Dual-antenna multi-constellation GNSS receiver (GPS + GLONASS + Galileo + BeiDou)',
+          id: 'PRT-GPS-001',
+          mass: 8,
+          metadata: [
+            { key: 'constellations', value: 'GPS + GLONASS + Galileo + BeiDou' },
+            { key: 'accuracy', value: '<1m (DGNSS)' },
+            { key: 'updateRate', value: '10Hz' }
+          ],
+          inputs: [],
+          outputs: [{ id: 'port-gps-nmea', name: 'nmea_position', interfaceType: 'nmea-0183' }]
+        }
+      },
+      {
+        id: 'part-gyrocompass',
+        type: 'part',
+        position: { x: 850, y: 600 },
+        data: {
+          declaredName: 'Gyrocompass',
+          definition: 'Fibre-Optic Gyrocompass',
+          comment: 'IMO type-approved fibre-optic gyrocompass with heading and rate-of-turn output',
+          id: 'PRT-GYRO-001',
+          mass: 22,
+          metadata: [
+            { key: 'technology', value: 'FOG (Fibre-Optic Gyro)' },
+            { key: 'accuracy', value: '0.1° secant latitude' },
+            { key: 'settlingTime', value: '<3min' }
+          ],
+          inputs: [],
+          outputs: [{ id: 'port-gyro-hdt', name: 'heading_nmea', interfaceType: 'nmea-0183' }]
+        }
+      },
+      {
+        id: 'part-ecdis-console',
+        type: 'part',
+        position: { x: 1500, y: 375 },
+        data: {
+          declaredName: 'ECDIS Console',
+          definition: 'Electronic Chart Display',
+          comment: 'Dual ECDIS workstation with S-100 compliant electronic chart display',
+          id: 'PRT-ECDIS-001',
+          mass: 45,
+          metadata: [
+            { key: 'displays', value: '2 × 27"' },
+            { key: 'chartStandard', value: 'S-57 / S-100' },
+            { key: 'trackControl', value: 'CAT II' }
+          ],
+          inputs: [
+            { id: 'port-ecdis-gps', name: 'position_in', interfaceType: 'nmea-0183' },
+            { id: 'port-ecdis-gyro', name: 'heading_in', interfaceType: 'nmea-0183' },
+            { id: 'port-ecdis-radar', name: 'radar_overlay', interfaceType: 'nmea-0183' }
+          ],
+          outputs: [{ id: 'port-ecdis-route', name: 'route_data', interfaceType: 'nmea-0183' }]
+        }
+      },
+      {
+        id: 'part-autopilot',
+        type: 'part',
+        position: { x: 2150, y: 375 },
+        data: {
+          declaredName: 'Adaptive Autopilot',
+          definition: 'Heading Control System',
+          comment: 'Adaptive track-keeping autopilot with weather compensation and rate-of-turn control',
+          id: 'PRT-AUTOPILOT-001',
+          mass: 18,
+          metadata: [
+            { key: 'controlMode', value: 'Heading / Track / Rate-of-Turn' },
+            { key: 'weatherCompensation', value: 'Adaptive' },
+            { key: 'interface', value: 'NMEA 0183 / Modbus TCP' }
+          ],
+          inputs: [
+            { id: 'port-ap-heading', name: 'heading_in', interfaceType: 'nmea-0183' },
+            { id: 'port-ap-route', name: 'route_in', interfaceType: 'nmea-0183' }
+          ],
+          outputs: [{ id: 'port-ap-rudder', name: 'rudder_cmd', interfaceType: 'nmea-0183' }]
+        }
+      }
+    ],
+    edges: [
+      { id: 'edge-gps-ecdis', source: 'part-gps-receiver', target: 'part-ecdis-console', sourceHandle: 'part-gps-receiver-output-nmea_position', targetHandle: 'part-ecdis-console-input-position_in', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-gyro-ecdis', source: 'part-gyrocompass', target: 'part-ecdis-console', sourceHandle: 'part-gyrocompass-output-heading_nmea', targetHandle: 'part-ecdis-console-input-heading_in', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-xradar-ecdis', source: 'part-xband-radar', target: 'part-ecdis-console', sourceHandle: 'part-xband-radar-output-radar_video', targetHandle: 'part-ecdis-console-input-radar_overlay', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-gyro-ap', source: 'part-gyrocompass', target: 'part-autopilot', sourceHandle: 'part-gyrocompass-output-heading_nmea', targetHandle: 'part-autopilot-input-heading_in', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } },
+      { id: 'edge-ecdis-ap', source: 'part-ecdis-console', target: 'part-autopilot', sourceHandle: 'part-ecdis-console-output-route_data', targetHandle: 'part-autopilot-input-route_in', type: 'default', data: { compatibility: 'direct', connectionType: 'flow' } }
+    ],
+    inputs: [],
+    outputs: []
+  }
+};
+
+// Keep these for backward compatibility — all point to the commercial vessel powertrain
 export const engineComponent = commercialVesselPowertrain;
 export const generatorComponent = commercialVesselPowertrain;
 export const pumpComponent = commercialVesselPowertrain;

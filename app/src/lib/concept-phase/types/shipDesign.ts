@@ -68,6 +68,7 @@ export interface ShipDesignTemplate {
   data: {
     declaredName: string;
     comment?: string;
+    id: string;
     nodes: Node[]; // Major systems (propulsion, power generation, etc.)
     edges: Edge[]; // Connections between systems
     metadata: Array<{ key: string; value: string }>;

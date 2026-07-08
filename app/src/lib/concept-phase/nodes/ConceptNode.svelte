@@ -380,7 +380,7 @@
             {:else}
                 <Squircle size={14} />
             {/if}
-            <span class="title">{data.definition ? `${data.definition} (${type})` : `${capitalize(type)}`}</span>
+            <span class="title">{data.definition ? `${data.definition} (${type})` : `${data.declaredName || capitalize(type)}`}</span>
             {#if systemTypeInfo.primary !== 'none'}
                 <div class="system-badges">
                     <!-- Primary badge -->

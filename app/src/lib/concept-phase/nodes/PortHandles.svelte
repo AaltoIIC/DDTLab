@@ -117,15 +117,29 @@
         }
     }
     
+    /** Resolve interfaceType to its string ID, handling the case where an entire
+     *  InterfaceDefinition object was stored instead of a plain string ID. */
+    function resolveInterfaceId(interfaceType: any): string | undefined {
+        if (!interfaceType) return undefined;
+        // Already a string ID
+        if (typeof interfaceType === 'string') return interfaceType;
+        // Accidentally stored as an InterfaceDefinition object — extract its .id
+        if (typeof interfaceType === 'object' && interfaceType !== null && typeof interfaceType.id === 'string') {
+            return interfaceType.id;
+        }
+        return undefined;
+    }
+
     function getInterfaceColor(interfaceType: string | undefined): string {
-        if (!interfaceType) return '#6b7280'; // gray
+        const interfaceId = resolveInterfaceId(interfaceType);
+        if (!interfaceId) return '#6b7280'; // gray
 
         // Check standard interfaces first
-        let intf = standardInterfaces[interfaceType];
+        let intf = standardInterfaces[interfaceId];
 
         // If not found in standard, check custom interfaces
         if (!intf) {
-            const customIntf = allCustomInterfaces.find(ci => ci.id === interfaceType);
+            const customIntf = allCustomInterfaces.find(ci => ci.id === interfaceId);
             if (customIntf) {
                 intf = customIntf;
             }
@@ -188,8 +202,9 @@
             <span class="handle-label">
                 {port.name}
                 {#if port.interfaceType}
-                    {@const interfaceName = standardInterfaces[port.interfaceType]?.name ||
-                        allCustomInterfaces.find(ci => ci.id === port.interfaceType)?.name ||
+                    {@const interfaceId = resolveInterfaceId(port.interfaceType)}
+                    {@const interfaceName = standardInterfaces[interfaceId]?.name ||
+                        allCustomInterfaces.find(ci => ci.id === interfaceId)?.name ||
                         'Unknown'}
                     <span class="interface-type">({interfaceName})</span>
                 {/if}

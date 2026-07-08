@@ -139,6 +139,16 @@ export async function fetchAnalysisRequestStatuses(sourceSystemId: string): Prom
 	return (await response.json()) as AnalysisRequestStatusView[];
 }
 
+export async function cancelAnalysisRequest(requestId: string): Promise<void> {
+	const response = await fetch(`${getAnalysisRequestApiBaseUrl()}/api/analysis-requests/${encodeURIComponent(requestId)}`, {
+		method: 'DELETE'
+	});
+
+	if (!response.ok) {
+		throw new Error(await readErrorMessage(response));
+	}
+}
+
 export async function shareAnalysisReport(requestId: string, payload: ShareAnalysisReportPayload): Promise<{ id: string }> {
 	const form = new FormData();
 	form.set('file', new Blob([payload.pdfBytes], { type: 'application/pdf' }), payload.filename);

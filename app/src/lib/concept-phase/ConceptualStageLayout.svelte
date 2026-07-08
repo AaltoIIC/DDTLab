@@ -20,11 +20,12 @@
     import type { PackageView } from './packageStore';
     import { onMount, onDestroy } from 'svelte';
     import { get } from 'svelte/store';
-    import { Save, CircleQuestionMark, Repeat, Send } from '@lucide/svelte';
+    import { Save, CircleQuestionMark, Repeat, Send, Eye, EyeOff } from '@lucide/svelte';
     import { saveTemplate } from '$lib/stores/stores.svelte';
     import {
         createAnalysisRequest,
         fetchAnalysisRequestStatuses,
+        cancelAnalysisRequest,
         shareAnalysisReport,
         type AnalysisRequestStatusView,
         type AnalysisRequestParameter,
@@ -58,7 +59,10 @@
     const MAX_POLL_FAILURES_BEFORE_STOP = 3;
     let sharingReportId = $state('');
     let shareReportError = $state('');
+    let cancellingRequestId = $state('');
+    let cancelledRequestIds = $state(new Set<string>());
     let isConvertingToDesign = $state(false);
+    let showAnalysisPanel = $state(true);
 
     type AnalysisPartTracking = AnalysisRequestStatusView['parts'][number] & {
         request_id: string;
@@ -322,7 +326,9 @@
 
         analysisStatusLoading = true;
         try {
-            analysisStatuses = await fetchAnalysisRequestStatuses(systemId);
+            const fetched = await fetchAnalysisRequestStatuses(systemId);
+            // Filter out any requests the user has cancelled locally
+            analysisStatuses = fetched.filter(s => !cancelledRequestIds.has(s.id));
             consecutivePollFailures = 0;
             if (!analysisStatusPoll) {
                 analysisStatusPoll = setInterval(() => {
@@ -368,6 +374,12 @@
     }
 
     function handleConvertToDesign() {
+        const nodes = get(currentNodes);
+        if (nodes.length === 0) {
+            showNotification('Add at least one element to the editor before converting to design', 'error');
+            return;
+        }
+
         if (analysisConversionBlocked) {
             const missingNames = missingAnalysisParts.map((part) => `${part.name} (${part.target_label})`).slice(0, 3).join(', ');
             const suffix = missingAnalysisParts.length > 3 ? ` and ${missingAnalysisParts.length - 3} more` : '';
@@ -634,6 +646,23 @@
         previousViewStack = [];
     }
 
+    async function cancelRequest(requestId: string) {
+        cancellingRequestId = requestId;
+        // Track locally so polling never brings it back
+        cancelledRequestIds = new Set([...cancelledRequestIds, requestId]);
+        // Remove from current display immediately
+        analysisStatuses = analysisStatuses.filter(s => s.id !== requestId);
+        // Best-effort: try to notify the OEM platform
+        try {
+            await cancelAnalysisRequest(requestId);
+            showNotification('Analysis request cancelled', 'success');
+        } catch {
+            showNotification('Request hidden locally — could not reach OEM platform', 'error');
+        } finally {
+            cancellingRequestId = '';
+        }
+    }
+
     function openAnalysisRequestDialog() {
         const parts = collectAnalysisParts();
         analysisTitle = `${$currentSystemMeta.name || 'System'} torsional vibration analysis`;
@@ -762,7 +791,7 @@
                 </button>
                 <button
                     class="stage-btn"
-                    class:blocked={analysisConversionBlocked}
+                    class:blocked={analysisConversionBlocked || $currentNodes.length === 0}
                     class:flash={isConvertingToDesign}
                     onclick={handleConvertToDesign}
                 >
@@ -773,6 +802,20 @@
                     <Send size={16} />
                     Request Analysis
                 </button>
+                {#if analysisStatuses.length || conceptAnalysisReports.length}
+                    <button
+                        class="stage-btn analysis-toggle-btn"
+                        title={showAnalysisPanel ? 'Hide analysis panel' : 'Show analysis panel'}
+                        onclick={() => (showAnalysisPanel = !showAnalysisPanel)}
+                    >
+                        {#if showAnalysisPanel}
+                            <EyeOff size={16} />
+                        {:else}
+                            <Eye size={16} />
+                        {/if}
+                        {showAnalysisPanel ? 'Hide' : 'Show'} Analysis
+                    </button>
+                {/if}
                 <div class="stage-indicator">
                     Conceptual Stage
                     {#if $currentPackageView}
@@ -789,7 +832,7 @@
             </div>
         </div>
         
-        {#if analysisStatuses.length || conceptAnalysisReports.length}
+        {#if showAnalysisPanel && (analysisStatuses.length || conceptAnalysisReports.length)}
             <div class="analysis-status {analysisAggregate.complete ? 'ready' : 'pending'}">
                 {#if analysisStatuses.length}
                     <div class="analysis-status-header">
@@ -798,13 +841,31 @@
                         <span>{analysisStatuses.length} request{analysisStatuses.length === 1 ? '' : 's'} tracked</span>
                         {#if analysisStatusLoading}<span>Refreshing...</span>{/if}
                     </div>
-                    <div class="analysis-status-parts">
-                        {#each analysisAggregate.partEntries as part (`${part.request_id}-${part.id}`)}
-                            <span class="analysis-part {part.responded ? 'ready' : 'pending'}">
-                                {part.name} ({part.target_label}): {part.responded ? `${part.responses.map((response) => response.oem_short_code ?? response.oem_name ?? 'OEM').join(', ')} responded` : 'waiting'}
-                            </span>
-                        {/each}
-                    </div>
+                    {#each analysisStatuses as status (status.id)}
+                        <div class="analysis-request-row">
+                            <div class="analysis-request-info">
+                                <strong>{status.title}</strong>
+                                <span class="analysis-request-meta">
+                                    {status.responded_part_count}/{status.part_count} responded
+                                    &middot; {formatReportDate(status.updated_at)}
+                                </span>
+                            </div>
+                            <button
+                                class="report-action-btn cancel"
+                                disabled={cancellingRequestId === status.id}
+                                onclick={() => cancelRequest(status.id)}
+                            >
+                                {cancellingRequestId === status.id ? 'Cancelling...' : 'Cancel Request'}
+                            </button>
+                        </div>
+                        <div class="analysis-status-parts">
+                            {#each status.parts as part (part.id)}
+                                <span class="analysis-part {part.responded ? 'ready' : 'pending'}">
+                                    {part.name}: {part.responded ? `${part.responses.map((response) => response.oem_short_code ?? response.oem_name ?? 'OEM').join(', ')} responded` : 'waiting'}
+                                </span>
+                            {/each}
+                        </div>
+                    {/each}
                 {/if}
                 {#if conceptAnalysisReports.length}
                     <div class="analysis-reports">
@@ -1120,6 +1181,46 @@
     .report-action-btn:disabled {
         cursor: not-allowed;
         opacity: 0.6;
+    }
+
+    .report-action-btn.cancel {
+        border-color: #fecaca;
+        color: #dc2626;
+        background: #fef2f2;
+    }
+
+    .report-action-btn.cancel:hover:not(:disabled) {
+        background: #fee2e2;
+        border-color: #fca5a5;
+    }
+
+    .analysis-request-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background: #ffffff;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+    }
+
+    .analysis-request-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .analysis-request-info strong {
+        font-size: 13px;
+        color: #111827;
+    }
+
+    .analysis-request-meta {
+        font-size: 11px;
+        color: #6b7280;
     }
 
     .analysis-part {

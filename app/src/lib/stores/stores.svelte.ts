@@ -340,7 +340,8 @@ const recursiveSystemBuilder = (
     nodes: Node[],
     edges: Edge[],
     parentSystemId: string,
-    fmuBindingsBySourceNodeId: Record<string, ConceptFmuBinding>
+    fmuBindingsBySourceNodeId: Record<string, ConceptFmuBinding>,
+    connectorHandleMap: Map<string, string> = new Map()
 ): { nodes: Node[], edges: Edge[], componentLinks: Record<string, string> } => {
     // Helper function for extracting handle names in the cocnept stage
     const extractHandleName = (handleId: string, type: '-input-' | '-output-') => {
@@ -405,9 +406,11 @@ const recursiveSystemBuilder = (
         // Convert the input/output ports to connectors
         var connectors: ConnectorType[] = [];
         var ioedges: Edge[] = [];
+        const designNodeId = `d-${node.id}`;
         if (node.type !== 'package') {
             ((node.data.inputs as any[]) || []).forEach(input => {
                 connectors.push({
+                    handleId: generateId(connectors.map(c => c.handleId).filter(Boolean) as string[]),
                     name: input.name,
                     VSSoClass: 'None',
                     type: 'input',
@@ -417,6 +420,7 @@ const recursiveSystemBuilder = (
             });
             ((node.data.outputs as any[]) || []).forEach(output => {
                 connectors.push({
+                    handleId: generateId(connectors.map(c => c.handleId).filter(Boolean) as string[]),
                     name: output.name,
                     VSSoClass: 'None',
                     type: 'output',
@@ -430,43 +434,39 @@ const recursiveSystemBuilder = (
             const inData = packageInside(node);
             const inNodeIds = inData.nodes.map(n => n.id);
             (inData.boundaryEdges || []).forEach(edge => {
-                if (inNodeIds.includes(edge.target)) {
-                    connectors.push({
-                        name: `p-Connector (${counter})`,
-                        VSSoClass: 'None',
-                        type: 'input',
-                        dataType: 'no-dt',
-                        unit: '-',
-                        metadata: edge.target
-                    });
-                    ioedges.push({
-                        source: `internal-port-input-p-Connector (${counter})`,
-                        sourceHandle: `internal-port-input-p-Connector (${counter})-source`,
-                        target: `d-${edge.target}`,
-                        targetHandle: `d-${edge.target}.${extractHandleName(edge.targetHandle ?? "", '-input-')}`,
-                        id: `d-internal-${edge.id}`
-                    })
-                }
-                else {
-                    connectors.push({
-                        name: `p-Connector (${counter})`,
-                        VSSoClass: 'None',
-                        type: 'output',
-                        dataType: 'no-dt',
-                        unit: '-',
-                        metadata: edge.source
-                    });
-                    ioedges.push({
-                        source: `d-${edge.source}`,
-                        sourceHandle: `d-${edge.source}.${extractHandleName(edge.sourceHandle ?? "", '-output-')}`,
-                        target: `internal-port-output-p-Connector (${counter})`,
-                        targetHandle: `internal-port-output-p-Connector (${counter})-target`,
-                        id: `d-internal-${edge.id}`
-                    })
-                }
+                const isInput = inNodeIds.includes(edge.target);
+                connectors.push({
+                    handleId: generateId(connectors.map(c => c.handleId).filter(Boolean) as string[]),
+                    name: `p-Connector (${counter})`,
+                    VSSoClass: 'None',
+                    type: isInput ? 'input' : 'output',
+                    dataType: 'no-dt',
+                    unit: '-',
+                    metadata: isInput ? edge.target : edge.source
+                });
+                // Defer ioedge creation until after recursive call so inner
+                // node handleIds are available in the map.
+                ioedges.push({
+                    source: isInput ? `internal-port-input-p-Connector (${counter})` : `d-${edge.source}`,
+                    sourceHandle: '', // filled after recursive call
+                    target: isInput ? `d-${edge.target}` : `internal-port-output-p-Connector (${counter})`,
+                    targetHandle: '', // filled after recursive call
+                    id: `d-internal-${edge.id}`,
+                    // Stash data needed after the recursive call to resolve handles.
+                    _input_edge: isInput ? edge : undefined,
+                    _output_edge: isInput ? undefined : edge,
+                    _counter: counter
+                } as any);
                 counter++;
             });
         }
+
+        // Register connector handleIds so edges can reference the actual handle ids
+        connectors.forEach(c => {
+            if (c.handleId) {
+                connectorHandleMap.set(`${designNodeId}:${c.name}`, c.handleId);
+            }
+        });
 
 
         const childNodes = Array.isArray(node.data?.nodes) ? node.data.nodes as Node[] : [];
@@ -477,20 +477,50 @@ const recursiveSystemBuilder = (
             const newSubsystemId = generateId(get(systems).map(s => s.id));
             const packageData = node.type === 'package' ? packageInside(node) : null;
             
-            // Convert children recursively
+            // Convert children recursively (populates inner node handleIds in the map)
             const internal = node.type === 'package' 
             ? recursiveSystemBuilder(
                 packageData?.nodes || [],
                 packageData?.inEdges || [],
                 newSubsystemId,
-                fmuBindingsBySourceNodeId
+                fmuBindingsBySourceNodeId,
+                connectorHandleMap
             )
             : recursiveSystemBuilder(
                 childNodes, 
                 childEdges, 
                 newSubsystemId,
-                fmuBindingsBySourceNodeId
+                fmuBindingsBySourceNodeId,
+                connectorHandleMap
             );
+
+            // Now that inner nodes are processed, resolve ioedge handles.
+            ioedges = (ioedges as any[]).map((ioedge: any) => {
+                if (ioedge._input_edge) {
+                    const e = ioedge._input_edge;
+                    const portName = extractHandleName(e.targetHandle ?? '', '-input-');
+                    const handleId = connectorHandleMap.get(`d-${e.target}:${portName}`) || portName;
+                    return {
+                        source: ioedge.source,
+                        sourceHandle: `internal-port-input-p-Connector (${ioedge._counter})-source`,
+                        target: `d-${e.target}`,
+                        targetHandle: `d-${e.target}.${handleId}`,
+                        id: ioedge.id
+                    };
+                } else if (ioedge._output_edge) {
+                    const e = ioedge._output_edge;
+                    const portName = extractHandleName(e.sourceHandle ?? '', '-output-');
+                    const handleId = connectorHandleMap.get(`d-${e.source}:${portName}`) || portName;
+                    return {
+                        source: `d-${e.source}`,
+                        sourceHandle: `d-${e.source}.${handleId}`,
+                        target: `internal-port-output-p-Connector (${ioedge._counter})`,
+                        targetHandle: `internal-port-output-p-Connector (${ioedge._counter})-target`,
+                        id: ioedge.id
+                    };
+                }
+                return ioedge;
+            });
 
             // Create the new System entry
             const subsystemRootNode = {...rootNode,
@@ -574,12 +604,16 @@ const recursiveSystemBuilder = (
     }, {} as Record<string, string>);
 
     const convertedEdges = filteredEdges.map(edge => {
+        const sourcePortName = extractHandleName(edge.sourceHandle ?? "", '-output-');
+        const targetPortName = extractHandleName(edge.targetHandle ?? "", '-input-');
+        const sourceNodeId = `d-${edge.source}`;
+        const targetNodeId = `d-${edge.target}`;
 
         var newBaseEdge: Edge = {
-            source: `d-${edge.source}`,
-            sourceHandle: `d-${edge.source}.${extractHandleName(edge.sourceHandle ?? "", '-output-')}`,
-            target: `d-${edge.target}`,
-            targetHandle: `d-${edge.target}.${extractHandleName(edge.targetHandle ?? "", '-input-')}`,
+            source: sourceNodeId,
+            sourceHandle: `${sourceNodeId}.${connectorHandleMap.get(`${sourceNodeId}:${sourcePortName}`) || sourcePortName}`,
+            target: targetNodeId,
+            targetHandle: `${targetNodeId}.${connectorHandleMap.get(`${targetNodeId}:${targetPortName}`) || targetPortName}`,
             id: `d-${edge.id}`
         }
 
@@ -590,7 +624,7 @@ const recursiveSystemBuilder = (
             // console.log(newConnector);
             newBaseEdge = {...newBaseEdge,
                 source: newSourceNode!.id,
-                sourceHandle: `${newSourceNode!.id}.${newConnector!.name}`
+                sourceHandle: `${newSourceNode!.id}.${newConnector?.handleId || newConnector!.name}`
             };
         }
         if (nodesInPackages.flat().includes(edge.target)) {
@@ -601,7 +635,7 @@ const recursiveSystemBuilder = (
             // console.log(newConnector);
             newBaseEdge = {...newBaseEdge,
                 target: newTargetNode!.id,
-                targetHandle: `${newTargetNode!.id}.${newConnector!.name}`
+                targetHandle: `${newTargetNode!.id}.${newConnector?.handleId || newConnector!.name}`
             };
         }
 

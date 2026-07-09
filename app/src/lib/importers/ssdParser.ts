@@ -121,6 +121,7 @@ export function parseSSDFile(xmlContent: string): ParsedSSDResult {
             }
 
             const newConnector = {
+                handleId: generateId(connectors.map(c => c.handleId).filter(Boolean)),
                 name: finalName,
                 class: finalClass, // Preserve VSSo class if detected
                 type: type,
@@ -225,10 +226,6 @@ export function parseSSDFile(xmlContent: string): ParsedSSDResult {
             target: targetNodeId,
             targetHandle: targetHandle,
             type: 'default', // Use 'default' to ensure RemovableEdge component is used
-            data: {
-                offsetX: 0,
-                offsetY: 0
-            }
         };
 
         edges.push(edge);

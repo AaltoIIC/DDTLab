@@ -25,6 +25,7 @@
                 {elementName}
                 connectorName={connector.name}
                 connectorVariable={connector.class}
+                handleId={connector.handleId}
                 type={connector.type}
             />
         {/each}

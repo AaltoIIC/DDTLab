@@ -13,6 +13,7 @@
     import {
         isNameValid,
         generateName,
+        generateId,
         selectNode
     } from '$lib/helpers';
 
@@ -133,9 +134,13 @@
             const nodeIndex = nodes.findIndex((node) => node.id === elementName);
             const newNodes: Node[] = [...nodes];
 
+            const existingHandleIds = ((newNodes[nodeIndex].data.element as any).connectors || [])
+                .map((c: any) => c.handleId).filter(Boolean);
+
             newNodes[nodeIndex].data = _.cloneDeep(newNodes[nodeIndex].data);
             (newNodes[nodeIndex].data.element as any).connectors.push(
                 {
+                    handleId: generateId(existingHandleIds),
                     name: newConnectorName,
                     VSSoClass: newConnectorClass,
                     type: type,
@@ -155,14 +160,15 @@
             const newNodes = [...nodes];
             const connector = (newNodes.find((node) => node.id === elementName)?.data as any)
                 .element.connectors.find((connector: any) => connector.name === connectorName)
-            
+
             connector.name = newConnectorName;
             connector.VSSoClass = newConnectorClass;
             connector.dataType = newConnectorDataType?.value;
             connector.unit = newConnectorUnit?.value;
-            
+
             return newNodes;
         });
+
         addToHistory();
 
         isOpen = false;

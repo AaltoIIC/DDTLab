@@ -113,6 +113,7 @@ export interface TemplateSimulationResultRecord {
 }
 
 export interface ConnectorType {
+    handleId?: string;
     name: string;
     VSSoClass: string | null;
     class?: string | null; // TODO: Look into this more, why are there two different class properties? One is VSSoClass and the other is class. Are they both needed?

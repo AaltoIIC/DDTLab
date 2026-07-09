@@ -5,7 +5,7 @@
         useSvelteFlow
     } from '@xyflow/svelte';
     import _ from 'lodash';
-    import { currentNodes, addToHistory } from '$lib/stores/stores.svelte';
+    import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { selectNode } from '$lib/helpers';
     import EditConnectorPopup from './EditConnectorPopup.svelte';
 
@@ -13,16 +13,19 @@
         elementName: string;
         connectorName: string;
         connectorVariable?: string | null;
+        handleId?: string;
         type: 'input' | 'output';
     }
 
-    let { elementName, connectorName, connectorVariable, type }: Props = $props();
+    let { elementName, connectorName, connectorVariable, handleId, type }: Props = $props();
 
     let onHover: boolean = $state(false);
     let isEditing: boolean = $state(false);
     
 
     const removeConnector = (name: string) => {
+        const resolvedHandleId = handleId || connectorName;
+
         currentNodes.update((nodes) => {
             const nodeIndex = nodes.findIndex((node) => node.id === elementName);
             const newNodes = [...nodes];
@@ -33,6 +36,15 @@
 
             return newNodes;
         });
+
+        // Remove any edges that reference this connector's handle
+        const fullHandleId = `${elementName}.${resolvedHandleId}`;
+        currentEdges.update((edges) => {
+            return edges.filter(edge =>
+                edge.sourceHandle !== fullHandleId && edge.targetHandle !== fullHandleId
+            );
+        });
+
         addToHistory();
     }
 
@@ -71,7 +83,7 @@
     <div class="handle-back">
     </div>
     <Handle
-        id={`${elementName}.${connectorVariable || connectorName}`}
+        id={`${elementName}.${handleId || connectorName}`}
         type="{type === 'input' ? 'target' : 'source'}"
         position={type === 'input' ? Position.Left : Position.Right}
         style="position: relative; top: 0; left: 0; transform: none; z-index: 4;"

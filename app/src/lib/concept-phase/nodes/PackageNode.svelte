@@ -5,7 +5,7 @@
         import { useUpdateNodeInternals, NodeResizeControl, type Node, type Edge } from '@xyflow/svelte';
         import { currentNodes, currentEdges, addToHistory, currentPackages } from '$lib/stores/stores.svelte';
     import type { PackageTemplate } from '$lib/types/types';
-    import { generateName } from '$lib/helpers';
+    import { generateName, validateName } from '$lib/helpers';
     import { activeViewpointDetails, viewpoints } from '../viewpoints/viewpointStore';
     import ContextMenu from '../ContextMenu.svelte';
     import { get } from 'svelte/store';
@@ -66,6 +66,7 @@
     let tempComment = $state(data.comment);
     let showComment = $state(false);
     let infoClicked = $state(false);
+    let isNameError = $state(false);
 
     // Context menu state
     let showContextMenu = $state(false);
@@ -202,11 +203,19 @@
         addToHistory();
     }
 
+    const validateNameLocal = () => {
+        const allNames = get(currentNodes)
+            .map(n => n.data?.declaredName)
+            .filter((name): name is string => typeof name === 'string');
+        isNameError = validateName(data.declaredName, tempName, allNames);
+    }
+
     function handleNameEdit() {
-        if (tempName.trim()) {
+        if (!isNameError && tempName.trim()) {
             updateNodeData('declaredName', tempName.trim());
         } else {
             tempName = data.declaredName;
+            isNameError = false;
         }
         editingName = false;
     }
@@ -329,14 +338,17 @@
             {#if editingName}
                 <input
                     class="package-title"
+                    class:error={isNameError}
                     type="text"
                     bind:value={tempName}
+                    oninput={validateNameLocal}
                     onblur={handleNameEdit}
                     onkeydown={(e) => {
                         if (e.key === 'Enter') handleNameEdit();
                         if (e.key === 'Escape') {
                             tempName = data.declaredName;
                             editingName = false;
+                            isNameError = false;
                         }
                     }}
                     autofocus
@@ -347,6 +359,7 @@
                     onclick={() => {
                         editingName = true;
                         tempName = data.declaredName;
+                        isNameError = false;
                     }}
                 >
                     {`${data.declaredName} (Package)`|| 'Unnamed'}
@@ -628,6 +641,17 @@
     .package-title {
         font-weight: 600;
         font-size: 18px;
+        border: solid 2px rgba(0, 0, 0, 0);
+        border-radius: 5px;
+        padding: 4px 6px;
+        outline: none;
+        background: none;
+        transition: border-color 0.2s;
+    }
+
+    .package-title.error {
+        border-color: var(--main-error-color, #dc2626);
+        background-color: #fef2f2;
     }
 
     .package-title.editable {

@@ -5,6 +5,7 @@
     import { Grid2X2, Squircle, X, Lock } from '@lucide/svelte';
     import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
+    import { validateName, generateName } from '$lib/helpers';
     import { navigateToPackage } from '../packageStore';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
@@ -141,6 +142,9 @@
         return false;
     });
 
+    // Collect all port names on this node for clash detection
+    let allPortNames = $derived([...(data.inputs || []), ...(data.outputs || [])].map(p => p.name));
+
     // Create port handlers
     const { addInput, removeInput, addOutput, removeOutput, updatePortInterface, updatePortInfo } = createPortHandlers<NodeData>(id);
     
@@ -189,6 +193,7 @@
     let tempName = $state(data.declaredName);
     let tempComment = $state(data.comment || '');
     let tempMass = $state(data.mass?.toString() || '0');
+    let isNameError = $state(false);
 
     function updateNodeData(field: string, value: any) {
         currentNodes.update(nodes => {
@@ -208,11 +213,19 @@
         addToHistory();
     }
 
+    const validateNameLocal = () => {
+        const allNames = get(currentNodes)
+            .map(n => n.data?.declaredName)
+            .filter((name): name is string => typeof name === 'string');
+        isNameError = validateName(data.declaredName, tempName, allNames);
+    }
+
     function handleNameEdit() {
-        if (tempName.trim()) {
+        if (!isNameError && tempName.trim()) {
             updateNodeData('declaredName', tempName.trim());
         } else {
             tempName = data.declaredName;
+            isNameError = false;
         }
         editingName = false;
     }
@@ -274,10 +287,13 @@
     }
 
     function handleDuplicate() {
-        const nodes = get(currentNodes);
+        const nodes = $currentNodes;
         const currentNode = nodes.find(n => n.id === id);
         
         if (currentNode) {
+            const existingNames = nodes
+                .map(n => n.data?.declaredName)
+                .filter((name): name is string => typeof name === 'string');
             const newNode = {
                 ...currentNode,
                 id: `${type}-${Date.now()}`,
@@ -288,6 +304,7 @@
                 data: {
                     ...currentNode.data,
                     id: `${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                    declaredName: generateName(String(currentNode.data.declaredName), existingNames),
                     mass: currentNode.data.mass || 0, // Copy mass value
                     inputs: Array.isArray(currentNode.data.inputs) ? currentNode.data.inputs.map(input => ({...input})) : [],
                     outputs: Array.isArray(currentNode.data.outputs) ? currentNode.data.outputs.map(output => ({...output})) : [],
@@ -374,6 +391,7 @@
         onRemove={removeInput}
         onUpdateInterface={handleUpdateInputInterface}
         onUpdatePort={handleUpdateInputPort}
+        allPortNames={allPortNames}
     />
 
     <div class="header">
@@ -441,14 +459,17 @@
             {#if editingName}
                 <input
                     class="field-input"
+                    class:error={isNameError}
                     type="text"
                     bind:value={tempName}
+                    oninput={validateNameLocal}
                     onblur={handleNameEdit}
                     onkeydown={(e) => {
                         if (e.key === 'Enter') handleNameEdit();
                         if (e.key === 'Escape') {
                             tempName = data.declaredName;
                             editingName = false;
+                            isNameError = false;
                         }
                     }}
                     onclick={stopPropagation(bubble('click'))}
@@ -460,6 +481,7 @@
                     onclick={stopPropagation(() => {
                         editingName = true;
                         tempName = data.declaredName;
+                        isNameError = false;
                     })}
                 >
                     {data.declaredName || `Unnamed ${capitalize(type)}`}
@@ -568,6 +590,7 @@
         onRemove={removeOutput}
         onUpdateInterface={handleUpdateOutputInterface}
         onUpdatePort={handleUpdateOutputPort}
+        allPortNames={allPortNames}
     />
     
     <Portal>
@@ -753,6 +776,11 @@
         outline: none;
         width: 100%;
         flex: 1;
+    }
+
+    .field-input.error {
+        border-color: var(--main-error-color, #dc2626);
+        background-color: #fef2f2;
     }
 
     .field-input:focus {

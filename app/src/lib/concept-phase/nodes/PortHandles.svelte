@@ -8,6 +8,7 @@
     import type { InterfaceCategory, Port } from '../interfaces';
     import { standardInterfaces, getInterfacesByCategory } from '../interfaces';
     import { customInterfaces, addCustomInterface, getCustomInterfaces } from '../interfaces/customInterfaceStore';
+    import { isNameValid } from '$lib/helpers';
 
     type TabCategory = InterfaceCategory | 'all';
     
@@ -19,6 +20,7 @@
         onRemove: (index: number) => void;
         onUpdateInterface: (index: number, interfaceType: string | undefined) => void;
         onUpdatePort?: (index: number, name: string, description: string) => void;
+        allPortNames?: string[];
     }
 
     let {
@@ -28,7 +30,8 @@
         onAdd,
         onRemove,
         onUpdateInterface,
-        onUpdatePort
+        onUpdatePort,
+        allPortNames = []
     }: Props = $props();
     
     let position = $derived(type === 'input' ? Position.Left : Position.Right);
@@ -169,6 +172,7 @@
     let tempPortName: string = $state('');
     let tempPortDescription: string = $state('');
     let portNameInputRef: HTMLInputElement | null = $state(null);
+    let isPortNameError = $state(false);
 
     async function openPortInfoEditor(index: number, port: Port) {
         showInterfaceSelector = null;
@@ -176,14 +180,26 @@
         if (showPortInfoEditor === index) {
             tempPortName = port.name;
             tempPortDescription = port.description || '';
+            isPortNameError = false;
             await tick();
             portNameInputRef?.focus();
             portNameInputRef?.select();
         }
     }
 
+    function validatePortNameLocal(name: string, currentName: string) {
+        if (!name.trim() || !isNameValid(name)) {
+            isPortNameError = true;
+            return;
+        }
+        const isTaken = allPortNames.some(
+            n => n !== currentName && n.trim().toLowerCase() === name.trim().toLowerCase()
+        );
+        isPortNameError = isTaken;
+    }
+
     function applyPortInfo(index: number) {
-        if (onUpdatePort && tempPortName.trim()) {
+        if (!isPortNameError && onUpdatePort && tempPortName.trim()) {
             onUpdatePort(index, tempPortName.trim(), tempPortDescription.trim());
         }
         showPortInfoEditor = null;
@@ -255,8 +271,10 @@
                             <input
                                 type="text"
                                 class="port-info-input"
+                                class:error={isPortNameError}
                                 bind:value={tempPortName}
                                 bind:this={portNameInputRef}
+                                oninput={() => validatePortNameLocal(tempPortName, port.name)}
                                 onkeydown={(e) => {
                                     if (e.key === 'Enter') applyPortInfo(i);
                                     if (e.key === 'Escape') cancelPortInfo();
@@ -651,6 +669,11 @@
         border-radius: 4px;
         outline: none;
         transition: border-color 0.2s;
+    }
+
+    .port-info-input.error {
+        border-color: var(--main-error-color, #dc2626);
+        background-color: #fef2f2;
     }
 
     .port-info-input:focus {

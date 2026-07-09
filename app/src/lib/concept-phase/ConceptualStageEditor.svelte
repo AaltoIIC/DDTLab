@@ -9,6 +9,7 @@
     import ConnectionTypeDropdown from './ConnectionTypeDropdown.svelte';
     import { get } from 'svelte/store';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
+    import { generateName } from '$lib/helpers';
     import { 
         currentPackageView, 
         navigateToPackage,
@@ -162,6 +163,18 @@
             } else {
                 console.error('Unknown component type:', data.type);
                 return;
+            }
+
+            // Uniquify node names to prevent clashes with existing nodes
+            const existingNames = get(currentNodes)
+                .map(n => n.data?.declaredName)
+                .filter((name): name is string => typeof name === 'string');
+
+            for (const node of newNodes) {
+                if (node.data?.declaredName) {
+                    node.data.declaredName = generateName(String(node.data.declaredName), existingNames);
+                    existingNames.push(String(node.data.declaredName));
+                }
             }
 
             // Add to current view

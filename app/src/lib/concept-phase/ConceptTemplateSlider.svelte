@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { formatDate } from '$lib/helpers';
+    import { formatDate, generateName } from '$lib/helpers';
     import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, PackagePlus } from '@lucide/svelte';
     import { fade, slide } from 'svelte/transition';
     import { templates, deleteTemplate, duplicateTemplate, exportTemplate, importTemplate, currentPackages, currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
@@ -92,13 +92,16 @@
 
     export function addPackageNode() {
         const existingNodes = $currentNodes;
+        const existingNames = existingNodes
+            .map(n => n.data?.declaredName)
+            .filter((name): name is string => typeof name === 'string');
         const newNode: Node = {
             id: `package-${Date.now()}`,
             type: 'package',
             dragHandle: '.drag-handle',
             position: { x: 250, y: 100 + existingNodes.length * 150 },
             data: {
-                declaredName: 'New Package',
+                declaredName: generateName('New Package', existingNames),
                 comment: '',
                 id: `PKG-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
                 insideData: {

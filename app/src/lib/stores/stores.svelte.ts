@@ -392,7 +392,16 @@ const recursiveSystemBuilder = (
     const filteredNodes = nodes.filter(node => !nodesInPackages.flat().includes(node.id));
     const filteredEdges = edges.filter(edge => !edgesInPackages.flat().includes(edge.id));
 
+    // Track used names at this level to prevent duplicate node names
+    // (mirrors design stage name clash prevention)
+    const usedNames: string[] = [];
+
     const convertedNodes = filteredNodes.map(node => {
+        // Ensure unique name at this breadcrumb level
+        const baseName = ((node.data.declaredName as string) || 'Unnamed').trim();
+        const uniqueName = generateName(baseName, usedNames);
+        usedNames.push(uniqueName);
+
         // Convert the input/output ports to connectors
         var connectors: ConnectorType[] = [];
         var ioedges: Edge[] = [];
@@ -492,7 +501,7 @@ const recursiveSystemBuilder = (
             }
             const newSystem: SystemType = {
                 id: newSubsystemId,
-                name: node.data.declaredName as string,
+                name: uniqueName,
                 parentSystemId: parentSystemId,
                 nodes: [subsystemRootNode, ...internal.nodes],
                 edges: [...ioedges, ...internal.edges],
@@ -509,7 +518,7 @@ const recursiveSystemBuilder = (
                 id: `d-${node.id}`,
                 type: 'Element', 
                 data: { 
-                    name: node.data.declaredName as string,
+                    name: uniqueName,
                     element: {
                         type: 'system',
                         VSSoClass: null,
@@ -534,7 +543,7 @@ const recursiveSystemBuilder = (
             id: `d-${node.id}`,
             type: 'Element', 
                 data: { 
-                    name: node.data.declaredName as string,
+                    name: uniqueName,
                     element: {
                         type: 'component',
                         VSSoClass: null,

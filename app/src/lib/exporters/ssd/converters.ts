@@ -115,7 +115,7 @@ export function convertComponent(
     });
 
     // Use VSSo class for component name if available, otherwise use custom name
-    const componentName = elementData.VSSoClass || node.data.name || node.id;
+    const componentName = String(elementData.VSSoClass || node.data.name || node.id);
 
     const ssdComponent: SSDComponent = {
         name: ensureUniqueName(componentName, usedNames),
@@ -241,8 +241,8 @@ export function convertConnection(
     const sourceElementData = sourceNode.data.element as ElementDataType;
     const targetElementData = targetNode.data.element as ElementDataType;
 
-    const sourceElementName = sourceElementData?.VSSoClass || sourceNode.data.name || sourceNode.id;
-    const targetElementName = targetElementData?.VSSoClass || targetNode.data.name || targetNode.id;
+    const sourceElementName = String(sourceElementData?.VSSoClass || sourceNode.data.name || sourceNode.id);
+    const targetElementName = String(targetElementData?.VSSoClass || targetNode.data.name || targetNode.id);
 
     return {
         startElement: sanitizeXMLName(sourceElementName),

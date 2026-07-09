@@ -76,7 +76,7 @@ function validateUniqueNames(
     for (const node of nodes) {
         if (node.type === 'RootSystem') continue;
 
-        const name = node.data.name || node.id;
+        const name = String(node.data.name || node.id);
         const count = names.get(name) || 0;
         names.set(name, count + 1);
 

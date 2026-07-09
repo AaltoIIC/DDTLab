@@ -74,7 +74,7 @@
       viewpoints.updateCustom(editingViewpoint.id, viewpointData);
     } else {
       const newId = viewpoints.addCustom(viewpointData);
-      $activeViewpoint = newId;
+      if (newId) $activeViewpoint = newId;
     }
 
     closeDialog();

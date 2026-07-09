@@ -7,6 +7,9 @@ export interface SystemTypeInfo {
   primary: SystemType;
   secondary?: SystemType[];
   isAutoDetected: boolean;
+  customViewpointId?: string;
+  customViewpointName?: string;
+  customViewpointIcon?: string;
 }
 
 /**
@@ -14,8 +17,8 @@ export interface SystemTypeInfo {
  */
 export function detectSystemType(node: Node): SystemTypeInfo {
   // Combine inputs and outputs
-  const inputs = node.data.inputs || [];
-  const outputs = node.data.outputs || [];
+  const inputs = (node.data.inputs as any[]) || [];
+  const outputs = (node.data.outputs as any[]) || [];
   const allPorts = [...inputs, ...outputs];
 
   // Count interface categories
@@ -91,7 +94,7 @@ export function nodeMatchesViewpoint(node: Node, viewpointId: string): boolean {
   if (viewpointId === 'all') return true;
 
   // Get node's system type (either manual override or auto-detected)
-  const systemTypeInfo = node.data.systemType || detectSystemType(node);
+  const systemTypeInfo = (node.data.systemType as SystemTypeInfo | undefined) || detectSystemType(node);
 
   // Map viewpoint IDs to system types
   const viewpointSystemMap: Record<string, SystemType> = {

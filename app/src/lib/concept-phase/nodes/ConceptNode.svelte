@@ -31,6 +31,8 @@
         metadata?: MetadataItem[];
         nodes?: import('@xyflow/svelte').Node[];
         edges?: import('@xyflow/svelte').Edge[];
+        systemType?: SystemTypeInfo;
+        [key: string]: any;
     } & PortData;
 
     interface Props {
@@ -61,10 +63,11 @@
     let systemTypeInfo = $derived.by(() => {
         // If it has a custom viewpoint assigned, return that info
         if (data.systemType?.customViewpointId) {
-            const customViewpoint = $viewpoints.find(v => v.id === data.systemType.customViewpointId);
+            const customViewpoint = $viewpoints.find(v => v.id === data.systemType!.customViewpointId);
             return {
                 primary: 'custom' as any,
-                customViewpointName: customViewpoint?.name || data.systemType.customViewpointName,
+                secondary: undefined,
+                customViewpointName: customViewpoint?.name || data.systemType!.customViewpointName,
                 customViewpointIcon: customViewpoint?.icon || '👁️',
                 isAutoDetected: false
             };

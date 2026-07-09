@@ -1,12 +1,13 @@
 import type { Node, Edge } from '@xyflow/svelte';
-import type { Icon as LucideIcon } from '@lucide/svelte';
+import type { IconProps } from 'lucide-svelte';
+import type { Component } from 'svelte';
 
 // Represents a category of components in the library
 export interface ComponentCategory {
     id: string;
     name: string;
     description?: string;
-    icon?: LucideIcon;
+    icon?: Component<IconProps>;
     subcategories?: ComponentCategory[];
     components?: LibraryComponent[];
     isExpanded?: boolean;
@@ -19,7 +20,7 @@ export interface LibraryComponent {
     description?: string;
     categoryId: string;
     subcategoryId?: string;
-    icon?: LucideIcon;
+    icon?: Component<IconProps>;
     tags?: string[];
     // The actual component data structure (package with parts and items)
     template: ComponentTemplate;

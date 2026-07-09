@@ -26,12 +26,12 @@
 
         nodes.forEach(node => {
             if (node.type === 'part' || node.type === 'item') {
-                const mass = node.data.mass || 0;
+                const mass = Number(node.data.mass) || 0;
                 total += mass;
 
                 if (mass > 0) {
                     breakdown.push({
-                        name: node.data.declaredName || node.data.definition || 'Unnamed',
+                        name: String(node.data.declaredName || node.data.definition || 'Unnamed'),
                         type: node.type,
                         mass: mass
                     });

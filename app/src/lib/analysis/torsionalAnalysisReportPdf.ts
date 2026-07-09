@@ -49,7 +49,7 @@ const MARGIN = 48;
 
 export function downloadTorsionalAnalysisPdf(result: TorsionalAnalysisResult, options: ReportOptions = {}) {
 	const bytes = buildTorsionalAnalysisPdf(result, options);
-	const blob = new Blob([bytes], { type: 'application/pdf' });
+	const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
 	const url = URL.createObjectURL(blob);
 	const link = document.createElement('a');
 	link.href = url;

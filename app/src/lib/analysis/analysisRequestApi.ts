@@ -151,7 +151,7 @@ export async function cancelAnalysisRequest(requestId: string): Promise<void> {
 
 export async function shareAnalysisReport(requestId: string, payload: ShareAnalysisReportPayload): Promise<{ id: string }> {
 	const form = new FormData();
-	form.set('file', new Blob([payload.pdfBytes], { type: 'application/pdf' }), payload.filename);
+	form.set('file', new Blob([payload.pdfBytes as BlobPart], { type: 'application/pdf' }), payload.filename);
 	form.set('title', payload.title);
 	form.set('filename', payload.filename);
 	form.set('analysis_type', payload.analysisType);

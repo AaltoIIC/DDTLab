@@ -4,33 +4,31 @@
 	import type { Snippet } from 'svelte';
 	import { cn } from "$lib/utils.js";
 
-	type $$Props = SelectPrimitive.TriggerProps;
-	type $$Events = SelectPrimitive.TriggerEvents;
+	export type $$Props = SelectPrimitive.TriggerProps;
+	export type $$Events = SelectPrimitive.TriggerEvents;
 
-	interface Props {
+	let { class: className = undefined, children, ...rest }: {
 		class?: string;
 		children?: Snippet<[any]>;
-		[key: string]: any
-	}
-
-	let { class: className = undefined, children, ...rest }: Props = $props();
-	
+		[k: string]: unknown;
+	} = $props();
 
 	const children_render = $derived(children);
+	const triggerClass = $derived(cn(
+		"border-input bg-background ring-offset-background focus-visible:ring-ring aria-[invalid]:border-destructive data-[placeholder]:[&>span]:text-muted-foreground flex h-10 w-full items-center justify-between rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+		className
+	));
+	const mergedProps = $derived({ ...rest, class: triggerClass } as Record<string, unknown>);
 </script>
 
 <SelectPrimitive.Trigger
-	class={cn(
-		"border-input bg-background ring-offset-background focus-visible:ring-ring aria-[invalid]:border-destructive data-[placeholder]:[&>span]:text-muted-foreground flex h-10 w-full items-center justify-between rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-		className
-	)}
-	{...rest}
+	{...mergedProps}
 	
 	on:click
 	on:keydown
 >
-	{#snippet children({ builder }: { builder: any })} 
-		{@render children_render?.({ builder, })}
+	{#snippet children()} 
+		{@render children_render?.({ builder: {} as any })}
 		<div>
 			<ChevronDown class="h-4 w-4 opacity-50" />
 		</div>

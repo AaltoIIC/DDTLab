@@ -1,5 +1,6 @@
 import { writable, derived, get } from 'svelte/store';
 import type { InterfaceDefinition } from './types';
+import { standardInterfaces } from './definitions';
 
 // Store for custom user-defined interfaces
 export const customInterfaces = writable<Record<string, InterfaceDefinition>>({});
@@ -58,8 +59,6 @@ export function getCustomInterfaces(): InterfaceDefinition[] {
 export const allInterfaces = derived(
   customInterfaces,
   ($customInterfaces) => {
-    // Import standardInterfaces dynamically to avoid circular dependencies
-    const { standardInterfaces } = require('./definitions');
     return {
       ...standardInterfaces,
       ...$customInterfaces

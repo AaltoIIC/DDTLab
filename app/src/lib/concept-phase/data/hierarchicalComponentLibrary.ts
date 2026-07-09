@@ -2,7 +2,6 @@ import type { ComponentCategory } from '../types/componentLibrary';
 import {
     Ship, Waves, Thermometer, Wind, Compass
 } from '@lucide/svelte';
-import type { Icon as LucideIcon } from '@lucide/svelte';
 
 // Import reusable concept-stage component examples
 import {

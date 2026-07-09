@@ -27,12 +27,12 @@
 
     onMount(() => {
         // Add skip functionality to the first step
-        const stepsWithSkip = steps.map((step, index) => {
+        const stepsWithSkip: DriveStep[] = steps.map((step, index) => {
             if (index === 0 && disableCancel) {
                 return {
                     ...step,
                     popover: {
-                        ...step.popover,
+                        ...(step.popover || {}),
                         showButtons: ['next', 'close'], // First step gets next and close
                         onCloseClick: () => {
                             // Save that tour was skipped
@@ -42,7 +42,7 @@
                             onClose();
                         }
                     }
-                };
+                } as DriveStep;
             }
             return step;
         });

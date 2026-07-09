@@ -130,6 +130,13 @@
         return undefined;
     }
 
+    function getInterfaceName(interfaceId: string | undefined): string {
+        if (!interfaceId) return 'Unknown';
+        return standardInterfaces[interfaceId]?.name ||
+            allCustomInterfaces.find(ci => ci.id === interfaceId)?.name ||
+            'Unknown';
+    }
+
     function getInterfaceColor(interfaceType: string | undefined): string {
         const interfaceId = resolveInterfaceId(interfaceType);
         if (!interfaceId) return '#6b7280'; // gray
@@ -203,9 +210,7 @@
                 {port.name}
                 {#if port.interfaceType}
                     {@const interfaceId = resolveInterfaceId(port.interfaceType)}
-                    {@const interfaceName = standardInterfaces[interfaceId]?.name ||
-                        allCustomInterfaces.find(ci => ci.id === interfaceId)?.name ||
-                        'Unknown'}
+                    {@const interfaceName = getInterfaceName(interfaceId)}
                     <span class="interface-type">({interfaceName})</span>
                 {/if}
             </span>

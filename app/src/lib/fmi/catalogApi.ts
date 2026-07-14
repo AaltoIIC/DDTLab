@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/public';
 import type { FMIComponentType, FMIVariableType } from '$lib/types/types';
+import { fetchCkanDigitalTwins } from './dcatCatalogApi';
 
 const DEFAULT_CATALOG_API_URL = '';
 const CATALOG_PAGE_LIMIT = 500;
@@ -266,7 +267,7 @@ function dedupeCatalogFmus(fmus: CatalogFmu[]): CatalogFmu[] {
     return Array.from(fmusById.values());
 }
 
-export async function fetchCatalogFmuComponents(query = ''): Promise<FMIComponentType[]> {
+async function fetchOemCatalogFmuComponents(query = ''): Promise<FMIComponentType[]> {
     const params = {
         q: query || undefined,
         _: Date.now()
@@ -287,4 +288,27 @@ export async function fetchCatalogFmuComponents(query = ''): Promise<FMIComponen
     ]);
 
     return catalogFmus.map(mapCatalogFmuToComponent);
+}
+
+export async function fetchCatalogFmuComponents(query = ''): Promise<FMIComponentType[]> {
+    const [oemResult, ckanResult] = await Promise.allSettled([
+        fetchOemCatalogFmuComponents(query),
+        fetchCkanDigitalTwins()
+    ]);
+
+    const components: FMIComponentType[] = [];
+
+    if (oemResult.status === 'fulfilled') {
+        components.push(...oemResult.value);
+    } else {
+        console.warn('Failed to load OEM catalog:', oemResult.reason);
+    }
+
+    if (ckanResult.status === 'fulfilled') {
+        components.push(...ckanResult.value);
+    } else {
+        console.warn('Failed to load CKAN digital twin catalogs:', ckanResult.reason);
+    }
+
+    return components;
 }

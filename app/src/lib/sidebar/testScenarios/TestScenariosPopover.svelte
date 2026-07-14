@@ -14,6 +14,7 @@
           upsertTemplateSimulationResult
       } from '$lib/stores/stores.svelte';
       import type { AnalysisReportRecord } from '$lib/types/types';
+      import { parseDcatTitle, buildDcatOpenTorsionMetadata } from '$lib/fmi/dcatCatalogApi';
 
       interface Props {
           onclose: () => void;
@@ -331,12 +332,28 @@
               if (node.type !== 'Element') continue;
               const fmuId = $componentLinks[node.id] || element?.fmiComponentId || '';
               const fmu = fmuId ? $fmiComponents.find(component => component.id === fmuId) : null;
+
+              // Merge node-element metadata with any DCAT OpenTorsion metadata from the linked FMU
+              let nodeMetadata: Array<{ key: string; value: string }> = element?.metadata || (node.data as any)?.metadata || [];
+              if (fmu?.catalogSource === 'digitalTwin') {
+                  // Recompute from title if dcatOpenTorsionMetadata was stripped for localStorage
+                  const otMeta = fmu.dcatOpenTorsionMetadata?.length
+                      ? fmu.dcatOpenTorsionMetadata
+                      : buildDcatOpenTorsionMetadata(parseDcatTitle(fmu.name));
+                  for (const fmMeta of otMeta) {
+                      const fmKey = String(fmMeta.key || '').toLowerCase();
+                      if (!nodeMetadata.some(m => String((m as any).key || '').toLowerCase() === fmKey)) {
+                          nodeMetadata = [...nodeMetadata, fmMeta];
+                      }
+                  }
+              }
+
               collected.push({
                   id: node.id,
                   name: String((node.data as any)?.name || ''),
                   position: node.position,
                   mass: element?.mass ?? (node.data as any)?.mass ?? null,
-                  metadata: element?.metadata || (node.data as any)?.metadata || [],
+                  metadata: nodeMetadata,
                   fmuId,
                   fmuName: fmu?.name || element?.fmiBinding?.fmuName || '',
                   oemName: fmu?.oemName || element?.fmiBinding?.oemName || '',

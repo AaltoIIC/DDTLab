@@ -28,10 +28,18 @@ const persistentStore = <T>(key: string, initValue: T): Writable<T> => {
         if (val === null || val === undefined) {
             localStorage.removeItem(key)
         } else {
-            if (initValue instanceof Map && val instanceof Map) {
-                localStorage.setItem(key, JSON.stringify(Array.from(val.entries())));
-            } else {
-                localStorage.setItem(key, JSON.stringify(val));
+            try {
+                if (initValue instanceof Map && val instanceof Map) {
+                    localStorage.setItem(key, JSON.stringify(Array.from(val.entries())));
+                } else {
+                    localStorage.setItem(key, JSON.stringify(val));
+                }
+            } catch (e) {
+                if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+                    console.warn(`localStorage quota exceeded for key '${key}'. Data will not persist across reloads. Try clearing stale data in your browser.`);
+                } else {
+                    throw e;
+                }
             }
         }
     })

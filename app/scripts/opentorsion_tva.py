@@ -8,7 +8,7 @@ import numpy as np
 import opentorsion as ot
 
 
-ROTARY_KEYWORDS = ("motor", "shaft", "propeller", "engine", "gearbox", "generator", "turbine")
+ROTARY_KEYWORDS = ("motor", "shaft", "propeller", "engine", "gearbox", "generator", "turbine", "rotor")
 
 
 def main():
@@ -143,6 +143,8 @@ def infer_inertia(node):
         return 20.0
     if "engine" in text or "turbine" in text:
         return 45.0
+    if "rotor" in text:
+        return 30.0
     return 5.0
 
 

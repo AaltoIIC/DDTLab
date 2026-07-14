@@ -191,7 +191,9 @@ export interface FMIComponentType {
     outputCount?: number;
     parameterCount?: number;
     variables?: FMIVariableType[];
-    catalogSource?: 'api' | 'mock' | 'upload';
+    catalogSource?: 'api' | 'mock' | 'upload' | 'digitalTwin';
+    /** OpenTorsion-compatible metadata key-value pairs for simulation */
+    dcatOpenTorsionMetadata?: Array<{ key: string; value: string }>;
 }
 
 export interface FMIVariableType {
@@ -271,3 +273,4 @@ export interface TemplateMetadata {
     itemCount: number;
     connectionCount: number;
 }
+

@@ -4,6 +4,7 @@
     import { fmiComponents, componentLinks, currentNodes } from '$lib/stores/stores.svelte';
     import type { FMIComponentType } from '$lib/types/types';
     import { fetchCatalogFmuComponents, getCatalogApiBaseUrl } from './catalogApi';
+    import { CKAN_SITES } from './dcatCatalogApi';
     import { capitalize } from 'lodash';
     
     interface Props {
@@ -13,6 +14,7 @@
     let { isOpen = $bindable(false) }: Props = $props();
 
     type ManufacturerFilter = 'all' | 'kongsberg' | 'abb' | 'other';
+    type SourceFilter = 'all' | 'oem' | 'digitalTwin' | string;
 
     const manufacturerFilters: { value: ManufacturerFilter; label: string }[] = [
         { value: 'all', label: 'All' },
@@ -20,14 +22,22 @@
         { value: 'abb', label: 'ABB' },
         { value: 'other', label: 'Other' }
     ];
+
+    const sourceFilters: { value: SourceFilter; label: string }[] = [
+        { value: 'all', label: 'All sources' },
+        { value: 'oem', label: 'OEM Platform' },
+        ...CKAN_SITES.map((site) => ({ value: site.id, label: site.name }))
+    ];
     
     let searchQuery = $state('');
     let manufacturerFilter = $state<ManufacturerFilter>('all');
+    let sourceFilter = $state<SourceFilter>('all');
     let expandedCategories: Set<string> = $state(new Set(['motors', 'propellers', 'sensors', 'engines', 'controllers', 'other']));
     let isLoadingCatalog = $state(false);
     let catalogError = $state('');
     let catalogLastLoadedCount = $state(0);
-    
+
+
     const popoverWidth = 340;
     
     // Mock components for MVP
@@ -184,26 +194,50 @@
         }
     ];
     
+    /**
+     * Strip heavy metadata arrays from DCAT components before persisting to localStorage.
+     * dcatOpenTorsionMetadata is recomputed on-the-fly by collectAnalysisNodes()
+     * in TestScenariosPopover when running torsional vibration analysis, so it
+     * doesn't need to survive localStorage round-trips.
+     */
+    function sanitizeForStorage(components: FMIComponentType[]): FMIComponentType[] {
+        return components.map((c) => {
+            if (c.catalogSource !== 'digitalTwin') return c;
+            // Keep the small simulation metadata but drop the metadata key-value array
+            const { dcatOpenTorsionMetadata: _ot, ...rest } = c;
+            return rest as FMIComponentType;
+        });
+    }
+
     const loadCatalogComponents = async () => {
         isLoadingCatalog = true;
         catalogError = '';
 
         try {
             const catalogComponents = await fetchCatalogFmuComponents();
-            const catalogIds = new Set(catalogComponents.map(component => component.id));
-            const linkedFmuIds = new Set(Object.values($componentLinks));
-            const existingLinkedComponents = $fmiComponents.filter(component => linkedFmuIds.has(component.id) && !catalogIds.has(component.id));
-            fmiComponents.set([...catalogComponents, ...existingLinkedComponents]);
-            catalogLastLoadedCount = catalogComponents.length;
-        } catch (error) {
-            catalogError = error instanceof Error ? error.message : 'Failed to load FMU catalog';
 
-            if ($fmiComponents.length === 0) {
+            if (catalogComponents.length === 0) {
+                console.warn('Catalog returned no FMUs; loading sample FMUs');
                 fmiComponents.set(mockComponents.map(component => ({
                     ...component,
                     catalogSource: 'mock'
                 })));
+                catalogLastLoadedCount = mockComponents.length;
+            } else {
+                const catalogIds = new Set(catalogComponents.map(component => component.id));
+                const linkedFmuIds = new Set(Object.values($componentLinks));
+                const existingLinkedComponents = $fmiComponents.filter(component => linkedFmuIds.has(component.id) && !catalogIds.has(component.id));
+                fmiComponents.set(sanitizeForStorage([...catalogComponents, ...existingLinkedComponents]));
+                catalogLastLoadedCount = catalogComponents.length;
             }
+        } catch (error) {
+            console.error('Failed to load FMU catalog:', error);
+            catalogError = error instanceof Error ? error.message : 'Failed to load FMU catalog';
+            fmiComponents.set(mockComponents.map(component => ({
+                ...component,
+                catalogSource: 'mock'
+            })));
+            catalogLastLoadedCount = mockComponents.length;
         } finally {
             isLoadingCatalog = false;
         }
@@ -230,11 +264,29 @@
 
         return 'other';
     };
+
+    const getSource = (component: FMIComponentType): string => {
+        if (component.catalogSource === 'digitalTwin') {
+            return CKAN_SITES.find((site) => component.id.startsWith(`ckan-${site.id}-`))?.id ?? 'digitalTwin';
+        }
+        return 'oem';
+    };
+
+    const getSourceLabel = (component: FMIComponentType): string => {
+        if (component.catalogSource === 'digitalTwin') {
+            return CKAN_SITES.find((site) => component.id.startsWith(`ckan-${site.id}-`))?.name ?? 'Digital Twin';
+        }
+        return 'OEM Platform';
+    };
     
     let filteredComponents = $derived($fmiComponents.filter(comp => {
         const query = searchQuery.trim().toLowerCase();
 
         if (manufacturerFilter !== 'all' && getManufacturer(comp) !== manufacturerFilter) {
+            return false;
+        }
+
+        if (sourceFilter !== 'all' && getSource(comp) !== sourceFilter) {
             return false;
         }
 
@@ -377,6 +429,21 @@
             {/each}
         </div>
     </div>
+
+    <div class="filter-container">
+        <div class="filter-label">Source</div>
+        <div class="source-filter" role="group" aria-label="Filter FMUs by catalog source">
+            {#each sourceFilters as filter}
+                <button
+                    type="button"
+                    class:active={sourceFilter === filter.value}
+                    onclick={() => sourceFilter = filter.value}
+                >
+                    {filter.label}
+                </button>
+            {/each}
+        </div>
+    </div>
     
     <div class="components-tree">
         {#if Object.keys(componentsByCategory).length === 0}
@@ -431,6 +498,7 @@
                                         {#if getVariableSummary(component)}
                                             <span>{getVariableSummary(component)}</span>
                                         {/if}
+                                        <span class="source-badge">{getSourceLabel(component)}</span>
                                     </div>
                                 </button>
                             {/each}
@@ -646,6 +714,49 @@
         background: white;
         color: var(--main-dark-color);
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .source-filter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 3px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 6px;
+        background: var(--main-grey-color);
+    }
+
+    .source-filter button {
+        min-width: 0;
+        padding: 4px 8px;
+        border: none;
+        border-radius: 4px;
+        background: transparent;
+        color: rgba(0, 0, 0, 0.65);
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1.2;
+        text-align: left;
+    }
+
+    .source-filter button:hover {
+        background: rgba(255, 255, 255, 0.75);
+    }
+
+    .source-filter button.active {
+        background: white;
+        color: var(--main-dark-color);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .source-badge {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 10px;
     }
     
     .components-tree {

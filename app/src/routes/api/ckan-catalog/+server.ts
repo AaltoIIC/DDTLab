@@ -1,19 +1,30 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-const CKAN_CATALOG_URLS: Record<string, string> = {
-	securedigitaltwins: 'https://securedigitaltwins.com/catalog.jsonld',
-	trustedtwincatalog: 'https://trustedtwincatalog.com/catalog.jsonld'
-};
-
-export const GET: RequestHandler = async ({ params, url }) => {
-	const catalogUrl = CKAN_CATALOG_URLS[params.siteId];
+export const GET: RequestHandler = async ({ url }) => {
+	const catalogUrl = url.searchParams.get('url');
 
 	if (!catalogUrl) {
-		throw error(400, `Unknown CKAN site: ${params.siteId}`);
+		throw error(400, 'Missing required "url" query parameter');
 	}
 
-	// Forward DCAT ?page= parameter for pagination
+	// Validate the URL is http/https
+	let parsed: URL;
+	try {
+		parsed = new URL(catalogUrl);
+		if (!['http:', 'https:'].includes(parsed.protocol)) {
+			throw error(400, 'Only http/https catalog URLs are accepted');
+		}
+	} catch {
+		throw error(400, 'Invalid catalog URL');
+	}
+
+	// Only accept jsonld catalog endpoints
+	if (!/\.jsonld$/i.test(parsed.pathname)) {
+		throw error(400, 'Only catalog.jsonld endpoints are accepted');
+	}
+
+	// Forward ?page= parameter for pagination
 	const page = url.searchParams.get('page');
 	const fetchUrl = page ? `${catalogUrl}?page=${encodeURIComponent(page)}` : catalogUrl;
 

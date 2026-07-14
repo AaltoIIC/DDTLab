@@ -1,4 +1,6 @@
 import type { FMIComponentType, FMIVariableType } from '$lib/types/types';
+import { get } from 'svelte/store';
+import { ckanSites, type CkanSite } from '$lib/stores/stores.svelte';
 
 // ─── DCAT Title Parsing & Physical Parameter Extraction ───
 
@@ -318,27 +320,8 @@ export function buildDcatOpenTorsionMetadata(
 }
 
 
-export interface CkanSite {
-	id: string;
-	name: string;
-	baseUrl: string;
-	catalogUrl: string;
-}
-
-export const CKAN_SITES: CkanSite[] = [
-	{
-		id: 'securedigitaltwins',
-		name: 'securedigitaltwins.com',
-		baseUrl: 'https://securedigitaltwins.com',
-		catalogUrl: 'https://securedigitaltwins.com/catalog.jsonld'
-	},
-	{
-		id: 'trustedtwincatalog',
-		name: 'trustedtwincatalog.com',
-		baseUrl: 'https://trustedtwincatalog.com',
-		catalogUrl: 'https://trustedtwincatalog.com/catalog.jsonld'
-	}
-];
+// Re-export CkanSite from stores for convenience
+export type { CkanSite };
 
 // Expanded (full-URI) property keys used by some CKAN instances
 const EXPANDED = {
@@ -522,7 +505,7 @@ async function fetchSiteCatalog(site: CkanSite): Promise<FMIComponentType[]> {
 	let pageSize = 0;
 
 	while (true) {
-		const response = await fetch(`/api/ckan-catalog/${site.id}?page=${page}`, {
+		const response = await fetch(`/api/ckan-catalog?url=${encodeURIComponent(site.catalogUrl)}&page=${page}`, {
 			headers: { Accept: 'application/ld+json' }
 		});
 
@@ -560,11 +543,10 @@ async function fetchSiteCatalog(site: CkanSite): Promise<FMIComponentType[]> {
 	}
 
 	return components;
-}
-
-export async function fetchCkanDigitalTwins(): Promise<FMIComponentType[]> {
+}export async function fetchCkanDigitalTwins(): Promise<FMIComponentType[]> {
+	const sites = get(ckanSites);
 	const results = await Promise.allSettled(
-		CKAN_SITES.map((site) => fetchSiteCatalog(site))
+		sites.map((site) => fetchSiteCatalog(site))
 	);
 
 	const components: FMIComponentType[] = [];

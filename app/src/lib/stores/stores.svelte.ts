@@ -971,8 +971,47 @@ export const resetNavigation = () => {
     currentViewSystemId.set(get(currentSystemMeta).id);
 }
 
-export const fmiComponents = persistentStore<FMIComponentType[]>('fmiComponents', []);
+export const fmiComponents = writable<FMIComponentType[]>([]);
 export const componentLinks = persistentStore<Record<string, string>>('componentLinks', {});
+
+export interface CkanSite {
+	id: string;
+	name: string;
+	baseUrl: string;
+	catalogUrl: string;
+}
+
+export const ckanSites = persistentStore<CkanSite[]>('ckanSites', [
+	{
+		id: 'securedigitaltwins',
+		name: 'securedigitaltwins.com',
+		baseUrl: 'https://securedigitaltwins.com',
+		catalogUrl: 'https://securedigitaltwins.com/catalog.jsonld'
+	},
+	{
+		id: 'trustedtwincatalog',
+		name: 'trustedtwincatalog.com',
+		baseUrl: 'https://trustedtwincatalog.com',
+		catalogUrl: 'https://trustedtwincatalog.com/catalog.jsonld'
+	}
+]);
+
+export function addCkanSite(name: string, catalogUrl: string) {
+	const baseUrl = new URL(catalogUrl).origin;
+	const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `ckan-${Date.now()}`;
+	const site: CkanSite = { id, name, baseUrl, catalogUrl };
+
+	ckanSites.update(sites => {
+		if (sites.some(s => s.id === id || s.catalogUrl === catalogUrl)) return sites;
+		return [...sites, site];
+	});
+
+	return site;
+}
+
+export function removeCkanSite(siteId: string) {
+	ckanSites.update(sites => sites.filter(s => s.id !== siteId));
+}
 
 export const templatesByCategory = derived(templates, $templates => {
     const grouped: Record<string, ConceptTemplate[]> = {

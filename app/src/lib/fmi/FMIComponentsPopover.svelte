@@ -1,10 +1,9 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { RefreshCw } from '@lucide/svelte';
-    import { fmiComponents, componentLinks, currentNodes } from '$lib/stores/stores.svelte';
+    import { RefreshCw, Plus, Trash2 } from '@lucide/svelte';
+    import { fmiComponents, componentLinks, currentNodes, ckanSites, addCkanSite, removeCkanSite, type CkanSite } from '$lib/stores/stores.svelte';
     import type { FMIComponentType } from '$lib/types/types';
     import { fetchCatalogFmuComponents, getCatalogApiBaseUrl } from './catalogApi';
-    import { CKAN_SITES } from './dcatCatalogApi';
     import { capitalize } from 'lodash';
     
     interface Props {
@@ -13,21 +12,8 @@
 
     let { isOpen = $bindable(false) }: Props = $props();
 
-    type ManufacturerFilter = 'all' | 'kongsberg' | 'abb' | 'other';
-    type SourceFilter = 'all' | 'oem' | 'digitalTwin' | string;
-
-    const manufacturerFilters: { value: ManufacturerFilter; label: string }[] = [
-        { value: 'all', label: 'All' },
-        { value: 'kongsberg', label: 'Kongsberg' },
-        { value: 'abb', label: 'ABB' },
-        { value: 'other', label: 'Other' }
-    ];
-
-    const sourceFilters: { value: SourceFilter; label: string }[] = [
-        { value: 'all', label: 'All sources' },
-        { value: 'oem', label: 'OEM Platform' },
-        ...CKAN_SITES.map((site) => ({ value: site.id, label: site.name }))
-    ];
+    type ManufacturerFilter = string;
+    type SourceFilter = string;
     
     let searchQuery = $state('');
     let manufacturerFilter = $state<ManufacturerFilter>('all');
@@ -37,8 +23,50 @@
     let catalogError = $state('');
     let catalogLastLoadedCount = $state(0);
 
+    // Add Catalog state
+    let showAddCatalog = $state(false);
+    let newCatalogName = $state('');
+    let newCatalogUrl = $state('');
+    let addCatalogError = $state('');
+    let isAddingCatalog = $state(false);
 
-    const popoverWidth = 340;
+    const popoverWidth = 360;
+
+    // ─── Dynamic source filters: OEM Platform (hardcoded) + CKAN sites from store ───
+
+    let sourceFilters = $derived([
+        { value: 'all', label: 'All sources' },
+        { value: 'oem', label: 'OEM Platform' },
+        ...$ckanSites.map((site) => ({ value: site.id, label: site.name }))
+    ]);
+
+    // ─── Dynamic manufacturer filters: derived from actual oemName on components ───
+
+    let manufacturerFilters = $derived.by(() => {
+        const counts = new Map<string, number>();
+        for (const c of $fmiComponents) {
+            const oem = c.oemName?.trim();
+            if (oem) counts.set(oem, (counts.get(oem) || 0) + 1);
+        }
+        // Sort by frequency descending, take top 8
+        const topOems = Array.from(counts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8)
+            .map(([oem]) => ({ value: oem, label: truncateLabel(oem, 14) }));
+
+        // Add 'Other' for components without an oemName
+        const hasUnknown = $fmiComponents.some(c => !c.oemName?.trim());
+        const filters: { value: ManufacturerFilter; label: string }[] = [
+            { value: 'all', label: 'All' },
+            ...topOems
+        ];
+        if (hasUnknown) filters.push({ value: 'other', label: 'Other' });
+        return filters;
+    });
+
+    function truncateLabel(text: string, max: number) {
+        return text.length > max ? text.slice(0, max - 1) + '…' : text;
+    }
     
     // Mock components for MVP
     const mockComponents: FMIComponentType[] = [
@@ -194,22 +222,10 @@
         }
     ];
     
-    /**
-     * Strip heavy metadata arrays from DCAT components before persisting to localStorage.
-     * dcatOpenTorsionMetadata is recomputed on-the-fly by collectAnalysisNodes()
-     * in TestScenariosPopover when running torsional vibration analysis, so it
-     * doesn't need to survive localStorage round-trips.
-     */
-    function sanitizeForStorage(components: FMIComponentType[]): FMIComponentType[] {
-        return components.map((c) => {
-            if (c.catalogSource !== 'digitalTwin') return c;
-            // Keep the small simulation metadata but drop the metadata key-value array
-            const { dcatOpenTorsionMetadata: _ot, ...rest } = c;
-            return rest as FMIComponentType;
-        });
-    }
-
-    const loadCatalogComponents = async () => {
+    const loadCatalogComponents = async (force = false) => {
+        // Session cache: fmiComponents (writable) survives component remounts —
+        // skip fetch if we already have catalog data from this page session.
+        if (!force && $fmiComponents.length > 0) return;
         isLoadingCatalog = true;
         catalogError = '';
 
@@ -227,7 +243,7 @@
                 const catalogIds = new Set(catalogComponents.map(component => component.id));
                 const linkedFmuIds = new Set(Object.values($componentLinks));
                 const existingLinkedComponents = $fmiComponents.filter(component => linkedFmuIds.has(component.id) && !catalogIds.has(component.id));
-                fmiComponents.set(sanitizeForStorage([...catalogComponents, ...existingLinkedComponents]));
+                fmiComponents.set([...catalogComponents, ...existingLinkedComponents]);
                 catalogLastLoadedCount = catalogComponents.length;
             }
         } catch (error) {
@@ -247,37 +263,67 @@
         loadCatalogComponents();
     });
 
-    const getManufacturer = (component: FMIComponentType): Exclude<ManufacturerFilter, 'all'> => {
-        const oemShortCode = component.oemShortCode?.trim().toUpperCase();
-        const manufacturerText = [
-            component.oemName,
-            component.name
-        ].filter(Boolean).join(' ').toLowerCase();
-
-        if (oemShortCode === 'ABB' || manufacturerText.includes('abb')) {
-            return 'abb';
-        }
-
-        if (oemShortCode === 'KM' || oemShortCode === 'KONGSBERG' || manufacturerText.includes('kongsberg')) {
-            return 'kongsberg';
-        }
-
-        return 'other';
+    /** Returns the oemName for filtering, or 'other' if none set */
+    const getManufacturer = (component: FMIComponentType): ManufacturerFilter => {
+        return component.oemName?.trim() || 'other';
     };
 
     const getSource = (component: FMIComponentType): string => {
         if (component.catalogSource === 'digitalTwin') {
-            return CKAN_SITES.find((site) => component.id.startsWith(`ckan-${site.id}-`))?.id ?? 'digitalTwin';
+            return $ckanSites.find((site) => component.id.startsWith(`ckan-${site.id}-`))?.id ?? 'digitalTwin';
         }
         return 'oem';
     };
 
     const getSourceLabel = (component: FMIComponentType): string => {
         if (component.catalogSource === 'digitalTwin') {
-            return CKAN_SITES.find((site) => component.id.startsWith(`ckan-${site.id}-`))?.name ?? 'Digital Twin';
+            return $ckanSites.find((site) => component.id.startsWith(`ckan-${site.id}-`))?.name ?? 'Digital Twin';
         }
         return 'OEM Platform';
     };
+
+    // ─── Add Catalog ───
+
+    async function handleAddCatalog() {
+        addCatalogError = '';
+        const name = newCatalogName.trim();
+        const url = newCatalogUrl.trim();
+
+        if (!name || !url) {
+            addCatalogError = 'Both name and catalog URL are required.';
+            return;
+        }
+
+        // Only accept jsonld catalog URLs
+        if (!/\.jsonld$/i.test(url) && !url.includes('catalog.jsonld')) {
+            addCatalogError = 'Only catalog.jsonld endpoints are accepted.';
+            return;
+        }
+
+        isAddingCatalog = true;
+        try {
+            // Validate the catalog URL is reachable
+            const response = await fetch(`/api/ckan-catalog?url=${encodeURIComponent(url)}&page=1`, {
+                headers: { Accept: 'application/ld+json' }
+            });
+            if (!response.ok) {
+                const text = await response.text().catch(() => '');
+                throw new Error(`Catalog fetch failed (${response.status}): ${text.slice(0, 120)}`);
+            }
+            addCkanSite(name, url);
+            newCatalogName = '';
+            newCatalogUrl = '';
+            showAddCatalog = false;
+        } catch (error) {
+            addCatalogError = error instanceof Error ? error.message : 'Failed to add catalog';
+        } finally {
+            isAddingCatalog = false;
+        }
+    }
+
+    function handleRemoveCatalog(siteId: string) {
+        removeCkanSite(siteId);
+    }
     
     let filteredComponents = $derived($fmiComponents.filter(comp => {
         const query = searchQuery.trim().toLowerCase();
@@ -320,12 +366,29 @@
     let selectedNodeId = $derived($currentNodes.find(n => n.selected)?.id || null);
     
     const toggleCategory = (category: string) => {
-        if (expandedCategories.has(category)) {
-            expandedCategories.delete(category);
+        const next = new Set(expandedCategories);
+        if (next.has(category)) {
+            next.delete(category);
         } else {
-            expandedCategories.add(category);
+            next.add(category);
         }
-        expandedCategories = expandedCategories;
+        expandedCategories = next;
+    };
+
+    // All categories currently visible (respects search/filter)
+    let visibleCategories = $derived(Object.keys(componentsByCategory));
+
+    // True when every visible category is expanded
+    let allExpanded = $derived(
+        visibleCategories.length > 0 && visibleCategories.every((cat) => expandedCategories.has(cat))
+    );
+
+    const toggleAllCategories = () => {
+        if (allExpanded) {
+            expandedCategories = new Set();
+        } else {
+            expandedCategories = new Set(visibleCategories);
+        }
     };
     
     const linkComponent = (componentId: string) => {
@@ -388,7 +451,10 @@
     <div class="fmi-header">
         <h3>FMU Catalog</h3>
         <div class="header-actions">
-            <button class="btn-small" onclick={loadCatalogComponents} title="Refresh FMU catalog" disabled={isLoadingCatalog}>
+            <button class="btn-small" onclick={() => showAddCatalog = !showAddCatalog} title="Add CKAN catalog">
+                <Plus size={14} />
+            </button>
+            <button class="btn-small" onclick={() => loadCatalogComponents(true)} title="Refresh FMU catalog" disabled={isLoadingCatalog}>
                 <span class={isLoadingCatalog ? 'spin-icon' : ''}>
                     <RefreshCw size={14} />
                 </span>
@@ -415,6 +481,42 @@
         />
     </div>
 
+    <!-- ─── Add Catalog Section ─── -->
+    {#if showAddCatalog}
+        <div class="add-catalog-section">
+            <div class="add-catalog-header">
+                <span class="add-catalog-title">Add CKAN Catalog</span>
+                <button class="add-catalog-close" onclick={() => { showAddCatalog = false; addCatalogError = ''; }} aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="add-catalog-form">
+                <input type="text" placeholder="Catalog name (e.g., My Catalog)" bind:value={newCatalogName} class="add-catalog-input" />
+                <input type="url" placeholder="https://example.com/catalog.jsonld" bind:value={newCatalogUrl} class="add-catalog-input" />
+                <button class="add-catalog-btn" onclick={handleAddCatalog} disabled={isAddingCatalog}>
+                    {isAddingCatalog ? 'Adding...' : 'Add Catalog'}
+                </button>
+            </div>
+            {#if addCatalogError}
+                <div class="add-catalog-error">{addCatalogError}</div>
+            {/if}
+            <!-- Existing CKAN sites with remove buttons -->
+            {#if $ckanSites.length > 0}
+                <div class="ckan-sites-list">
+                    <span class="ckan-sites-label">Active catalogs</span>
+                    {#each $ckanSites as site}
+                        <div class="ckan-site-row">
+                            <span class="ckan-site-name">{site.name}</span>
+                            <button class="ckan-site-remove" onclick={() => handleRemoveCatalog(site.id)} title="Remove {site.name}">
+                                <Trash2 size={12} />
+                            </button>
+                        </div>
+                    {/each}
+                </div>
+            {/if}
+        </div>
+    {/if}
+
     <div class="filter-container">
         <div class="filter-label">Manufacturer</div>
         <div class="manufacturer-filter" role="group" aria-label="Filter FMUs by manufacturer">
@@ -423,6 +525,7 @@
                     type="button"
                     class:active={manufacturerFilter === filter.value}
                     onclick={() => manufacturerFilter = filter.value}
+                    title={filter.label}
                 >
                     {filter.label}
                 </button>
@@ -438,6 +541,7 @@
                     type="button"
                     class:active={sourceFilter === filter.value}
                     onclick={() => sourceFilter = filter.value}
+                    title={filter.label}
                 >
                     {filter.label}
                 </button>
@@ -446,7 +550,14 @@
     </div>
     
     <div class="components-tree">
-        {#if Object.keys(componentsByCategory).length === 0}
+        {#if visibleCategories.length > 0}
+            <div class="tree-header">
+                <button class="tree-toggle-btn" onclick={toggleAllCategories}>
+                    {allExpanded ? 'Collapse all' : 'Expand all'}
+                </button>
+            </div>
+        {/if}
+        {#if visibleCategories.length === 0}
             <div class="empty-state">
                 <p>{isLoadingCatalog ? 'Loading FMUs...' : 'No FMUs found'}</p>
             </div>
@@ -626,13 +737,8 @@
     }
 
     @keyframes spin {
-        from {
-            transform: rotate(0deg);
-        }
-
-        to {
-            transform: rotate(360deg);
-        }
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
 
     .catalog-status {
@@ -666,6 +772,143 @@
     .search-input:focus {
         border-color: var(--main-dark-color);
     }
+
+    /* ─── Add Catalog Section ─── */
+
+    .add-catalog-section {
+        padding: 12px 20px;
+        border-bottom: var(--main-border);
+        background: rgba(59, 130, 246, 0.03);
+    }
+
+    .add-catalog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .add-catalog-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.7);
+    }
+
+    .add-catalog-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 2px;
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+    }
+
+    .add-catalog-close:hover {
+        background: rgba(0, 0, 0, 0.06);
+    }
+
+    .add-catalog-form {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .add-catalog-input {
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 4px;
+        font-size: 12px;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+    .add-catalog-input:focus {
+        border-color: var(--main-dark-color);
+    }
+
+    .add-catalog-btn {
+        padding: 6px 10px;
+        background: var(--main-dark-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: filter 0.2s;
+    }
+
+    .add-catalog-btn:hover {
+        filter: brightness(1.1);
+    }
+
+    .add-catalog-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .add-catalog-error {
+        margin-top: 6px;
+        font-size: 11px;
+        color: #b91c1c;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 4px;
+        padding: 4px 8px;
+    }
+
+    .ckan-sites-list {
+        margin-top: 10px;
+        max-height: 100px;
+        overflow-y: auto;
+    }
+
+    .ckan-sites-label {
+        display: block;
+        font-size: 10px;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.45);
+        margin-bottom: 4px;
+        text-transform: uppercase;
+    }
+
+    .ckan-site-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 3px 0;
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.65);
+    }
+
+    .ckan-site-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .ckan-site-remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 3px;
+        color: rgba(0, 0, 0, 0.35);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .ckan-site-remove:hover {
+        color: #b91c1c;
+        background: rgba(185, 28, 28, 0.06);
+    }
+
+    /* ─── Filter Containers ─── */
 
     .filter-container {
         padding: 10px 20px 12px;
@@ -762,7 +1005,29 @@
     .components-tree {
         flex: 1;
         overflow-y: auto;
-        padding: 8px 0;
+        padding: 0 0 8px 0;
+    }
+
+    .tree-header {
+        display: flex;
+        justify-content: flex-end;
+        padding: 10px 20px 0 20px;
+    }
+
+    .tree-toggle-btn {
+        padding: 8px 12px;
+        background: var(--main-dark-color);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-family: inherit;
+        transition: filter 0.2s;
+    }
+
+    .tree-toggle-btn:hover {
+        filter: brightness(1.1);
     }
     
     .empty-state {

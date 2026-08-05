@@ -15,16 +15,13 @@
       currentNodes,
       currentEdges,
       addToHistory
-
     } from '../stores/stores.svelte';
-    import RootSystemNode from './nodes/RootSystemNode.svelte';
     import ElementNode from './nodes/ElementNode.svelte';
     import InternalPortNode from '$lib/concept-phase/nodes/InternalPortNode.svelte';
     import RemovableEdge from './nodes/RemovableEdge.svelte';
     import './editor.css';
 
     const nodeTypes = {
-      'RootSystem': RootSystemNode,
       'Element': ElementNode,
       'Internal': InternalPortNode
     } as {} as NodeTypes;
@@ -33,8 +30,8 @@
       'default': RemovableEdge
     } as {} as EdgeTypes;
 
-    function nodeVisibility(node: Node) {
-      return node.type === 'RootSystem' ? 'transparent' : 'x';
+    function nodeVisibility(_node: Node) {
+      return 'x';
     }
 </script>
 <SvelteFlow

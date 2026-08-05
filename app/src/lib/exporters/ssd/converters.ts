@@ -17,6 +17,7 @@ import type {
     SSDAnnotation,
     ConversionContext
 } from './types';
+import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
 import {
     DATA_TYPE_MAPPING,
     formatVSSoAnnotation,
@@ -289,8 +290,8 @@ export function convertSystem(
     const elements: (SSDComponent | SSDSystem)[] = [];
     const connections: SSDConnection[] = [];
 
-    // Filter out the root node or input/output nodes
-    const nonRootNodes = system.nodes.filter(n => n.type !== 'RootSystem' && n.type !== 'Internal'); //TODO: Maybe temporary fix, I don't know if we should be including input/output nodes in the .ssd file
+    // Filter out internal port nodes; design systems no longer contain a synthetic root node.
+    const nonRootNodes = stripSyntheticRootNodes(system.nodes).filter(n => n.type !== 'Internal');
 
     // Convert each node
     for (const node of nonRootNodes) {
@@ -309,9 +310,10 @@ export function convertSystem(
         }
     }
 
-    // Convert connections
-    for (const edge of system.edges) {
-        const connection = convertConnection(edge, system.nodes, context);
+    // Convert only connections whose endpoints survive legacy-root sanitization.
+    const nodeIds = new Set(nonRootNodes.map((node) => node.id));
+    for (const edge of system.edges.filter((candidate) => nodeIds.has(candidate.source) && nodeIds.has(candidate.target))) {
+        const connection = convertConnection(edge, nonRootNodes, context);
         if (connection) {
             connections.push(connection);
         }
@@ -343,9 +345,7 @@ function calculateSystemGeometry(nodes: Node[]): SSDElementGeometry | undefined 
     let minX = Infinity, minY = Infinity;
     let maxX = -Infinity, maxY = -Infinity;
 
-    for (const node of nodes) {
-        if (node.type === 'RootSystem') continue;
-
+    for (const node of stripSyntheticRootNodes(nodes)) {
         minX = Math.min(minX, node.position.x);
         minY = Math.min(minY, node.position.y);
         maxX = Math.max(maxX, node.position.x + COMPONENT_SIZE.width);

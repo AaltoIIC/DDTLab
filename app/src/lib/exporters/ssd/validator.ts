@@ -3,6 +3,7 @@
 import type { Node, Edge } from '@xyflow/svelte';
 import type { SystemType, ConnectorType } from '$lib/types/types';
 import type { ConversionContext, ValidationError } from './types';
+import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
 
 // Validate system before conversion
 export function validateSystem(
@@ -19,10 +20,11 @@ export function validateSystem(
     }
 
     // Check for orphaned connections
-    validateConnections(system.nodes, system.edges, context);
+    const nodes = stripSyntheticRootNodes(system.nodes);
+    validateConnections(nodes, system.edges, context);
 
     // Check for duplicate names
-    validateUniqueNames(system.nodes, context);
+    validateUniqueNames(nodes, context);
 
     // Check for circular dependencies in subsystems
     validateNoCircularDependencies(system, context);
@@ -74,8 +76,6 @@ function validateUniqueNames(
     const names = new Map<string, number>();
 
     for (const node of nodes) {
-        if (node.type === 'RootSystem') continue;
-
         const name = String(node.data.name || node.id);
         const count = names.get(name) || 0;
         names.set(name, count + 1);

@@ -43,7 +43,7 @@ test.describe('dashboard and editor lifecycle', () => {
     const systems = await page.evaluate(() => JSON.parse(localStorage.getItem('systems') || '[]'));
     expect(systems).toHaveLength(1);
     expect(systems[0].stage).toBe('design');
-    expect(systems[0].nodes.some((node: { type: string }) => node.type === 'RootSystem')).toBe(true);
+    expect(systems[0].nodes).toEqual([]);
 
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL('/');

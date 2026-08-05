@@ -14,10 +14,10 @@ import {
     currentPackages,
     currentPartDefinitions,
     currentReqs,
-    currentSystemMeta,
-    rootNode
+    currentSystemMeta
 } from '$lib/domains/editor-core/state/activeEditorSessionStore';
 import { getSystem } from '$lib/domains/system/state/systemCatalogStore';
+import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
 
 export const history = writable<{ currentIndex: number; data: HistoryEntryType[] }>({
     currentIndex: -1,
@@ -142,7 +142,7 @@ export function navigateToSubsystem(subsystemId: string, parentNodeId: string): 
     ];
 
     const subNodes = [
-        ...subsystem.nodes.filter((node) => node.type !== 'Internal'),
+        ...stripSyntheticRootNodes(subsystem.nodes).filter((node) => node.type !== 'Internal'),
         ...internalPortNodes
     ];
 
@@ -183,7 +183,7 @@ export function navigateToParent(): void {
             : ''
     }));
     currentSystemMeta.set(parentMeta);
-    currentNodes.set(parentSystem.nodes);
+    currentNodes.set(stripSyntheticRootNodes(parentSystem.nodes));
     currentEdges.set(parentSystem.edges);
     currentReqs.set(parentSystem.requirements || []);
     currentPartDefinitions.set(parentSystem.partDefinitions || []);

@@ -27,7 +27,7 @@ export function parseSSDFile(xmlContent: string): ParsedSSDResult {
     const systemStructure = xmlDoc.querySelector('SystemStructureDescription');
     const systemName = systemStructure?.getAttribute('name') || 'Imported System';
 
-    // Get the root system (first System element, regardless of name)
+    // Get the SSD container system (first System element, regardless of name).
     const rootSystem = xmlDoc.querySelector('System');
     if (!rootSystem) {
         throw new Error('No system found in SSD file');
@@ -36,19 +36,6 @@ export function parseSSDFile(xmlContent: string): ParsedSSDResult {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
     const usedNodeIds = new Set<string>();
-
-    // Always add root node
-    const rootNode: Node = {
-        id: 'root',
-        type: 'RootSystem',
-        data: {
-            label: 'Node',
-            name: 'Root Node'
-        },
-        position: { x: 0, y: 150 }
-    };
-    nodes.push(rootNode);
-    usedNodeIds.add('root');
 
     // Parse components
     const components = rootSystem.querySelectorAll('Elements > Component');
@@ -176,8 +163,7 @@ export function parseSSDFile(xmlContent: string): ParsedSSDResult {
                 name: finalComponentName,
                 element: elementData
             },
-            dragHandle: '.element-node-inner',
-            parentId: 'root'
+            dragHandle: '.element-node-inner'
         };
 
         nodes.push(node);

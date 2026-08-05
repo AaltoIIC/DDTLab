@@ -22,6 +22,7 @@
         parseTTLToRequirements
     } from "./conversions";
     import { parseSSDFile, isValidSSD } from "$lib/importers/ssdParser";
+    import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
     import Tooltip from "$lib/Tooltip.svelte";
     import type { SubsystemDataType } from "$lib/types/types";
     import JSZip from 'jszip';  
@@ -168,7 +169,7 @@
             await new Promise(resolve => setTimeout(resolve, 10));
 
             // Then update nodes and edges
-            currentNodes.set(nodes);
+            currentNodes.set(stripSyntheticRootNodes(nodes));
             currentEdges.set(edges);
 
             // Add to history after a small delay to ensure renders complete
@@ -177,7 +178,7 @@
             }, 50);
 
             console.log(`Successfully imported system: ${systemName}`);
-            alert(`Successfully imported system "${systemName}"\n${nodes.length - 1} components\n${edges.length} connections`);
+            alert(`Successfully imported system "${systemName}"\n${nodes.length} components\n${edges.length} connections`);
 
             // Reset file input
             target.value = '';
@@ -249,7 +250,7 @@
 
                     await new Promise(resolve => setTimeout(resolve, 10));
 
-                    currentNodes.set(nodes);
+                    currentNodes.set(stripSyntheticRootNodes(nodes));
                     currentEdges.set(edges);
 
                     console.log(`Successfully imported SSD: ${systemName} from ${ssdFileName}`);
@@ -304,13 +305,13 @@
     }
 
     const handleAdd = (option: string) => {
-        const nodesLength = $currentNodes.length - 1;
+        const nodesLength = $currentNodes.length;
         if (option === 'Component') {
             currentNodes.update((nodes) => {
                 return [...nodes, {
                     id: generateId($currentNodes.map(n => n.id)),
                     type: 'Element',
-                    position: { x: 30, y: 30 + nodesLength * 100 },
+                    position: { x: 100, y: 100 + nodesLength * 100 },
                     data: {
                         name: nameElement('component'),
                         element: {
@@ -319,15 +320,14 @@
                             connectors: []
                         } as ElementDataType
                     },
-                    dragHandle: '.element-node-inner',
-                    parentId: 'root'
+                    dragHandle: '.element-node-inner'
                 }];
             });
             addToHistory();
         } else if (option === 'Sub-System') {
             const nodeId = generateId($currentNodes.map(n => n.id));
             const sysName = nameElement('subsystem');
-            const subsystem = createSubsystem($currentSystemMeta.id, nodeId, sysName);
+            const subsystem = createSubsystem($currentSystemMeta.id, sysName);
 
             const elementData: SubsystemDataType = {
                 type: 'system',
@@ -345,8 +345,7 @@
                     name: sysName,
                     element: elementData
                 },
-                dragHandle: '.element-node-inner',
-                parentId: 'root'
+                dragHandle: '.element-node-inner'
             };
 
             currentNodes.update((nodes) => {

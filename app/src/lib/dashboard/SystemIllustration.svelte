@@ -1,5 +1,6 @@
 <script lang="ts">
     import type {SystemType} from "$lib/types/types";
+    import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
     import {
         getSmoothStepPath,
         Position
@@ -12,7 +13,7 @@
     let { system }: Props = $props();
 
     // TODO: Maybe change this in the future so that packages are included somehow in the illustration
-    let filteredNodes = $derived(system.nodes.filter(n => n.type !== 'RootSystem' && n.type !== 'package'));
+    let filteredNodes = $derived(stripSyntheticRootNodes(system.nodes).filter(n => n.type !== 'package'));
 
     // get node dimensions
     let highestX = 0,
@@ -38,7 +39,8 @@
 
     // get px to percent ratio
     const [width, height] = [highestX - lowestX, highestY - lowestY];
-    const pxToPercent = Math.max(width, height) / 100;
+    // Keep single-node layouts finite now that there is no large synthetic root boundary.
+    const pxToPercent = Math.max(Math.max(width, height), 1) / 100;
 
     const [addToX, addToY] = (width > height) ? [0, (width - height) / 2] : [(height - width) / 2, 0];
 
@@ -52,7 +54,10 @@
     });
 
     const elementWidthPercent = 22;
-    const edgePaths = system.edges.map(edge => {
+    const nodeIds = new Set(filteredNodes.map((node) => node.id));
+    const edgePaths = system.edges
+        .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+        .map(edge => {
         const source = elemPositions[edge.source];
         const target = elemPositions[edge.target];
         return getSmoothStepPath({

@@ -1,6 +1,6 @@
-import type { Node } from '@xyflow/svelte';
 import { get } from 'svelte/store';
 import type { SystemType } from '$lib/types/types';
+import { normalizeNodePositions, stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
 import {
     currentEdges,
     currentItemDefinitions,
@@ -28,13 +28,6 @@ export type EditorSessionResult =
     | { kind: 'redirect-home' }
     | { kind: 'redirect-stage'; id: string; stage: EditorStage };
 
-const designRootNode = (): Node => ({
-    id: 'root',
-    type: 'RootSystem',
-    data: { label: 'Node' },
-    position: { x: 0, y: 150 }
-});
-
 export function initializeEditorSession(input: EditorRouteInput): EditorSessionResult {
     if (input.id) {
         const system = findSystem(input.id);
@@ -50,6 +43,10 @@ export function initializeEditorSession(input: EditorRouteInput): EditorSessionR
         // must also match, otherwise a concept/design route change would be
         // incorrectly treated as already initialized.
         if (get(currentSystemMeta).id === input.id && systemStage === input.stage) {
+            // A route can be reopened while the active stores still contain this
+            // system. Re-anchor that active graph too, without replacing it with
+            // the persisted snapshot and losing in-progress edits.
+            currentNodes.set(normalizeNodePositions(stripSyntheticRootNodes(get(currentNodes))));
             return { kind: 'ready', stage: input.stage, systemId: input.id };
         }
 
@@ -69,7 +66,7 @@ export function initializeEditorSession(input: EditorRouteInput): EditorSessionR
 
     const newSystem = createSystem();
     const stage = input.stage;
-    const nodes = stage === 'concept' ? [] : [designRootNode()];
+    const nodes = normalizeNodePositions([]);
 
     currentSystemMeta.set({
         name: newSystem.name,
@@ -108,7 +105,7 @@ function loadSystemIntoEditor(system: SystemType): void {
         date: system.date,
         id: system.id
     });
-    currentNodes.set(system.nodes);
+    currentNodes.set(normalizeNodePositions(stripSyntheticRootNodes(system.nodes)));
     currentEdges.set(system.edges);
     currentReqs.set(system.requirements || []);
     currentPartDefinitions.set(system.partDefinitions || []);

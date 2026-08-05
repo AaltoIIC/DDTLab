@@ -29,7 +29,6 @@ import persistentStore from './persistentStore';
 import {
     notification,
     isAddingRequirement,
-    rootNode,
     currentSystemMeta,
     currentNodes,
     currentEdges,
@@ -62,7 +61,11 @@ import {
 import _ from 'lodash';
 import { saveCurrentSystem } from '$lib/domains/editor-core/services/activeEditorActions';
 import ConceptTemplateSlider from '$lib/concept-phase/ConceptTemplateSlider.svelte';
-import { packageViewStack, type PackageView } from '$lib/concept-phase/packageStore';
+import {    packageViewStack,
+    type PackageView
+} from '$lib/concept-phase/packageStore';
+import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
+
 
 export type ConceptFmuBinding = {
     sourceNodeId: string;
@@ -78,7 +81,6 @@ export type ConceptFmuBinding = {
 export {
     notification,
     isAddingRequirement,
-    rootNode,
     currentSystemMeta,
     currentNodes,
     currentEdges,
@@ -123,7 +125,7 @@ export const setCurrentSystem = (id: string) => {
             name: system.name,
             date: system.date
         });
-        currentNodes.set(system.nodes);
+        currentNodes.set(stripSyntheticRootNodes(system.nodes));
         currentEdges.set(system.edges);
         currentReqs.set(system.requirements || []);
         currentPartDefinitions.set(system.partDefinitions);
@@ -144,7 +146,7 @@ export const convertToDesign = (fmuBindingsBySourceNodeId: Record<string, Concep
     ));
     const stack = get(packageViewStack);
     const rootLevel = stack.length > 0 ? stack[0] : null;
-    const rootNodes = rootLevel ? rootLevel.nodes : get(currentNodes);
+    const rootNodes = rootLevel ? stripSyntheticRootNodes(rootLevel.nodes) : stripSyntheticRootNodes(get(currentNodes));
     const rootEdges = rootLevel ? rootLevel.edges : get(currentEdges);
     const newRootId = generateId(get(systems).map(s => s.id));
     const newRootName = generateName(`${get(currentSystemMeta).name} (Design Stage)`, get(systems).map(s => s.name));
@@ -152,12 +154,12 @@ export const convertToDesign = (fmuBindingsBySourceNodeId: Record<string, Concep
     // Deep recursive conversion
     const converted = recursiveSystemBuilder(rootNodes, rootEdges, newRootId, fmuBindingsBySourceNodeId);
 
-    // Create the root system for the design stage
+    // Create the persisted design-stage system container.
     const designRootSystem: SystemType = {
         id: newRootId,
         name: newRootName,
         date: new Date().toISOString(), 
-        nodes: [rootNode, ...converted.nodes],
+        nodes: converted.nodes,
         edges: converted.edges,
         requirements: [],
         partDefinitions: [],
@@ -513,17 +515,11 @@ const recursiveSystemBuilder = (
             });
 
             // Create the new System entry
-            const subsystemRootNode = {...rootNode,
-                data: {
-                    parentSystemId: parentSystemId,
-                    parentNodeId: node.id,
-                }
-            }
             const newSystem: SystemType = {
                 id: newSubsystemId,
                 name: uniqueName,
                 parentSystemId: parentSystemId,
-                nodes: [subsystemRootNode, ...internal.nodes],
+                nodes: internal.nodes,
                 edges: [...ioedges, ...internal.edges],
                 date: new Date().toISOString(),
                 requirements: [],
@@ -550,7 +546,6 @@ const recursiveSystemBuilder = (
                     }
                 },
                 dragHandle: '.element-node-inner',
-                parentId: 'root',
                 measured: {
                     width: 200,
                     height: 200
@@ -576,7 +571,6 @@ const recursiveSystemBuilder = (
                     }
                 },
             dragHandle: '.element-node-inner',
-            parentId: 'root',
             measured: {
                 width: 200,
                 height: 200
@@ -710,24 +704,13 @@ export const removeOtherSystems = () => {
     systems.update(sys => sys.filter(s => s.id === get(currentSystemMeta).id));
 }
 
-export const createSubsystem = (parentSystemId: string, parentNodeId: string, name: string): SystemType => {
+export const createSubsystem = (parentSystemId: string, name: string): SystemType => {
     const subsystem = createSystem();
     subsystem.name = name;
 
-    const subsystemRootNode = {
-        id: 'root',
-        type: 'RootSystem',
-        data: { 
-            label: subsystem.name,
-            parentSystemId: parentSystemId,
-            parentNodeId: parentNodeId,
-         },
-        position: { x: 0, y: 150 }
-    } as Node;
-
     saveSystem({
         ...subsystem,
-        nodes: [subsystemRootNode],
+        nodes: [],
         edges: [],
         requirements: [],
         parentSystemId: parentSystemId,

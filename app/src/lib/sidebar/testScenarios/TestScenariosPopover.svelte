@@ -318,7 +318,6 @@
           const collected: any[] = [];
           const sourceNodes = nodes ?? $currentNodes;
           for (const node of sourceNodes) {
-              if (node.id === 'root') continue;
               const element = (node.data as any)?.element;
               if (element?.type === 'system' && element.subsystemId && !seenSubsystems.has(element.subsystemId)) {
                   seenSubsystems.add(element.subsystemId);

@@ -124,9 +124,9 @@ describe('editor history store', () => {
     session.currentSystemMeta.set({ id: 'system-1', name: 'After', date: 'today' });
     historyModule.addToHistory();
 
-    historyModule.handleUndo();
+    historyModule.undoHistory();
     expect(get(session.currentSystemMeta).name).toBe('Before');
-    historyModule.handleRedo();
+    historyModule.redoHistory();
     expect(get(session.currentSystemMeta).name).toBe('After');
   });
 });

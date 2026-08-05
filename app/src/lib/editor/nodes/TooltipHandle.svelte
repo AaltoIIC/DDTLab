@@ -49,7 +49,7 @@
     }
 
     // Dispatch a custom event on click (so that it can be read in requirements tab)
-    const dispatchCustomEvent = () => {
+    const dispatchConnectorClick = () => {
         /*console.log('Dispatching connector-click:', {
             connectorName,
             connectorVariable,
@@ -79,7 +79,7 @@
 <div class="handle-wrapper {onHover || isEditing ? 'hovered' : ''} {type}"
     onmouseenter={() => {onHover = true; selectNode(elementName);}}
     onmouseleave={() => {onHover = false;}}
-    onclick={(e) => {e.stopPropagation(); dispatchCustomEvent();}}>
+    onclick={(e) => {e.stopPropagation(); dispatchConnectorClick();}}>
     <div class="handle-back">
     </div>
     <Handle

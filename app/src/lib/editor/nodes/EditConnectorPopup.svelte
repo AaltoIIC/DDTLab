@@ -40,7 +40,7 @@
     }
 
     // Function to generate a new unique connector name
-    const nameNewConnector = () => {
+    const generateNewConnectorName = () => {
         const connectorNames = ($currentNodes.find((node) => node.id === elementName)?.data.element as any)
             .connectors.map((connector: any) => connector.name);
         return generateName('Connector', connectorNames);
@@ -59,7 +59,7 @@
         newConnectorDataType = { value: "no-dt", label: "No Data Type" };
         newConnectorUnit = { value: "-", label: "-" };
     } else {
-        newConnectorName = nameNewConnector();
+        newConnectorName = generateNewConnectorName();
         newConnectorClass = null;
         newConnectorDataType = { value: "no-dt", label: "No Data Type" };
         newConnectorUnit = { value: "-", label: "-" };
@@ -71,7 +71,7 @@
         if (isOpen && !initialized) {
             selectNode(elementName);
             if (!isExistingConnector) {
-                newConnectorName = nameNewConnector();
+                newConnectorName = generateNewConnectorName();
                 newConnectorClass = null;
                 newConnectorDataType = { value: "no-dt", label: "No Data Type" };
                 newConnectorUnit = { value: "-", label: "-" };
@@ -82,7 +82,7 @@
     });
 
     let isNameError = $state(false);
-    const validateName = () => {
+    const validateConnectorName = () => {
         const nodeData = $currentNodes.find((node) => node.id === elementName)?.data;
         const isNameTaken = (nodeData?.element as any).connectors.filter((c: any) => c.name !== newConnectorName)
             .some((c: any) => (
@@ -208,7 +208,7 @@
         <span>Name:</span>
         <Input class="w-[142px] h-8 {isNameError ? 'error-outline' : ''}"
             bind:value={newConnectorName}
-            on:input={validateName}
+            on:input={validateConnectorName}
         />
     </div>
     <div class="connector-param">

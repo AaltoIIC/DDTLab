@@ -49,7 +49,7 @@ export function addToHistory(): void {
     });
 }
 
-function setHistoryEntry(entry: HistoryEntryType): void {
+function restoreHistoryEntry(entry: HistoryEntryType): void {
     currentSystemMeta.set(entry.systemMeta);
     currentNodes.set(entry.nodes);
     currentEdges.set(entry.edges);
@@ -59,7 +59,7 @@ function setHistoryEntry(entry: HistoryEntryType): void {
     currentPackages.set(entry.packages);
 }
 
-export function handleUndo(): void {
+export function undoHistory(): void {
     const snapshot = get(history);
     const currentIndex = undoHistoryIndex({
         currentIndex: snapshot.currentIndex,
@@ -67,10 +67,10 @@ export function handleUndo(): void {
     });
     if (currentIndex === null) return;
     history.update((currentHistory) => ({ ...currentHistory, currentIndex }));
-    setHistoryEntry(get(history).data[currentIndex]);
+    restoreHistoryEntry(get(history).data[currentIndex]);
 }
 
-export function handleRedo(): void {
+export function redoHistory(): void {
     const snapshot = get(history);
     if (snapshot.currentIndex === -1 || snapshot.currentIndex >= snapshot.data.length - 1) return;
 
@@ -83,7 +83,7 @@ export function handleRedo(): void {
     history.update((currentHistory) => ({ ...currentHistory, currentIndex }));
 
     const entry = get(history).data[entryIndex];
-    if (entry) setHistoryEntry(entry);
+    if (entry) restoreHistoryEntry(entry);
 }
 
 export const navigationContext = writable<NavigationContextType>({

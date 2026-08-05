@@ -89,7 +89,7 @@
     let inputName = $state(currentName);
     let isNameError = $state(false);
 
-    const validateNameLocal = () => {
+    const validateNodeName = () => {
     // const validateName = () => {
         const nodeNames = get(currentNodes)
             .map(n => n.data?.name)
@@ -104,7 +104,7 @@
         isNameError = validateName(currentName, inputName, allNames);
     }
 
-    const saveName = () => {
+    const saveNodeName = () => {
         if (!isNameError && inputName !== data.name) {
             currentNodes.update((nodes) => {
                 const nodeIndex = nodes.findIndex((node) => node.data.name === data.name);
@@ -149,7 +149,7 @@
         zoomLevel = value.zoom;
     });
 
-    const deleteComponent = () => {
+    const deleteElementNode = () => {
         currentNodes.update((nodes) => {
             return nodes.filter((node) => node.id !== id);
         });
@@ -164,7 +164,7 @@
         addToHistory();
     }
 
-    const duplicateComponent = () => {
+    const duplicateElementNode = () => {
         const nodes = get(currentNodes);
         const currentNode = nodes.find(n => n.id === id);
         const elementNames = nodes.map(elem => elem.data.name) as string[];
@@ -228,10 +228,10 @@
     const handleOptionClick = (option: string) => {
         switch (option) {
             case 'Duplicate':
-                duplicateComponent();
+                duplicateElementNode();
                 break;
             case 'Delete':
-                deleteComponent();
+                deleteElementNode();
                 break;
             default:
                 // Impossible to reach
@@ -267,8 +267,8 @@
             <input class="main-name-field {isNameError ? 'error' : ''}"
                 type="text"
                 bind:value={inputName}
-                oninput={validateNameLocal}
-                onblur={saveName} />
+                oninput={validateNodeName}
+                onblur={saveNodeName} />
             <div class="element-type-cont {data.element.type === 'system' ? 'subsystem-type' : ''}">
                 {#if data.element.type === 'system'}
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -304,7 +304,7 @@
     </div>
     <div class="delete-btn-wrapper">
         <button class="delete-btn {hover ? 'hover' : ''}" aria-label="Delete"
-        onclick={deleteComponent}
+        onclick={deleteElementNode}
         style="transform: scale({1/zoomLevel});">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />

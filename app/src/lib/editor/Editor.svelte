@@ -30,7 +30,7 @@
       'default': RemovableEdge
     } as {} as EdgeTypes;
 
-    function nodeVisibility(_node: Node) {
+    function minimapNodeColor(_node: Node) {
       return 'x';
     }
 </script>
@@ -52,5 +52,5 @@
 >
   <Controls position="bottom-right" />
   <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
-  <MiniMap nodeColor={nodeVisibility}/>
+  <MiniMap nodeColor={minimapNodeColor}/>
 </SvelteFlow>

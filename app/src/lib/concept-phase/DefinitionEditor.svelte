@@ -39,7 +39,7 @@
         isNameError = validateName(currentName, inputName, $currentDefs.map( p => p.name ));
     }
 
-    function handleAddDef() {
+    function handleAddDefinition() {
         validateNameLocal();
         if (!isNameError) {
             const baseDef = {
@@ -83,11 +83,11 @@
             // console.log(JSON.stringify(newDef, null, 2));
             
             addToHistory(); 
-            handleCloseDef();
+            handleCloseDefinition();
         }
     }
 
-    function handleEditDef() {
+    function handleEditDefinition() {
         validateNameLocal();
         if (editDef && !isNameError) {
             const defIndex = $currentDefs.findIndex(def => editDef.id === def.id)
@@ -135,11 +135,11 @@
             currentDefs.update(_ => updatedDefs)
 
             addToHistory(); 
-            handleCloseDef();
+            handleCloseDefinition();
         }
     }
 
-    function handleCloseDef() {
+    function handleCloseDefinition() {
         inputName = '';
         description = '';
         isOpen = false;
@@ -185,11 +185,11 @@
             type='item'
             />
         <div class="action-buttons">
-            <button id="cancelDefEditBtn" type="button" class="action-button" onclick={handleCloseDef}>Cancel</button>
+            <button id="cancelDefEditBtn" type="button" class="action-button" onclick={handleCloseDefinition}>Cancel</button>
             {#if editDef}
-                <button type="button" class="action-button" onclick={handleEditDef}>Accept</button>
+                <button type="button" class="action-button" onclick={handleEditDefinition}>Accept</button>
             {:else}
-                <button type="button" class="action-button" onclick={handleAddDef}>Add</button>
+                <button type="button" class="action-button" onclick={handleAddDefinition}>Add</button>
             {/if}
         </div>
     </form>

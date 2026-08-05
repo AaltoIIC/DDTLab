@@ -653,12 +653,12 @@
 <style>
     .concept-node {
         position: relative;
-        background: white;
-        border: 2px solid #d1d5db;
+        background: linear-gradient(180deg, #fbfdff 0%, #f0f5ff 100%);
+        border: 2px solid #b9c9e6;
         border-radius: 6px;
         padding: 10px;
         min-width: 180px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 1px 3px rgba(30, 64, 175, 0.08);
         cursor: move;
         transition: all 0.2s;
     }
@@ -680,7 +680,7 @@
         justify-content: space-between;
         margin-bottom: 10px;
         padding-bottom: 6px;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid #dbe4f5;
     }
 
     .header-left {
@@ -762,7 +762,7 @@
     }
 
     .field-value.editable:hover {
-        background-color: #f3f4f6;
+        background-color: #e6edfa;
     }
 
     .field-input {

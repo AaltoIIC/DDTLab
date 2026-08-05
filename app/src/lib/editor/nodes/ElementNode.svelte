@@ -439,7 +439,7 @@
     .main-element-node {
         width: 200px;
         height: 200px;
-        border: solid 3px rgba(0, 0, 0, 0.1);
+        border: solid 3px rgba(253, 82, 0, 0.18);
         border-radius: 15px;
         backdrop-filter: blur(15px);
         transition: .2s;
@@ -447,7 +447,7 @@
         background: var(--main-grey-color);
     }
     .main-element-node:hover {
-        background: white;
+        background: #fff6ef;
     }
     .element-node-inner {
         width: 100%;

@@ -296,7 +296,11 @@
               }}
               onconnect={onConnect}
           >
-              <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
+              <!-- The blueprint grid lives in xyflow's <Background> so it pans/zooms
+                   with the viewport; the container keeps the static tint + glow. The
+                   Lines variant uses dimensions = [gap, gap], which tiles into a
+                   continuous grid (Cross would draw only tiny 1px crosses). -->
+              <Background variant={BackgroundVariant.Lines} gap={100} lineWidth={2} patternColor="rgba(30, 64, 175, 0.035)" bgColor="transparent" />
               <Controls position="top-right"/>
               <MiniMap {nodeColor} {nodeStrokeColor} nodeStrokeWidth={5}/>
           </SvelteFlow>
@@ -317,7 +321,23 @@
           flex-direction: column;
           height: 100%;
           width: 100%;
-          background-color: #f9fafb;
+          /* Blueprint look: light blue tint + a soft white glow from the top. The
+             gridlines themselves are drawn by the <Background> component so they
+             pan/zoom with the viewport. Kept as background-color + translucent
+             image so the viewpoint overrides below (which recolor background-color)
+             still show through. */
+          background-color: #f2f6fd;
+          background-image:
+              radial-gradient(120% 85% at 50% 0%, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 55%);
+          background-size: 100% 100%;
+      }
+
+      /* Keep the flow itself transparent so the blueprint theme shows through, and
+         make it a stacking context (isolation: isolate) so xyflow's pattern layer
+         (z-index: -1) paints above the container instead of behind it. */
+      #conceptual-editor :global(.svelte-flow) {
+          background-color: transparent;
+          isolation: isolate;
       }
 
       .flow-container {

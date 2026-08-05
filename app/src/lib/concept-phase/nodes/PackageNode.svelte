@@ -556,15 +556,15 @@
         width: 100%;
         height: 100%;
         justify-content: space-between;
-        border: 4px dashed #c6c7c9;
-        background-color: transparent;
-        color: #8e8f91;
+        border: 4px dashed rgba(59, 130, 246, 0.5);
+        background-color: rgba(239, 246, 255, 0.12);
+        color: #6f7f9e;
         border-radius: 10px;
         padding: 10px;
     }
 
     .package-node:hover {
-        border-color: #8e8f91;
+        border-color: rgba(59, 130, 246, 0.55);
         cursor: pointer;
     }
 
@@ -662,7 +662,7 @@
     }
 
     .package-title.editable:hover {
-        background-color: #eceef0;
+        background-color: #e3ebfa;
     }
 
     .package-footer {

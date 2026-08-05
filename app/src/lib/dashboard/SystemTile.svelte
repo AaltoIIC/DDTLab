@@ -35,10 +35,14 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="tile shadow"
+      class:concept={system.stage === 'concept'}
+      class:design={system.stage !== 'concept'}
       onclick={() => {
       goto(`/editor/${system.id}${stageParam}`);
   }}>
-    <div class="stage-type system-info">
+    <div class="stage-type system-info"
+        class:concept={system.stage === 'concept'}
+        class:design={system.stage !== 'concept'}>
         {system.stage?.toUpperCase()}
     </div>
     <div class="illustration-cont">
@@ -86,8 +90,17 @@
         border: var(--main-border);
         background-color: white;
     }
-    .tile:hover {
-        background-color: var(--main-hover-color);
+    .tile.concept {
+        background: linear-gradient(180deg, #ffffff 0%, #edf2fc 100%);
+    }
+    .tile.design {
+        background: linear-gradient(180deg, #ffffff 0%, #fdede2 100%);
+    }
+    .tile.concept:hover {
+        background: linear-gradient(180deg, #ffffff 0%, #e3ebfa 100%);
+    }
+    .tile.design:hover {
+        background: linear-gradient(180deg, #ffffff 0%, #fbe3d2 100%);
     }
     .tile h4 {
         margin: 0;
@@ -115,5 +128,14 @@
         height: 20px;
         width: 175px;
         text-align: center;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+    }
+    .stage-type.concept {
+        color: #1e40af;
+    }
+    .stage-type.design {
+        color: var(--main-color-dark);
     }
 </style>

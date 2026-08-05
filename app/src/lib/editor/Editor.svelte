@@ -34,23 +34,43 @@
       return 'x';
     }
 </script>
-<SvelteFlow
-  nodes={currentNodes}
-  edges={currentEdges}
-  nodeTypes={nodeTypes}
-  edgeTypes={edgeTypes}
-  defaultEdgeOptions={{
-    animated: false,
-    deletable: true,
-  }}
-  connectionLineType={ConnectionLineType.SmoothStep}
-  deleteKey={null}
-  minZoom={0.48}
-  maxZoom={1}
-  onconnect={() => {addToHistory()}}
-  fitView
->
-  <Controls position="bottom-right" />
-  <Background bgColor="rgb(245,245,245)" variant={BackgroundVariant.Dots} gap={36} />
-  <MiniMap nodeColor={minimapNodeColor}/>
-</SvelteFlow>
+<!-- Design stage canvas: warm orange tint + the dot pattern used on the dashboard
+     illustrations, over a subtle vertical gradient. -->
+<div class="design-canvas">
+  <SvelteFlow
+    nodes={currentNodes}
+    edges={currentEdges}
+    nodeTypes={nodeTypes}
+    edgeTypes={edgeTypes}
+    defaultEdgeOptions={{
+      animated: false,
+      deletable: true,
+    }}
+    connectionLineType={ConnectionLineType.SmoothStep}
+    deleteKey={null}
+    minZoom={0.48}
+    maxZoom={1}
+    onconnect={() => {addToHistory()}}
+    fitView
+  >
+    <Controls position="bottom-right" />
+    <!-- The dot pattern lives in xyflow's <Background> so it pans/zooms with the
+         viewport; the wrapper only carries the static gradient tint. -->
+    <Background variant={BackgroundVariant.Dots} gap={30} size={2.2} patternColor="rgba(253, 82, 0, 0.22)" bgColor="transparent" />
+    <MiniMap nodeColor={minimapNodeColor}/>
+  </SvelteFlow>
+</div>
+<style>
+    .design-canvas {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(253, 82, 0, 0.028) 100%);
+    }
+    /* Keep the flow itself transparent so the themed wrapper shows through, and
+       make it a stacking context (isolation: isolate) so xyflow's pattern layer
+       (z-index: -1) paints above the wrapper instead of behind it. */
+    .design-canvas :global(.svelte-flow) {
+        background-color: transparent;
+        isolation: isolate;
+    }
+</style>

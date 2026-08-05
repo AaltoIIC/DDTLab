@@ -37,7 +37,8 @@ export function exportToSSD(): string {
         requirements: [], // Not used in SSD
         partDefinitions: [],
         itemDefinitions: [],
-        packages: []
+        packages: [],
+        stage: 'design'
     };
 
     // Create conversion context

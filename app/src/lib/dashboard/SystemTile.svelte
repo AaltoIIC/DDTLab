@@ -5,7 +5,8 @@
     import DropdownMenu from "$lib/DropdownMenu.svelte";
     import { formatDate } from "$lib/helpers";
     import SystemIllustration from "./SystemIllustration.svelte";
-    import { cloneSystem, removeSystem } from "$lib/stores/stores.svelte";
+    import { get } from 'svelte/store';
+    import { cloneSystem, removeSystem, currentNodes } from "$lib/stores/stores.svelte";
 
     interface Props {
         system: SystemType;
@@ -18,7 +19,7 @@
 
     const handleMenu = (option: string) => {
         if (option === "Duplicate") {
-            cloneSystem(system.id);
+            cloneSystem(system.id, get(currentNodes).map((node) => String(node.data.name ?? '')));
         } else if (option === "Edit") {
             goto(`/editor/${system.id}${stageParam}`);
         } else if (option === "Delete") {

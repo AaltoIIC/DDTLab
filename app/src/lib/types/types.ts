@@ -37,6 +37,8 @@ export interface RequirementType {
     interval?: IntervalType | number[];  // Support both object and array formats
 }
 
+export type SystemStage = 'concept' | 'design';
+
 export interface SystemType extends SystemMetaType {
     nodes: Node[];
     edges: Edge[];
@@ -48,7 +50,7 @@ export interface SystemType extends SystemMetaType {
     sourceConceptSystemId?: string | null;
     sourceConceptSystemName?: string | null;
     sourceAnalysisRequestIds?: string[];
-    stage?: 'concept' | 'design';
+    stage?: SystemStage;
 }
 
 export interface AnalysisReportRecord {

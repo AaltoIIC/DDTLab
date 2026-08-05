@@ -1,155 +1,72 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
-    import { onMount } from "svelte";
+    import { onMount } from 'svelte';
     import Sidebar from "$lib/sidebar/Sidebar.svelte";
     import { getScreenSize } from "$lib/helpers";
     import Editor from "$lib/editor/Editor.svelte";
     import TopBar from '$lib/editor/TopBar.svelte';
-    import type { SystemType } from "$lib/types/types";
     import { SvelteFlowProvider } from "@xyflow/svelte";
-    import {
-        createSystem,
-        currentSystemMeta,
-        currentEdges,
-        currentNodes,
-        currentReqs,
-        saveCurrentSystem,
-        systems,
-        addToHistory,
-        history,
-        navigateToParent,
-        resetNavigation,
-        navigationContext,
-
-        saveSystem,
-
-        currentItemDefinitions,
-
-        currentPartDefinitions
-
-
-
-    } from "$lib/stores/stores.svelte.js";
     import Breadcrumb from "$lib/editor/Breadcrumb.svelte";
     import ConceptualStageLayout from "$lib/concept-phase/ConceptualStageLayout.svelte";
+    import {
+        initializeEditorSession,
+        type EditorStage
+    } from "$lib/app/initialization/editorSessionController";
+    import { startEditorAutosave } from "$lib/app/initialization/editorAutosave";
+    import { startEditorNavigationLifecycle } from "$lib/app/navigation/editorNavigationLifecycle";
 
-    
-    // initialize the editor
     let { data } = $props();
-    
-    // Check if we're in conceptual stage
-    const isConceptualStage = data.stage === 'concept';
-    
-    if (data.id) {
-        if ($currentSystemMeta.id === data.id) {
-            // if system is already loaded, do nothing
-        } else if ($systems.some(s => s.id === data.id)) {
-            // if system exists, load it
-            const sys = $systems.find(s => s.id === data.id) as SystemType;
-            currentSystemMeta.set({
-                name: sys.name,
-                date: sys.date,
-                id: sys.id
-            });
-            currentNodes.set(sys.nodes);
-            currentEdges.set(sys.edges);
-            currentReqs.set(sys.requirements);
-            currentPartDefinitions.set(sys.partDefinitions);
-            currentItemDefinitions.set(sys.itemDefinitions);
-            
-            // If system has a different stage than URL, redirect to correct stage
-            if (sys.stage && sys.stage !== data.stage) {
-                onMount(() => {
-                    const stageParam = sys.stage === 'concept' ? '?stage=concept' : '';
-                    goto(`/editor/${sys.id}${stageParam}`, {replaceState: true});
-                });
-            }
-        } else {
-            // if system does not exist, redirect home
-            onMount(() => {
-                goto('/');
-            });
-        }
-    } else {
-        // create new system
-        const newSys = createSystem();
-        currentSystemMeta.set({
-            name: newSys.name,
-            date: newSys.date,
-            id: newSys.id
-        });
-        
-        if (isConceptualStage) {
-            // For conceptual stage, start with blank canvas
-            currentNodes.set([]);
-            currentEdges.set([]);
-            currentReqs.set([]);
-            currentPartDefinitions.set([]);
-            currentItemDefinitions.set([]);
-            
-            saveSystem({
-                ...newSys,
-                nodes: [],
-                edges: [],
-                requirements: [],
-                partDefinitions: [],
-                itemDefinitions: [],
-                parentSystemId: null,
-                stage: 'concept'
-            });
-        } else {
-            // For design stage, use the existing default setup
-            currentNodes.set([{
-                id: 'root',
-                type: 'RootSystem',
-                data: { label: 'Node' },
-                position: { x: 0, y: 150 }
-            }]);
-            currentEdges.set([]);
-            currentReqs.set([]);
+    const initialStage: EditorStage = data.stage === 'concept' ? 'concept' : 'design';
+    const initialRouteKey = `${data.id ?? 'new'}:${initialStage}`;
+    const initialResult = initializeEditorSession({
+        id: data.id,
+        stage: initialStage
+    });
+    let editorStage = $derived<'concept' | 'design'>(data.stage === 'concept' ? 'concept' : 'design');
+    let isConceptualStage = $derived(editorStage === 'concept');
+    let initializedRouteKey = initialRouteKey;
+    let stopAutosave: (() => void) | undefined;
+    let stopNavigationLifecycle: (() => void) | undefined;
 
-            saveSystem({
-                ...newSys,
-                nodes: [{
-                    id: 'root',
-                    type: 'RootSystem',
-                    data: { label: 'Node' },
-                    position: { x: 0, y: 150 }
-                }],
-                edges: [],
-                requirements: [],
-                parentSystemId: null,
-            });
-        }
-
-        onMount(() => {
-            const stageParam = isConceptualStage ? '?stage=concept' : '';
-            goto(`/editor/${newSys.id}${stageParam}`, {replaceState: true});
-        });
+    function stopEditorLifecycle() {
+        stopAutosave?.();
+        stopNavigationLifecycle?.();
+        stopAutosave = undefined;
+        stopNavigationLifecycle = undefined;
     }
 
-    // handle autosave and history
-    currentSystemMeta.subscribe(() => {
-        saveCurrentSystem();
-    });
-    currentEdges.subscribe(() => {
-        saveCurrentSystem();
-    });
-    currentNodes.subscribe(() => {
-        saveCurrentSystem();
-    });
-    currentReqs.subscribe(() => {
-        saveCurrentSystem();
-    });
-    currentPartDefinitions.subscribe(() => {
-        saveCurrentSystem();
-    });
-    currentItemDefinitions.subscribe(() => {
-        saveCurrentSystem();
-    })
+    function applyInitializationResult(result: ReturnType<typeof initializeEditorSession>) {
+        if (result.kind === 'redirect-home') {
+            void goto('/');
+            return;
+        }
+        if (result.kind === 'redirect-stage') {
+            const stageParam = result.stage === 'concept' ? '?stage=concept' : '';
+            void goto(`/editor/${result.id}${stageParam}`, { replaceState: true });
+            return;
+        }
+        stopEditorLifecycle();
+        stopAutosave = startEditorAutosave();
+        stopNavigationLifecycle = startEditorNavigationLifecycle();
+    }
 
+    // Keep the pre-refactor synchronous session initialization/render behavior
+    // for the first route, while still handling SvelteKit route-data reuse.
+    onMount(() => {
+        applyInitializationResult(initialResult);
+        return stopEditorLifecycle;
+    });
 
-    // handle different screen sizes
+    $effect(() => {
+        const stage: EditorStage = data.stage === 'concept' ? 'concept' : 'design';
+        const routeKey = `${data.id ?? 'new'}:${stage}`;
+        if (routeKey === initializedRouteKey) return;
+        initializedRouteKey = routeKey;
+        stopEditorLifecycle();
+        applyInitializationResult(initializeEditorSession({ id: data.id, stage }));
+    });
+
+    // Handle different screen sizes for consumers that still use these route values.
     let isMobile = false;
     let defaultFirstSize = 360;
     const screenSize = getScreenSize();
@@ -159,23 +76,6 @@
         defaultFirstSize = 0;
         isMobile = true;
     }
-
-    function handleKeydown(event: KeyboardEvent) {
-        if (event.key === 'Escape' && $navigationContext.path.length > 0) {
-            navigateToParent();
-        }
-    }
-
-    onMount(() => {
-        addToHistory();
-
-        resetNavigation();
-
-        window.addEventListener('keydown', handleKeydown);
-        return () => {
-            window.removeEventListener('keydown', handleKeydown);
-        };
-    });
 </script>
 <svelte:head>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -184,20 +84,20 @@
     <title>Edit | DDT Lab</title>
 </svelte:head>
 {#if isConceptualStage}
-    <SvelteFlowProvider>
-        <ConceptualStageLayout />
-        <TopBar />
-    </SvelteFlowProvider>
-{:else}
-    <SvelteFlowProvider>
-        <div class="main-screen">
-            <Editor />
+        <SvelteFlowProvider>
+            <ConceptualStageLayout />
             <TopBar />
-            <Sidebar />
-            <Breadcrumb />
-        </div>
-    </SvelteFlowProvider>
-{/if}
+        </SvelteFlowProvider>
+    {:else}
+        <SvelteFlowProvider>
+            <div class="main-screen">
+                <Editor />
+                <TopBar />
+                <Sidebar />
+                <Breadcrumb />
+            </div>
+        </SvelteFlowProvider>
+    {/if}
 <style>
     .main-screen {
         position: fixed;

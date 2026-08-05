@@ -183,7 +183,10 @@
 
             const subsystemData = newNode.data.element as SubsystemDataType;
             if (subsystemData.subsystemId) {
-                const newSubsystem = cloneSystem(subsystemData.subsystemId)!;
+                const newSubsystem = cloneSystem(
+                    subsystemData.subsystemId,
+                    nodes.map((node) => String(node.data.name ?? ''))
+                )!;
                 subsystemData.subsystemId = newSubsystem.id;
             }
             else {

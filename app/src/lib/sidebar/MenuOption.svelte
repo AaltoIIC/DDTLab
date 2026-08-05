@@ -11,6 +11,7 @@
         onClick?: (option: string) => void;
         visible?: boolean;
         isOpen?: boolean;
+        ariaLabel?: string;
     }
 
     let {
@@ -20,7 +21,8 @@
         optionIcons = [],
         onClick = () => {},
         visible = true,
-        isOpen = $bindable(false)
+        isOpen = $bindable(false),
+        ariaLabel = 'Dropdown'
     }: Props = $props();
 
     let isDropdownOpen = $state(false);
@@ -49,7 +51,7 @@
     onmouseleave={() => {onHover = false}}>
 <button
     class="btn"
-    aria-label="Dropdown"
+    aria-label={ariaLabel}
     onclick={(e) => {e.stopPropagation(); isDropdownOpen = !isDropdownOpen; isOpen = isDropdownOpen}}
     style:color={iconColor}>
         {@html icon}

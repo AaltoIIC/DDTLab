@@ -36,56 +36,6 @@
         default: RemovableEdge,
     } as {} as EdgeTypes;
 
-    // DEPRECATED WAY OF ADDING NODES
-    // *******************************
-    // export function addPartNode(definitionName: string = '') {
-    //     console.log('addPartNode called');
-    //     const existingNodes = get(currentNodes);
-    //     const newNode: Node = {
-    //         id: `part-${Date.now()}`,
-    //         type: 'part',
-    //         position: { x: 250, y: 100 + existingNodes.length * 150 },
-    //         data: {
-    //             declaredName: `New ${definitionName} Part` ,
-    //             definition: definitionName,
-    //             comment: '',
-    //             id: `PRT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-    //             orderStatus: 'Not Ordered',
-    //             metadata: [],  // Initialize with empty metadata array
-    //             nodes: [],  // Initialize with empty nodes array
-    //             edges: [],   // Initialize with empty edges array
-    //             inputs: [],  // Initialize with no inputs
-    //             outputs: [] // Initialize with no outputs
-    //         }
-    //     };
-
-    //     console.log('Creating new part:', newNode);
-    //     currentNodes.update(n => [...n, newNode]);
-    //     addToHistory(); // Track changes for undo/redo
-    // }
-    
-    // export function addItemNode(name: string = 'New Item') {
-    //     console.log('addItemNode called ' + name);
-    //     const existingNodes = get(currentNodes);
-    //     const newNode: Node = {
-    //         id: `item-${Date.now()}`,
-    //         type: 'item',
-    //         position: { x: 250, y: 100 + existingNodes.length * 150 },
-    //         data: {
-    //             declaredName: name,
-    //             comment: '',
-    //             id: `ITM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-    //             orderStatus: 'Not Ordered',
-    //             metadata: [],  // Initialize with empty metadata array
-    //             inputs: [],  // Initialize with one default input
-    //             outputs: [] // Initialize with one default output
-    //         }
-    //     };
-
-    //     console.log('Creating new item:', newNode);
-    //     currentNodes.update(n => [...n, newNode]);
-    //     addToHistory(); // Track changes for undo/redo
-    // }
 
     let flowContainer: HTMLDivElement | undefined = $state();
     const { viewport, getViewport } = useSvelteFlow();
@@ -335,7 +285,7 @@
 
 
   <div id="conceptual-editor" class="viewpoint-{$activeViewpoint}" ondragover={handleDragOver} ondrop={handleDrop} role="application" aria-label="Conceptual stage editor">
-      <div class="flow-container" bind:this={flowContainer} onclick={() => /* console.log(JSON.stringify($currentNodes, null, 2) + JSON.stringify($currentEdges, null, 2)) */ null /* TODO: Remove onclick later, just for debugging */}>
+      <div class="flow-container" bind:this={flowContainer}>
           <SvelteFlow
               nodes={currentNodes}
               edges={currentEdges}

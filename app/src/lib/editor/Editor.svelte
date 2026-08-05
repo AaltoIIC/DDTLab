@@ -38,7 +38,6 @@
     }
 </script>
 <SvelteFlow
-//  onclick={() => console.log(JSON.stringify($currentNodes, null, 2) + JSON.stringify($currentEdges, null, 2)) /* TODO: Remove onclick later, just for debugging */}
   nodes={currentNodes}
   edges={currentEdges}
   nodeTypes={nodeTypes}

@@ -1,6 +1,8 @@
 import { writable, derived, get } from 'svelte/store';
 import type { Node, Edge } from '@xyflow/svelte';
-import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
+import { currentNodes, currentEdges } from '$lib/domains/editor-core/state/activeEditorSessionStore';
+import { addToHistory } from '$lib/domains/editor-core/state/editorHistoryNavigationStore';
+import { saveCurrentSystem } from '$lib/domains/editor-core/services/activeEditorActions';
 
 export interface PackageView {
     packageId: string;
@@ -233,6 +235,7 @@ export function navigateToRoot() {
     }
     
     packageViewStack.set([]);
+    saveCurrentSystem();
     addToHistory();
 }
 

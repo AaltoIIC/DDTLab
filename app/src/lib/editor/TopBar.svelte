@@ -63,6 +63,7 @@
             bind:value={currentName}
             oninput={checkAndUpdateName}
             onblur={handleBlur}
+            aria-label="System name"
             />
     </div>
     <Button onClick={() => {goto('/');}}>Save</Button>

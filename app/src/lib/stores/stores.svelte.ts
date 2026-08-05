@@ -3,8 +3,6 @@ import {
     type SystemMetaType,
     type SystemType,
     type RequirementType,
-    type HistoryEntryType,
-    type NavigationContextType,
     type SubsystemDataType,
     type NodeDataType,
     type FMIComponentType,
@@ -28,7 +26,41 @@ import {
 } from '$lib/helpers';
 import { writable, get, derived } from 'svelte/store';
 import persistentStore from './persistentStore';
+import {
+    notification,
+    isAddingRequirement,
+    rootNode,
+    currentSystemMeta,
+    currentNodes,
+    currentEdges,
+    currentReqs,
+    customDataTypes,
+    customVSSoVariables,
+    currentPartDefinitions,
+    currentItemDefinitions,
+    currentPackages
+} from '$lib/domains/editor-core/state/activeEditorSessionStore';
+import {
+    systems,
+    createSystem,
+    getSystem,
+    saveSystem,
+    removeSystem,
+    cloneSystem
+} from '$lib/domains/system/state/systemCatalogStore';
+import {
+    history,
+    addToHistory,
+    handleUndo,
+    handleRedo,
+    navigationContext,
+    currentViewSystemId,
+    navigateToSubsystem,
+    navigateToParent,
+    resetNavigation
+} from '$lib/domains/editor-core/state/editorHistoryNavigationStore';
 import _ from 'lodash';
+import { saveCurrentSystem } from '$lib/domains/editor-core/services/activeEditorActions';
 import ConceptTemplateSlider from '$lib/concept-phase/ConceptTemplateSlider.svelte';
 import { packageViewStack, type PackageView } from '$lib/concept-phase/packageStore';
 
@@ -43,84 +75,42 @@ export type ConceptFmuBinding = {
     partName?: string | null;
 };
 
-// Helper variable for root node
-export const rootNode = {
-      id: 'root',
-      type: 'RootSystem',
-      data: { 
-        label: 'Node',
-        name: 'Root Node'
-        },
-      position: { x: 0, y: 150 }
-    } as {} as Node
+export {
+    notification,
+    isAddingRequirement,
+    rootNode,
+    currentSystemMeta,
+    currentNodes,
+    currentEdges,
+    currentReqs,
+    customDataTypes,
+    customVSSoVariables,
+    currentPartDefinitions,
+    currentItemDefinitions,
+    currentPackages
+};
+export { systems };
+export {
+    createSystem,
+    getSystem,
+    saveSystem,
+    removeSystem,
+    cloneSystem,
+    history,
+    addToHistory,
+    handleUndo,
+    handleRedo,
+    navigationContext,
+    currentViewSystemId,
+    navigateToSubsystem,
+    navigateToParent,
+    resetNavigation
+};
+export { saveCurrentSystem };
 
-export const notification = writable<NotificationType | null>(null);
-export const isAddingRequirement = writable<boolean>(false);
-
-// current system
-export const currentSystemMeta = persistentStore<SystemMetaType>('currentSystemMeta', {name: '', date: '', id: ''});
-export const currentNodes = persistentStore<Node[]>('currentNodes', [rootNode]);
-export const currentEdges = persistentStore<Edge[]>('currentEdges', []);
-export const currentReqs = persistentStore<RequirementType[]>('currentReqs', []);
-
-// Custom connector data types defined by users
-export const customDataTypes = persistentStore<string[]>('customDataTypes', []);
-
-// Custom VSSo variables defined by users
-export const customVSSoVariables = persistentStore<string[]>('customVSSoVariables', []);
-
-export const systems = persistentStore<SystemType[]>('systems', []);
 export const analysisReports = persistentStore<AnalysisReportRecord[]>('analysisReports', []);
 export const templateSimulationResults = persistentStore<TemplateSimulationResultRecord[]>('templateSimulationResults', []);
-
 export const templates = persistentStore<ConceptTemplate[]>('conceptTemplates', []);
-
-export const currentPartDefinitions = persistentStore<PartDefinition[]>('partDefinitions', []);
-export const currentItemDefinitions = persistentStore<ItemDefinition[]>('itemDefinitions', []);
-export const currentPackages = persistentStore<PackageTemplate[]>('packages', []);
-
-export const saveSystem = (system: SystemType) => {
-    systems.update((systems) => {
-        const sysIndex = systems.findIndex(s => s.id === system.id);
-        if (sysIndex !== -1) {
-            systems[sysIndex] = _.cloneDeep(system);
-        } else {
-            systems.push(_.cloneDeep(system));
-        }
-
-        return systems;
-    });
-}
-
-export const saveCurrentSystem = () => {
-    const currentSystem = getSystem(get(currentSystemMeta).id);
-    saveSystem({
-        id: get(currentSystemMeta).id,
-        name: get(currentSystemMeta).name,
-        date: new Date().toISOString(),
-        nodes: get(currentNodes),
-        edges: get(currentEdges),
-        requirements: get(currentReqs),
-        partDefinitions: get(currentPartDefinitions),
-        itemDefinitions: get(currentItemDefinitions),
-        packages: get(currentPackages),
-        parentSystemId: currentSystem?.parentSystemId || null,
-        sourceConceptSystemId: currentSystem?.sourceConceptSystemId || null,
-        sourceConceptSystemName: currentSystem?.sourceConceptSystemName || null,
-        sourceAnalysisRequestIds: currentSystem?.sourceAnalysisRequestIds || [],
-        stage: currentSystem?.stage || 'design',
-    });
-}
-
-export const getSystem = (id: string): SystemType | null => {
-    return _.cloneDeep(get(systems).find(s => s.id === id)) || null;
-}
-
-export const createSystem = () => ({
-        name: generateName("New System", get(systems).map(s => s.name)),
-        date: new Date().toISOString(),
-        id: generateId(get(systems).map(s => s.id))
-    } as SystemType)
 
 export const setCurrentSystem = (id: string) => {
     const sysIndex = get(systems).findIndex(s => s.id === id);
@@ -540,6 +530,7 @@ const recursiveSystemBuilder = (
                 partDefinitions: [],
                 itemDefinitions: [],
                 packages: [],
+                stage: 'design'
             };
             saveSystem(newSystem);
 
@@ -714,119 +705,10 @@ function inferFmiCategory(name: string): FMIComponentType['category'] {
     return 'other';
 }
 
-export const removeSystem = (id: string) => {
-    function inner(id: string, allSystems: SystemType[]): SystemType[] {
-        const children = allSystems.filter((sys) => sys.parentSystemId === id);
-        children.forEach((child) => {
-            allSystems = inner(child.id, allSystems);
-        });
-
-        return allSystems.filter((sys) => sys.id !== id);
-    }
-
-    systems.update((systems) => {
-        systems = inner(id, systems);
-        return systems;
-    });
-}
-
 // For debugging purposes
 export const removeOtherSystems = () => {
     systems.update(sys => sys.filter(s => s.id === get(currentSystemMeta).id));
 }
-
-export const cloneSystem = (id: string) => {
-    const system = getSystem(id);
-    const allNames = (get(currentNodes).map(n => n.data.name) as string[]).concat(get(systems).map(s => s.name));
-    if (system) {
-        const newSystem = _.cloneDeep(system);
-        newSystem.id = generateId(get(systems).map(s => s.id));
-        newSystem.name = generateName(`Copy of ${newSystem.name}`, allNames);
-        systems.update((systems) => {
-            systems.push(newSystem);
-            return systems;
-        });
-        return newSystem;
-    }
-    return null;
-}
-
-// history
-export const history = writable<{currentIndex: number, data: HistoryEntryType[]}>({currentIndex: -1, data: []});
-
-export const addToHistory = () => {
-    history.update(h => {
-        if (h.currentIndex !== -1) {
-            h.data = h.data.slice(0, h.currentIndex + 1);
-        }
-
-        const entry = _.cloneDeep({
-            systemMeta: get(currentSystemMeta),
-            nodes: get(currentNodes),
-            edges: get(currentEdges),
-            requirements: get(currentReqs),
-            partDefinitions: get(currentPartDefinitions),
-            itemDefinitions: get(currentItemDefinitions),
-            packages: get(currentPackages)
-        });
-        h.data.push(entry);
-        h.currentIndex = -1;
-        if (h.data.length > 10) {
-            h.data.shift();
-        }
-        return h;
-    });
-}
-
-const setHistoryEntry = (entry: HistoryEntryType) => {
-    currentSystemMeta.set(entry.systemMeta);
-    currentNodes.set(entry.nodes);
-    currentEdges.set(entry.edges);
-    currentReqs.set(entry.requirements);
-    currentPartDefinitions.set(entry.partDefinitions);
-    currentItemDefinitions.set(entry.itemDefinitions);
-    currentPackages.set(entry.packages);
-}
-
-export const handleUndo = () => {
-    let currentIndex = get(history).currentIndex === -1 ? get(history).data.length - 1 : get(history).currentIndex;
-    currentIndex -= 1;
-    if (currentIndex >= 0) {
-        history.update(h => {
-            h.currentIndex = currentIndex;
-            return h;
-        });
-
-        const entry = get(history).data[currentIndex];
-        setHistoryEntry(entry);
-    }
-}
-export const handleRedo = () => {
-    if (get(history).currentIndex !== -1 && get(history).currentIndex < get(history).data.length - 1) {
-        let currentIndex = get(history).currentIndex;
-        currentIndex += 1;
-        if (currentIndex === get(history).data.length - 1) currentIndex = -1;
-
-        history.update(h => {
-            h.currentIndex = currentIndex;
-            return h;
-        });
-
-        const entry = get(history).data.at(get(history).currentIndex);
-        if (entry) {
-            setHistoryEntry(entry);
-        }
-    }
-}
-
-export const navigationContext = writable<NavigationContextType>({
-    path: [],
-    currentSystemId: '',
-    parentSystemId: '',
-    rootSystemId: ''
-});
-
-export const currentViewSystemId = writable<string>('');
 
 export const createSubsystem = (parentSystemId: string, parentNodeId: string, name: string): SystemType => {
     const subsystem = createSystem();
@@ -858,118 +740,6 @@ export const isSubsystemNode = (nodeData: any): boolean => {
     return nodeData?.element?.type === 'system' && nodeData?.element?.hasSubsystems === true;
 };
 
-export const navigateToSubsystem = (subsystemId: string, parentNodeId: string) => {
-    const subsystem = getSystem(subsystemId);
-    if (!subsystem) {
-        console.error('Subsystem not found:', subsystemId);
-        return;
-    }
-    
-    // Create internal port nodes
-    const parentNodeData = get(currentNodes).find( n => n.id === parentNodeId)?.data
-    const parentNodeElement = parentNodeData?.element as SubsystemDataType;
-    const inputs = parentNodeElement.connectors.filter(c => c.type === 'input');
-    const outputs = parentNodeElement.connectors.filter(c => c.type === 'output');
-    
-    let internalPortNodes: Node[] = [];
-
-    inputs.forEach((connector, index) => {
-        internalPortNodes.push({
-            id: `internal-port-input-${connector.name}`,
-            type: 'Internal',
-            position: { x: 20, y: 150 + index * 100 },  // More spread out vertically
-            data: {
-                ...connector,
-                portType: 'input',
-                parentNodeId,
-                parentNodeName: parentNodeData?.name as string,
-                isInternal: true
-            },
-            draggable: true,  // Allow users to position ports where needed
-            deletable: false
-        });
-    })
-
-    outputs.forEach((connector, index) => {
-        internalPortNodes.push({
-            id: `internal-port-output-${connector.name}`,
-            type: 'Internal',
-            position: { x: 800, y: 150 + index * 100 },  // Further right and more spread
-            data: {
-                ...connector,
-                portType: 'output',
-                parentNodeId,
-                parentNodeName: parentNodeData?.name as string,
-                isInternal: true
-            },
-            draggable: true,  // Allow users to position ports where needed
-            deletable: false
-        });
-    });
-
-    const subNodes = [...subsystem.nodes.filter(n => n.type !== 'Internal'), ...internalPortNodes]
-    // TODO: This way is scuffed, fix later for both concept and design so its more robust
-    // subsystem.nodes.push(...internalPortNodes);
-
-    navigationContext.update(ctx => ({
-        ...ctx,
-        path: [...ctx.path, get(currentSystemMeta)],
-        currentSystemId: subsystem.id,
-    }));
-
-    currentSystemMeta.set({
-        id: subsystem.id,
-        name: subsystem.name,
-        date: subsystem.date
-    });
-    currentNodes.set(subNodes);
-    currentEdges.set(subsystem.edges);
-    currentReqs.set(subsystem.requirements);
-
-    currentViewSystemId.set(subsystem.id);
-    history.set({currentIndex: -1, data: []});
-    addToHistory();
-}
-
-export const navigateToParent = () => {
-    const ctx = get(navigationContext);
-    if (ctx.path.length === 0) return;
-
-    const parentMeta = ctx.path[ctx.path.length - 1];
-    const parentSystem = getSystem(parentMeta.id);
-
-    if (!parentSystem) {
-        console.error('Parent system not found:', parentMeta.id);
-        return;
-    }
-
-    navigationContext.update(ctx => ({
-        ...ctx,
-        path: ctx.path.slice(0, -1),
-        currentSystemId: parentMeta.id,
-        parentSystemId: ctx.path.length > 1 ? ctx.path[ctx.path.length - 2].id : '',
-    }));
-
-    currentSystemMeta.set(parentMeta);
-    currentNodes.set(parentSystem.nodes);
-    currentEdges.set(parentSystem.edges);
-    currentReqs.set(parentSystem.requirements);
-
-    currentViewSystemId.set(parentMeta.id);
-    history.set({currentIndex: -1, data: []});
-    addToHistory();
-}
-
-// root system
-export const resetNavigation = () => {
-    navigationContext.set({
-        path: [],
-        currentSystemId: get(currentSystemMeta).id,
-        parentSystemId: '',
-        rootSystemId: get(currentSystemMeta).id
-    });
-    currentViewSystemId.set(get(currentSystemMeta).id);
-}
 
 export const fmiComponents = writable<FMIComponentType[]>([]);
 export const componentLinks = persistentStore<Record<string, string>>('componentLinks', {});

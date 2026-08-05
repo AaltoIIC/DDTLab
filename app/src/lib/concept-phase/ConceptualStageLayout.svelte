@@ -10,12 +10,14 @@
         currentSystemMeta,
         currentNodes,
         currentEdges,
+        systems,
         analysisReports,
         convertToDesign as convertConceptToDesign,
         markAnalysisReportShared,
         removeOtherSystems,
         type ConceptFmuBinding
     } from '$lib/stores/stores.svelte';
+    import DialogBox from '$lib/DialogBox.svelte';
     import { currentPackageView, packageViewStack, navigateToRoot, navigateToPackage } from './packageStore';
     import type { PackageView } from './packageStore';
     import { onMount, onDestroy } from 'svelte';
@@ -39,6 +41,7 @@
     import _ from 'lodash';
     
     let conceptEditor: ConceptualStageEditor | undefined = $state();
+    let dialogBox: DialogBox | undefined = $state();
     let showSaveDialog = $state(false);
     let templateName = $state('');
     let templateDescription = $state('');
@@ -373,7 +376,7 @@
         };
     }
 
-    function handleConvertToDesign() {
+    async function handleConvertToDesign() {
         const nodes = get(currentNodes);
         if (nodes.length === 0) {
             showNotification('Add at least one element to the editor before converting to design', 'error');
@@ -387,13 +390,29 @@
             return;
         }
 
+        // Re-conversion: warn that the existing design stage system will be overwritten.
+        const existingDesignChild = get(systems).find(
+            (s) => s.stage === 'design' && s.sourceConceptSystemId === $currentSystemMeta.id
+        );
+        if (existingDesignChild) {
+            const confirmed = await dialogBox?.openDialog(
+                `"${existingDesignChild.name}" already exists for this system. Converting again will overwrite the old design stage system. Continue?`,
+                'Overwrite',
+                'Cancel'
+            );
+            if (!confirmed) return;
+        }
+
         isConvertingToDesign = true;
         setTimeout(() => {
             isConvertingToDesign = false;
         }, 500);
 
         try {
-            const designSystemId = convertConceptToDesign(analysisStatuses.length ? fmuBindingsFromStatuses(analysisStatuses) : {});
+            const designSystemId = convertConceptToDesign(
+                analysisStatuses.length ? fmuBindingsFromStatuses(analysisStatuses) : {},
+                { overwriteExisting: Boolean(existingDesignChild) }
+            );
             if (analysisAggregate.complete) {
                 showNotification('Design stage created with OEM FMU links', 'success');
             }
@@ -816,12 +835,6 @@
                         {showAnalysisPanel ? 'Hide' : 'Show'} Analysis
                     </button>
                 {/if}
-                <div class="stage-indicator">
-                    Conceptual Stage
-                    {#if $currentPackageView}
-                        - {$currentPackageView.packageName}
-                    {/if}
-                </div>
                 <button 
                     id="help-btn" 
                     title="Start tutorial tour" 
@@ -1000,6 +1013,8 @@
     </div>
 {/if}
 
+<DialogBox bind:this={dialogBox} />
+
 <Tour
     bind:driverObj={driver}
     bind:start={startTour}
@@ -1048,15 +1063,6 @@
         font-weight: 500;
         color: #111827;
         font-size: 16px;
-    }
-    
-    .stage-indicator {
-        padding: 6px 12px;
-        background: #dbeafe;
-        color: #1e40af;
-        border-radius: 4px;
-        font-size: 13px;
-        font-weight: 500;
     }
     
     .stage-btn {

@@ -19,7 +19,8 @@ test.describe('dashboard and editor lifecycle', () => {
     await page.getByRole('button', { name: 'Conceptual Stage' }).click();
 
     await expect(page).toHaveURL(/\/editor\/[^/]+\/?\?stage=concept$/);
-    await expect(page.getByText('Conceptual Stage', { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Concept', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Design', exact: true })).toBeDisabled();
 
     const systems = await page.evaluate(() => JSON.parse(localStorage.getItem('systems') || '[]'));
     expect(systems).toHaveLength(1);
@@ -27,7 +28,8 @@ test.describe('dashboard and editor lifecycle', () => {
 
     await page.reload();
     await expect(page).toHaveURL(/\/editor\/[^/]+\/?\?stage=concept$/);
-    await expect(page.getByText('Conceptual Stage', { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Concept', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Design', exact: true })).toBeDisabled();
   });
 
   test('creates a design system and exposes editor history controls', async ({ page }) => {
@@ -36,6 +38,7 @@ test.describe('dashboard and editor lifecycle', () => {
     await page.getByRole('button', { name: 'Design Stage' }).click();
 
     await expect(page).toHaveURL(/\/editor\/[^/]+\/?$/);
+    await expect(page.getByRole('button', { name: 'Concept', exact: true })).toBeDisabled();
     await expect(page.getByRole('button', { name: 'Undo' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Redo' })).toBeVisible();
     await expect(page.locator('input[type="text"]').first()).toBeVisible();
@@ -48,6 +51,22 @@ test.describe('dashboard and editor lifecycle', () => {
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL('/');
     await expect(page.getByRole('heading', { name: 'Your Systems:' })).toBeVisible();
+  });
+
+  test('deletes a system from the editor top bar and returns to the dashboard', async ({ page }) => {
+    await resetBrowserState(page);
+    await page.getByRole('button', { name: 'New' }).click();
+    await page.getByRole('button', { name: 'Design Stage' }).click();
+    await expect(page).toHaveURL(/\/editor\/[^/]+\/?$/);
+
+    await page.getByRole('button', { name: 'Delete system' }).click();
+    await expect(page.getByRole('button', { name: 'Delete', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('heading', { name: 'Your Systems:' })).toBeVisible();
+    const systems = await page.evaluate(() => JSON.parse(localStorage.getItem('systems') || '[]'));
+    expect(systems).toHaveLength(0);
   });
 
   test('opens an existing system on the canonical stage and survives dashboard reload', async ({ page }) => {
@@ -75,6 +94,7 @@ test.describe('compatibility guardrails', () => {
     const id = idMatch![1];
     await page.goto(`/editor/${id}`);
     await expect(page).toHaveURL(new RegExp(`/editor/${id}/?\\?stage=concept$`));
-    await expect(page.getByText('Conceptual Stage', { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Concept', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Design', exact: true })).toBeDisabled();
   });
 });

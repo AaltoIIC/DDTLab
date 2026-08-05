@@ -8,6 +8,16 @@
     import ResourceTile from "$lib/dashboard/ResourceTile.svelte";
     import Header from "$lib/Header.svelte";
 
+    // Design systems converted from a concept stage are only reachable from their
+    // concept parent (via the stage switcher); hide them by default.
+    let showConvertedDesignSystems = $state(false);
+
+    const visibleSystems = $derived(
+        (Array.isArray($systems) ? $systems : [])
+            .filter(s => !s.parentSystemId)
+            .filter(s => showConvertedDesignSystems || !(s.stage === 'design' && s.sourceConceptSystemId))
+    );
+
     setTimeout(() => {
         notification.set(null);
     }, 1000);
@@ -21,9 +31,13 @@
         <div class="systems-outer">
             <div class="title-cont">
                 <h2>Your Systems:</h2>
+                <label class="show-converted-toggle" title="Show design systems that were converted from a concept stage">
+                    <input type="checkbox" bind:checked={showConvertedDesignSystems} />
+                    Show converted design systems
+                </label>
             </div>
             <div class="ddt-cont">
-                {#each (Array.isArray($systems) ? $systems : []).filter(s => !s.parentSystemId).slice() as system}
+                {#each visibleSystems as system (system.id)}
                     {#key system.id}
                         <SystemTile {system} />
                     {/key}
@@ -179,6 +193,18 @@
     .title-cont h2 {
         font-size: 26px;
         font-weight: 600;
+    }
+    .show-converted-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: rgba(0, 0, 0, 0.6);
+        cursor: pointer;
+        user-select: none;
+    }
+    .show-converted-toggle input {
+        cursor: pointer;
     }
     .systems-outer {
         width: 100%;

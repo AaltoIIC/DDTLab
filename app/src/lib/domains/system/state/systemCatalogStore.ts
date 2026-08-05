@@ -62,7 +62,22 @@ export function removeSystem(id: string): void {
         return withoutChildren.filter((system) => system.id !== targetId);
     }
 
-    systems.update((storedSystems) => removeRecursively(id, storedSystems));
+    systems.update((storedSystems) => {
+        const target = storedSystems.find((system) => system.id === id);
+        // A concept stage's converted design child is only reachable from its concept
+        // parent (it is hidden from the dashboard), so it lives and dies with it.
+        if (target?.stage === 'concept') {
+            const designChildIds = storedSystems
+                .filter((system) => system.stage === 'design' && system.sourceConceptSystemId === id)
+                .map((system) => system.id);
+            const withoutDesignChildren = designChildIds.reduce(
+                (systemsAfterChild, childId) => removeRecursively(childId, systemsAfterChild),
+                storedSystems
+            );
+            return removeRecursively(id, withoutDesignChildren);
+        }
+        return removeRecursively(id, storedSystems);
+    });
 }
 
 export function cloneSystem(id: string, namesInCurrentSession: string[] = []): SystemType | null {

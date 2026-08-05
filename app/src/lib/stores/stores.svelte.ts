@@ -134,12 +134,20 @@ export const setCurrentSystem = (id: string) => {
     }
 }
 
-export const convertToDesign = (fmuBindingsBySourceNodeId: Record<string, ConceptFmuBinding> = {}) => {
+export type ConvertToDesignOptions = {
+    /** Re-convert into the existing design child, reusing its ID instead of creating a new one. */
+    overwriteExisting?: boolean;
+};
+
+export const convertToDesign = (
+    fmuBindingsBySourceNodeId: Record<string, ConceptFmuBinding> = {},
+    options: ConvertToDesignOptions = {}
+) => {
 
     // Get the root context
     const sourceConceptSystemId = get(currentSystemMeta).id;
     const sourceConceptSystemName = get(currentSystemMeta).name;
-    const sourceAnalysisRequestIds = Array.from(new Set(
+    const requestedAnalysisRequestIds = Array.from(new Set(
         Object.values(fmuBindingsBySourceNodeId)
             .map(binding => binding.requestId)
             .filter((requestId): requestId is string => Boolean(requestId))
@@ -148,8 +156,32 @@ export const convertToDesign = (fmuBindingsBySourceNodeId: Record<string, Concep
     const rootLevel = stack.length > 0 ? stack[0] : null;
     const rootNodes = rootLevel ? stripSyntheticRootNodes(rootLevel.nodes) : stripSyntheticRootNodes(get(currentNodes));
     const rootEdges = rootLevel ? rootLevel.edges : get(currentEdges);
-    const newRootId = generateId(get(systems).map(s => s.id));
-    const newRootName = generateName(`${get(currentSystemMeta).name} (Design Stage)`, get(systems).map(s => s.name));
+
+    // Re-conversion: reuse the existing design child so its ID (and with it any analysis
+    // reports / simulation results / FMU links) stays valid, and remove its old subsystems.
+    const designChildren = options.overwriteExisting
+        ? get(systems).filter(s => s.stage === 'design' && s.sourceConceptSystemId === sourceConceptSystemId)
+        : [];
+    const existingDesignChild = designChildren[0] ?? undefined;
+
+    const newRootId = existingDesignChild?.id ?? generateId(get(systems).map(s => s.id));
+    const newRootName = existingDesignChild?.name ?? generateName(`${get(currentSystemMeta).name} (Design Stage)`, get(systems).map(s => s.name));
+
+    if (existingDesignChild) {
+        // Older duplicate design children are hidden from the dashboard (and therefore
+        // unreachable), so drop any extras when overwriting.
+        for (const duplicate of designChildren.slice(1)) {
+            removeSystem(duplicate.id);
+        }
+        for (const subsystemId of collectSubsystemIds(existingDesignChild)) {
+            removeSystem(subsystemId);
+        }
+    }
+
+    // Keep previously recorded analysis request ids when re-converting without OEM bindings.
+    const sourceAnalysisRequestIds = requestedAnalysisRequestIds.length
+        ? requestedAnalysisRequestIds
+        : (existingDesignChild?.sourceAnalysisRequestIds ?? []);
 
     // Deep recursive conversion
     const converted = recursiveSystemBuilder(rootNodes, rootEdges, newRootId, fmuBindingsBySourceNodeId);
@@ -172,10 +204,55 @@ export const convertToDesign = (fmuBindingsBySourceNodeId: Record<string, Concep
     }
 
     saveSystem(designRootSystem);
-    componentLinks.update(links => ({ ...links, ...converted.componentLinks }));
+    componentLinks.update(links => {
+        // componentLinks is global across all systems — only prune on overwrite, where
+        // links to the old (removed) subsystems of this design tree would otherwise linger.
+        if (!existingDesignChild) {
+            return { ...links, ...converted.componentLinks };
+        }
+        const validNodeIds = collectTreeNodeNodeIds(designRootSystem);
+        const survivingLinks = Object.fromEntries(
+            Object.entries(links).filter(([nodeId]) => validNodeIds.has(nodeId))
+        );
+        return { ...survivingLinks, ...converted.componentLinks };
+    });
     mergeBoundFmiComponents(fmuBindingsBySourceNodeId, converted.componentLinks);
     return newRootId;
 };
+
+// Collect every subsystem ID reachable from a system's node tree (recursively).
+function collectSubsystemIds(system: SystemType): string[] {
+    const subsystemIds = new Set<string>();
+    const visit = (sys: SystemType) => {
+        for (const node of sys.nodes) {
+            const subsystemId = (node.data as unknown as SubsystemDataType | undefined)?.subsystemId;
+            if (subsystemId && !subsystemIds.has(subsystemId)) {
+                subsystemIds.add(subsystemId);
+                const child = getSystem(subsystemId);
+                if (child) visit(child);
+            }
+        }
+    };
+    visit(system);
+    return Array.from(subsystemIds);
+}
+
+// Collect every node ID in a system's node tree (recursively through subsystems).
+function collectTreeNodeNodeIds(system: SystemType): Set<string> {
+    const nodeIds = new Set<string>();
+    const visit = (sys: SystemType) => {
+        for (const node of sys.nodes) {
+            nodeIds.add(node.id);
+            const subsystemId = (node.data as unknown as SubsystemDataType | undefined)?.subsystemId;
+            if (subsystemId) {
+                const child = getSystem(subsystemId);
+                if (child) visit(child);
+            }
+        }
+    };
+    visit(system);
+    return nodeIds;
+}
 
 export const upsertAnalysisReport = (report: AnalysisReportRecord) => {
     analysisReports.update((reports) => {

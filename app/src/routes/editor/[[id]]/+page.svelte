@@ -23,8 +23,13 @@
         stage: initialStage
     });
     let editorStage = $derived<'concept' | 'design'>(data.stage === 'concept' ? 'concept' : 'design');
-    let isConceptualStage = $derived(editorStage === 'concept');
-    let initializedRouteKey = initialRouteKey;
+    // Render the layout of the stage whose session is actually loaded into the
+    // editor stores. Deriving from the initialized session key (rather than the
+    // URL stage) means a stage toggle never renders the new stage's editor against
+    // the previous stage's stale nodes — which made SvelteFlow warn about unknown
+    // node types (e.g. concept "package"/"part" nodes in the design editor).
+    let initializedRouteKey = $state(initialRouteKey);
+    let isConceptualStage = $derived(initializedRouteKey.endsWith(':concept'));
     let stopAutosave: (() => void) | undefined;
     let stopNavigationLifecycle: (() => void) | undefined;
 
@@ -86,13 +91,13 @@
 {#if isConceptualStage}
         <SvelteFlowProvider>
             <ConceptualStageLayout />
-            <TopBar />
+            <TopBar stage={editorStage} />
         </SvelteFlowProvider>
     {:else}
         <SvelteFlowProvider>
             <div class="main-screen">
                 <Editor />
-                <TopBar />
+                <TopBar stage={editorStage} />
                 <Sidebar />
                 <Breadcrumb />
             </div>

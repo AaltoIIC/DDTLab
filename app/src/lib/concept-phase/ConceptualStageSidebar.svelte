@@ -2,7 +2,7 @@
     import { goto } from '$app/navigation';
     import Tooltip from '$lib/Tooltip.svelte';
     import { Component, Box, Library, FileText, Package, Grid2X2, Squircle, Weight } from '@lucide/svelte';
-    import { currentPackageView, navigateToRoot } from './packageStore';
+    import { navigateToRoot } from './nodeViewStore';
     import { currentNodes, notification } from '$lib/stores/stores.svelte';
     import { get } from 'svelte/store';
     import ConceptLibrarySlider from './ConceptLibrarySlider.svelte';

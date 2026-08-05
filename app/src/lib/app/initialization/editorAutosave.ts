@@ -9,17 +9,18 @@ import {
     currentSystemMeta
 } from '$lib/domains/editor-core/state/activeEditorSessionStore';
 import { saveCurrentSystem } from '$lib/domains/editor-core/services/activeEditorActions';
-import { packageViewStack } from '$lib/concept-phase/packageStore';
+import { navigationStack } from '$lib/concept-phase/nodeViewStore';
 
 /**
  * Subscribe to active-session fields and persist changes on route unmount.
- * While a package is open, currentNodes/currentEdges represent that package's
- * working view; packageStore commits it back to the root hierarchy on exit.
+ * While a part/item view is open, currentNodes/currentEdges represent that
+ * node's internal diagram; nodeViewStore commits it back to the hierarchy
+ * on exit.
  */
 export function startEditorAutosave(): () => void {
     let initialized = false;
     const autosave = () => {
-        if (initialized && get(packageViewStack).length === 0) saveCurrentSystem();
+        if (initialized && get(navigationStack).length === 0) saveCurrentSystem();
     };
     const unsubscribe = [
         currentSystemMeta.subscribe(autosave),

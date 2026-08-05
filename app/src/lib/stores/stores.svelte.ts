@@ -61,9 +61,7 @@ import {
 import _ from 'lodash';
 import { saveCurrentSystem } from '$lib/domains/editor-core/services/activeEditorActions';
 import ConceptTemplateSlider from '$lib/concept-phase/ConceptTemplateSlider.svelte';
-import {    packageViewStack,
-    type PackageView
-} from '$lib/concept-phase/packageStore';
+import { navigationStack } from '$lib/concept-phase/nodeViewStore';
 import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
 
 
@@ -152,7 +150,7 @@ export const convertToDesign = (
             .map(binding => binding.requestId)
             .filter((requestId): requestId is string => Boolean(requestId))
     ));
-    const stack = get(packageViewStack);
+    const stack = get(navigationStack);
     const rootLevel = stack.length > 0 ? stack[0] : null;
     const rootNodes = rootLevel ? stripSyntheticRootNodes(rootLevel.nodes) : stripSyntheticRootNodes(get(currentNodes));
     const rootEdges = rootLevel ? rootLevel.edges : get(currentEdges);

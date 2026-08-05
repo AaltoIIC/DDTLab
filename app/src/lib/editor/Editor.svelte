@@ -14,11 +14,13 @@
     import {
       currentNodes,
       currentEdges,
+      currentViewSystemId,
       addToHistory
     } from '../stores/stores.svelte';
     import ElementNode from './nodes/ElementNode.svelte';
     import InternalPortNode from '$lib/concept-phase/nodes/InternalPortNode.svelte';
     import RemovableEdge from './nodes/RemovableEdge.svelte';
+    import ViewportFitter from './ViewportFitter.svelte';
     import './editor.css';
 
     const nodeTypes = {
@@ -58,6 +60,7 @@
          viewport; the wrapper only carries the static gradient tint. -->
     <Background variant={BackgroundVariant.Dots} gap={30} size={2.2} patternColor="rgba(253, 82, 0, 0.22)" bgColor="transparent" />
     <MiniMap nodeColor={minimapNodeColor}/>
+    <ViewportFitter signal={$currentViewSystemId} />
   </SvelteFlow>
 </div>
 <style>

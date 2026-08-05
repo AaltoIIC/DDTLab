@@ -17,7 +17,10 @@ import {
     currentSystemMeta
 } from '$lib/domains/editor-core/state/activeEditorSessionStore';
 import { getSystem } from '$lib/domains/system/state/systemCatalogStore';
-import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
+import {
+    normalizeNodePositions,
+    stripSyntheticRootNodes
+} from '$lib/editor-core/canvas/nodePositionNormalization';
 
 export const history = writable<{ currentIndex: number; data: HistoryEntryType[] }>({
     currentIndex: -1,
@@ -141,8 +144,14 @@ export function navigateToSubsystem(subsystemId: string, parentNodeId: string): 
             }))
     ];
 
+    // Normalize the stored content only — the internal port nodes are re-created at
+    // fixed positions on every navigation, so including them in the normalization
+    // would let their min-corner (x:20, y:150) dominate and drift the content on
+    // each enter/leave cycle. Content-only normalization is idempotent.
     const subNodes = [
-        ...stripSyntheticRootNodes(subsystem.nodes).filter((node) => node.type !== 'Internal'),
+        ...normalizeNodePositions(
+            stripSyntheticRootNodes(subsystem.nodes).filter((node) => node.type !== 'Internal')
+        ),
         ...internalPortNodes
     ];
 
@@ -183,7 +192,7 @@ export function navigateToParent(): void {
             : ''
     }));
     currentSystemMeta.set(parentMeta);
-    currentNodes.set(stripSyntheticRootNodes(parentSystem.nodes));
+    currentNodes.set(normalizeNodePositions(stripSyntheticRootNodes(parentSystem.nodes)));
     currentEdges.set(parentSystem.edges);
     currentReqs.set(parentSystem.requirements || []);
     currentPartDefinitions.set(parentSystem.partDefinitions || []);

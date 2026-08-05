@@ -3,7 +3,10 @@
   history, addToHistory, currentViewSystemId, systems } from '$lib/stores/stores.svelte';
       import { get } from 'svelte/store';
       import type { SystemMetaType } from '$lib/types/types';
-      import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
+      import {
+          normalizeNodePositions,
+          stripSyntheticRootNodes
+      } from '$lib/editor-core/canvas/nodePositionNormalization';
 
       let breadcrumbs = $derived([
           ...$navigationContext.path,
@@ -32,7 +35,7 @@
 
           // Load the target system
           currentSystemMeta.set(targetSystem);
-          currentNodes.set(stripSyntheticRootNodes(targetSystemData.nodes));
+          currentNodes.set(normalizeNodePositions(stripSyntheticRootNodes(targetSystemData.nodes)));
           currentEdges.set(targetSystemData.edges);
           currentReqs.set(targetSystemData.requirements);
 

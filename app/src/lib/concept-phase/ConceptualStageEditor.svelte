@@ -10,11 +10,7 @@
     import { get } from 'svelte/store';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { generateName } from '$lib/helpers';
-    import { 
-        currentPackageView, 
-        navigateToPackage,
-        updateCurrentPackageContent 
-    } from './packageStore';
+    import { currentNodeView } from './nodeViewStore';
     import { checkCompatibility } from './interfaces';
     import type { Port } from './interfaces';
     import { instantiateSimpleComponent } from './utils/simpleInstantiation';
@@ -23,6 +19,7 @@
     import { zoom } from 'd3-zoom';
     import { findPort } from './nodes/portUtils';
     import { activeViewpoint, activeViewpointDetails } from './viewpoints/viewpointStore';
+    import ViewportFitter from '$lib/editor/ViewportFitter.svelte';
     
 
     const nodeTypes = {
@@ -295,6 +292,7 @@
                   type: 'default',
               }}
               onconnect={onConnect}
+              fitView
           >
               <!-- The blueprint grid lives in xyflow's <Background> so it pans/zooms
                    with the viewport; the container keeps the static tint + glow. The
@@ -303,6 +301,7 @@
               <Background variant={BackgroundVariant.Lines} gap={100} lineWidth={2} patternColor="rgba(30, 64, 175, 0.035)" bgColor="transparent" />
               <Controls position="top-right"/>
               <MiniMap {nodeColor} {nodeStrokeColor} nodeStrokeWidth={5}/>
+              <ViewportFitter signal={$currentNodeView?.nodeId ?? null} />
           </SvelteFlow>
       </div>
   </div>

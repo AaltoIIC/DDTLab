@@ -5,7 +5,7 @@
     const bubble = createBubbler();
     import ConceptualStageEditor from './ConceptualStageEditor.svelte';
     import ConceptualStageSidebar from './ConceptualStageSidebar.svelte';
-    import PackageBreadcrumb from './PackageBreadcrumb.svelte';
+    import NodeBreadcrumb from './NodeBreadcrumb.svelte';
     import {
         currentSystemMeta,
         currentNodes,
@@ -18,8 +18,8 @@
         type ConceptFmuBinding
     } from '$lib/stores/stores.svelte';
     import DialogBox from '$lib/DialogBox.svelte';
-    import { currentPackageView, packageViewStack, navigateToRoot, navigateToPackage } from './packageStore';
-    import type { PackageView } from './packageStore';
+    import { currentNodeView, navigationStack, navigateToRoot, navigateIntoNode } from './nodeViewStore';
+    import type { NodeView } from './nodeViewStore';
     import { onMount, onDestroy } from 'svelte';
     import { get } from 'svelte/store';
     import { Save, CircleQuestionMark, Repeat, Send, Eye, EyeOff } from '@lucide/svelte';
@@ -45,7 +45,7 @@
     let showSaveDialog = $state(false);
     let templateName = $state('');
     let templateDescription = $state('');
-    let previousViewStack: PackageView[] = [];
+    let previousViewStack: NodeView[] = [];
     let showAnalysisRequestDialog = $state(false);
     let analysisRequesterOrg = $state('RMC');
     let analysisRequesterName = $state('RMC');
@@ -511,13 +511,13 @@
         return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
     }
     
-    // Clear the package view stack when component mounts (start at root)
+    // Clear the navigation stack when component mounts (start at root)
     onMount(() => {
         // If we have a stack, save current state and go to root
-        if (get(packageViewStack).length > 0) {
+        if (get(navigationStack).length > 0) {
             navigateToRoot();
         }
-        packageViewStack.set([]);
+        navigationStack.set([]);
 
         // Start the tour only if it's the first time and hasn't been shown
         if (typeof localStorage !== 'undefined' && localStorage.getItem("showedFirstTour") !== "true") {
@@ -545,7 +545,7 @@
     // Clean up when leaving the editor
     onDestroy(() => {
         // Save current state if needed
-        const stack = get(packageViewStack);
+        const stack = get(navigationStack);
         if (stack.length > 0) {
             // Save any pending changes
             navigateToRoot();
@@ -572,7 +572,7 @@
     
     function handleSaveAsTemplate() {
         // Store current view stack before navigating to root
-        const stack = get(packageViewStack);
+        const stack = get(navigationStack);
         const isInNestedView = stack.length > 0;
         
         if (isInNestedView) {
@@ -643,20 +643,20 @@
         
         // Rebuild the navigation stack
         const stackToRestore = [...previousViewStack];
-        packageViewStack.set([]);
+        navigationStack.set([]);
         
         // Navigate through each level to restore the view
         for (let i = 0; i < stackToRestore.length; i++) {
             const view = stackToRestore[i];
-            if (i === 0 && view.packageId === 'root') {
+            if (i === 0 && view.nodeId === 'root') {
                 // Skip root restoration, just set the stack
-                packageViewStack.update(s => [view]);
+                navigationStack.update(s => [view]);
             } else {
                 // For nested views, we need to navigate into them
                 const parentNodes = i === 0 ? view.nodes : stackToRestore[i-1].nodes;
-                const packageNode = parentNodes.find(n => n.id === view.packageId);
-                if (packageNode) {
-                    navigateToPackage(view.packageId, view.packageName, view.parentId);
+                const node = parentNodes.find(n => n.id === view.nodeId);
+                if (node) {
+                    navigateIntoNode(view.nodeId, view.nodeName, view.parentId);
                 }
             }
         }
@@ -720,7 +720,8 @@
             source_stage: 'concept',
             source_snapshot_json: {
                 system: $currentSystemMeta,
-                packageView: get(currentPackageView),
+                // Wire-format key kept as-is (the analysis backend may read it)
+                packageView: get(currentNodeView),
                 nodes: get(currentNodes),
                 edges: get(currentEdges)
             },
@@ -919,7 +920,7 @@
             </div>
         {/if}
 
-        <PackageBreadcrumb />
+        <NodeBreadcrumb />
         
         <ConceptualStageEditor bind:this={conceptEditor} />
     </div>

@@ -6,7 +6,7 @@
     import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { validateName, generateName } from '$lib/helpers';
-    import { navigateToPackage } from '../packageStore';
+    import { navigateIntoNode } from '../nodeViewStore';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
     import AttributeEditor from '../MetadataEditor.svelte';
@@ -172,18 +172,18 @@
         }
     });
 
-    const { viewport } = useSvelteFlow();
-    let zoomLevel = $state(1);
-    viewport.subscribe((value) => {
-        zoomLevel = value.zoom;
-    });
+    const { getViewport } = useSvelteFlow();
 
     // Measure and save the nodes width and height into the store
     let nodeElement: HTMLDivElement | undefined = $state();
     onMount(() => {
         const rect = nodeElement!.getBoundingClientRect();
+        // Measure against the live viewport zoom: after a navigation fitView the
+        // zoom is still animating when nodes mount, and a stale zoomLevel would
+        // store the wrong width/height — which then compounds on every visit.
+        const currentZoom = getViewport().zoom;
         currentNodes.update(nodes =>
-            nodes.map(n => n.id === id ? { ...n, width: rect.width / zoomLevel, height: rect.height / zoomLevel} : n)
+            nodes.map(n => n.id === id ? { ...n, width: rect.width / currentZoom, height: rect.height / currentZoom} : n)
         );
     });
 
@@ -263,7 +263,7 @@
         
         // Navigate into this part
         // console.log('Opening part:', id, data);
-        navigateToPackage(id, data.declaredName || 'Unnamed Part');            
+        navigateIntoNode(id, data.declaredName || 'Unnamed Part');            
     }
 
     // Context menu handling

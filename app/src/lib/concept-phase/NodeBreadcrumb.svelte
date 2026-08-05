@@ -1,6 +1,6 @@
 <script lang="ts">
     import { ChevronRight, Home } from '@lucide/svelte';
-    import { packageViewStack, navigateToRoot, navigateToLevel } from './packageStore';
+    import { navigationStack, navigateToRoot, navigateToLevel } from './nodeViewStore';
 
     function navigateToIndex(index: number) {
         if (index === -1) {
@@ -15,22 +15,22 @@
 <div class="breadcrumb-container">
     <button 
         class="breadcrumb-item"
-        class:active={$packageViewStack.length === 0}
+        class:active={$navigationStack.length === 0}
         onclick={() => navigateToIndex(-1)}
     >
         <Home size={14} />
         <span>Root</span>
     </button>
     
-    {#each $packageViewStack as view, index}
-        {#if view.packageId !== 'root'}
+    {#each $navigationStack as view, index}
+        {#if view.nodeId !== 'root'}
             <ChevronRight size={14} class="breadcrumb-separator" />
             <button 
                 class="breadcrumb-item"
-                class:active={index === $packageViewStack.length - 1}
+                class:active={index === $navigationStack.length - 1}
                 onclick={() => navigateToIndex(index)}
             >
-                <span>{view.packageName}</span>
+                <span>{view.nodeName}</span>
             </button>
         {/if}
     {/each}

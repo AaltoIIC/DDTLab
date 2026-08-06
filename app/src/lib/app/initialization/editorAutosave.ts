@@ -9,7 +9,7 @@ import {
     currentSystemMeta
 } from '$lib/domains/editor-core/state/activeEditorSessionStore';
 import { saveCurrentSystem } from '$lib/domains/editor-core/services/activeEditorActions';
-import { navigationStack } from '$lib/concept-phase/nodeViewStore';
+import { navigationStack } from '$lib/concept-stage/nodeViewStore';
 
 /**
  * Subscribe to active-session fields and persist changes on route unmount.

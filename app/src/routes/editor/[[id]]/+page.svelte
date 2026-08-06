@@ -1,13 +1,13 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { onMount } from 'svelte';
-    import Sidebar from "$lib/sidebar/Sidebar.svelte";
+    import DesignStageSidebar from "$lib/sidebar/DesignStageSidebar.svelte";
     import { getScreenSize } from "$lib/helpers";
-    import Editor from "$lib/editor/Editor.svelte";
-    import TopBar from '$lib/editor/TopBar.svelte';
+    import DesignStageEditor from "$lib/design-stage/DesignStageEditor.svelte";
+    import TopBar from '$lib/design-stage/TopBar.svelte';
     import { SvelteFlowProvider } from "@xyflow/svelte";
-    import Breadcrumb from "$lib/editor/Breadcrumb.svelte";
-    import ConceptualStageLayout from "$lib/concept-phase/ConceptualStageLayout.svelte";
+    import DesignStageBreadcrumb from "$lib/design-stage/DesignStageBreadcrumb.svelte";
+    import ConceptualStageLayout from "$lib/concept-stage/ConceptualStageLayout.svelte";
     import {
         initializeEditorSession,
         type EditorStage
@@ -96,10 +96,10 @@
     {:else}
         <SvelteFlowProvider>
             <div class="main-screen">
-                <Editor />
+                <DesignStageEditor />
                 <TopBar stage={editorStage} />
-                <Sidebar />
-                <Breadcrumb />
+                <DesignStageSidebar />
+                <DesignStageBreadcrumb />
             </div>
         </SvelteFlowProvider>
     {/if}

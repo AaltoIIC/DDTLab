@@ -59,9 +59,8 @@ import {
     resetNavigation
 } from '$lib/domains/editor-core/state/editorHistoryNavigationStore';
 import _ from 'lodash';
-import { saveCurrentSystem } from '$lib/domains/editor-core/services/activeEditorActions';
-import ConceptTemplateSlider from '$lib/concept-phase/ConceptTemplateSlider.svelte';
-import { navigationStack } from '$lib/concept-phase/nodeViewStore';
+import { saveCurrentSystem } from '$lib/domains/editor-core/services/activeEditorActions';import ConceptTemplateSlider from '$lib/concept-stage/ConceptTemplateSlider.svelte';
+  import { navigationStack } from '$lib/concept-stage/nodeViewStore';
 import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
 
 

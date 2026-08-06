@@ -19,7 +19,7 @@
     import { zoom } from 'd3-zoom';
     import { findPort } from './nodes/portUtils';
     import { activeViewpoint, activeViewpointDetails } from './viewpoints/viewpointStore';
-    import ViewportFitter from '$lib/editor/ViewportFitter.svelte';
+    import ViewportFitter from '$lib/design-stage/ViewportFitter.svelte';
     
 
     const nodeTypes = {

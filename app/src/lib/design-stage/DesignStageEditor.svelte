@@ -18,10 +18,10 @@
       addToHistory
     } from '../stores/stores.svelte';
     import ElementNode from './nodes/ElementNode.svelte';
-    import InternalPortNode from '$lib/concept-phase/nodes/InternalPortNode.svelte';
+    import InternalPortNode from '$lib/concept-stage/nodes/InternalPortNode.svelte';
     import RemovableEdge from './nodes/RemovableEdge.svelte';
     import ViewportFitter from './ViewportFitter.svelte';
-    import './editor.css';
+    import './designStageEditor.css';
 
     const nodeTypes = {
       'Element': ElementNode,

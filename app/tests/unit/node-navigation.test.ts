@@ -6,7 +6,7 @@ vi.mock('$app/environment', () => ({ browser: false }));
 
 const loadModules = async () => {
     const [nodeViewStore, session, historyModule] = await Promise.all([
-        import('$lib/concept-phase/nodeViewStore'),
+        import('$lib/concept-stage/nodeViewStore'),
         import('$lib/domains/editor-core/state/activeEditorSessionStore'),
         import('$lib/domains/editor-core/state/editorHistoryNavigationStore')
     ]);
@@ -32,7 +32,7 @@ beforeEach(async () => {
     session.currentItemDefinitions.set([]);
     session.currentPackages.set([]);
     historyModule.history.set({ currentIndex: -1, data: [] });
-    await import('$lib/concept-phase/nodeViewStore').then(({ navigationStack }) =>
+    await import('$lib/concept-stage/nodeViewStore').then(({ navigationStack }) =>
         navigationStack.set([])
     );
 });

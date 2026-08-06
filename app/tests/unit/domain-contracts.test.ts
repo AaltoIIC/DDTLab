@@ -10,7 +10,7 @@ import { appendHistoryCursor, redoHistoryIndex, undoHistoryIndex } from '$lib/ed
 import { cloneSystemName, normalizeSystemRecord } from '$lib/domains/system/services/systemRecordNormalization';
 import { generateElementName, generateName, isNameValid, validateName } from '$lib/shared/validation/nameValidation';
 import { generateId } from '$lib/shared/identifiers';
-import { checkCompatibility } from '$lib/concept-phase/interfaces/compatibility';
+import { checkCompatibility } from '$lib/concept-stage/interfaces/compatibility';
 import { ensureUniqueName, sanitizeXMLName } from '$lib/exporters/ssd/mappings';
 import { createValidationReport, validateConnectorCompatibility, validateXMLName } from '$lib/exporters/ssd/validator';
 import { parseDcatTitle, buildDcatOpenTorsionMetadata } from '$lib/fmi/dcatCatalogApi';

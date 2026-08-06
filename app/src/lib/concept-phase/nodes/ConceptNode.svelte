@@ -177,11 +177,22 @@
     // Measure and save the nodes width and height into the store
     let nodeElement: HTMLDivElement | undefined = $state();
     onMount(() => {
+        // Nodes that already carry a measured size keep it. Re-measuring on every
+        // reopen was the source of the stretching bug: the flow applies the fitView
+        // zoom to its store before the painted transform catches up, so dividing a
+        // DOM rect by the store zoom grows the stored size by ~1/zoom each visit.
+        const existing = get(currentNodes).find((n) => n.id === id);
+        if (existing?.width && existing?.height) return;
+
         const rect = nodeElement!.getBoundingClientRect();
-        // Measure against the live viewport zoom: after a navigation fitView the
-        // zoom is still animating when nodes mount, and a stale zoomLevel would
-        // store the wrong width/height — which then compounds on every visit.
-        const currentZoom = getViewport().zoom;
+        // Read the zoom from the same DOM source as the rect — the viewport's
+        // painted transform — so the two can never disagree, even mid-fitView
+        // animation. Fall back to the flow store only if no viewport is mounted.
+        const viewportNode = nodeElement!.closest('.svelte-flow__viewport');
+        const transform = viewportNode ? getComputedStyle(viewportNode).transform : '';
+        const currentZoom = transform && transform !== 'none'
+            ? new DOMMatrixReadOnly(transform).m22
+            : getViewport().zoom;
         currentNodes.update(nodes =>
             nodes.map(n => n.id === id ? { ...n, width: rect.width / currentZoom, height: rect.height / currentZoom} : n)
         );

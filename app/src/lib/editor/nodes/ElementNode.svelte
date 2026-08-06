@@ -447,7 +447,7 @@
         background: var(--main-grey-color);
     }
     .main-element-node:hover {
-        background: #fff6ef;
+        background: #ffe8d5;
     }
     .element-node-inner {
         width: 100%;

@@ -50,15 +50,17 @@
     }}
     connectionLineType={ConnectionLineType.SmoothStep}
     deleteKey={null}
-    minZoom={0.48}
+    minZoom={0.1}
     maxZoom={1}
     onconnect={() => {addToHistory()}}
     fitView
   >
     <Controls position="bottom-right" />
-    <!-- The dot pattern lives in xyflow's <Background> so it pans/zooms with the
-         viewport; the wrapper only carries the static gradient tint. -->
-    <Background variant={BackgroundVariant.Dots} gap={30} size={2.2} patternColor="rgba(253, 82, 0, 0.22)" bgColor="transparent" />
+    <!-- The × pattern lives in xyflow's <Background> so it pans/zooms with the
+         viewport; the wrapper only carries the static gradient tint. The Cross
+         variant draws a + tile; the :global rule below rotates it 45° so the
+         pattern reads as ×'s. -->
+    <Background variant={BackgroundVariant.Cross} gap={140} size={100} lineWidth={2} patternColor="rgba(253, 82, 0, 0.1)" bgColor="transparent" />
     <MiniMap nodeColor={minimapNodeColor}/>
     <ViewportFitter signal={$currentViewSystemId} />
   </SvelteFlow>
@@ -67,7 +69,7 @@
     .design-canvas {
         width: 100%;
         height: 100%;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(253, 82, 0, 0.028) 100%);
+        background: linear-gradient(180deg, rgba(253, 80, 0, 0.05) 0%, rgba(253, 80, 0, 0.1) 100%);
     }
     /* Keep the flow itself transparent so the themed wrapper shows through, and
        make it a stacking context (isolation: isolate) so xyflow's pattern layer
@@ -75,5 +77,14 @@
     .design-canvas :global(.svelte-flow) {
         background-color: transparent;
         isolation: isolate;
+    }
+    /* Rotate the Cross-variant pattern so the + marks become ×'s. The path
+       lives inside xyflow's SVG <pattern>, so it must be targeted globally;
+       transform-box: fill-box makes the rotation spin around the cross's own
+       center, keeping the tiling aligned. */
+    .design-canvas :global(.svelte-flow__background-pattern.cross) {
+        transform: rotate(45deg);
+        transform-box: fill-box;
+        transform-origin: center;
     }
 </style>

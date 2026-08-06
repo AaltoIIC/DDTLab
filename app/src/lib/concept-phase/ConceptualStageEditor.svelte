@@ -293,6 +293,7 @@
               }}
               onconnect={onConnect}
               fitView
+              minZoom={0.1}
           >
               <!-- The blueprint grid lives in xyflow's <Background> so it pans/zooms
                    with the viewport; the container keeps the static tint + glow. The

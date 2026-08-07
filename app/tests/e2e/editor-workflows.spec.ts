@@ -8,6 +8,7 @@ async function resetBrowserState(page: import('@playwright/test').Page) {
   await page.evaluate(() => {
     localStorage.clear();
     localStorage.setItem('showedFirstTour', 'true');
+    localStorage.setItem('showedDesignTour', 'true');
   });
   await page.reload();
 }
@@ -32,6 +33,22 @@ test.describe('dashboard and editor lifecycle', () => {
     await expect(page.getByRole('button', { name: 'Design', exact: true })).toBeDisabled();
   });
 
+  test('uses the shared TopBar button to show and replay the concept-stage tutorial', async ({ page }) => {
+    await resetBrowserState(page);
+    await page.getByRole('button', { name: 'New' }).click();
+    await page.getByRole('button', { name: 'Conceptual Stage' }).click();
+
+    await expect(page.locator('#stage-help-btn')).toHaveCount(1);
+    await expect(page.locator('#help-btn')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Start concept stage tutorial tour' }).click();
+    await expect(page.locator('.driver-popover-title')).toHaveText('Welcome to the Concept Stage tour!');
+
+    await page.locator('.driver-popover-close-btn').click();
+    await expect(page.locator('.driver-popover')).toBeHidden();
+    await page.getByRole('button', { name: 'Start concept stage tutorial tour' }).click();
+    await expect(page.locator('.driver-popover-title')).toHaveText('Welcome to the Concept Stage tour!');
+  });
+
   test('creates a design system and exposes editor history controls', async ({ page }) => {
     await resetBrowserState(page);
     await page.getByRole('button', { name: 'New' }).click();
@@ -51,6 +68,29 @@ test.describe('dashboard and editor lifecycle', () => {
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL('/');
     await expect(page.getByRole('heading', { name: 'Your Systems:' })).toBeVisible();
+  });
+
+  test('shows and replays the design-stage tutorial', async ({ page }) => {
+    await resetBrowserState(page);
+    await page.evaluate(() => localStorage.removeItem('showedDesignTour'));
+    await page.getByRole('button', { name: 'New' }).click();
+    await page.getByRole('button', { name: 'Design Stage' }).click();
+
+    await expect(page.locator('.driver-popover-title')).toHaveText('Welcome to the Design Stage tour!');
+    const overlayBox = await page.locator('.driver-overlay').boundingBox();
+    const viewport = page.viewportSize();
+    expect(overlayBox).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(overlayBox!.width).toBe(viewport!.width);
+    expect(overlayBox!.height).toBe(viewport!.height);
+    await page.locator('.driver-popover-close-btn').click();
+    await expect(page.locator('.driver-popover')).toBeHidden();
+    await expect(page).toHaveTitle(/Edit/);
+
+    await page.getByRole('button', { name: 'Start design stage tutorial tour' }).click();
+    await expect(page.locator('.driver-popover-title')).toHaveText('Welcome to the Design Stage tour!');
+    await page.locator('.driver-popover-next-btn').click();
+    await expect(page.locator('.driver-popover-title')).toHaveText('Top bar');
   });
 
   test('deletes a system from the editor top bar and returns to the dashboard', async ({ page }) => {

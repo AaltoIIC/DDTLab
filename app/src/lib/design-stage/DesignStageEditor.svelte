@@ -38,7 +38,7 @@
 </script>
 <!-- Design stage canvas: warm orange tint + the dot pattern used on the dashboard
      illustrations, over a subtle vertical gradient. -->
-<div class="design-canvas">
+<div id="design-editor" class="design-canvas">
   <SvelteFlow
     nodes={currentNodes}
     edges={currentEdges}

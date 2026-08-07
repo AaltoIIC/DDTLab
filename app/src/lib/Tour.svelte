@@ -8,13 +8,15 @@
         steps: DriveStep[];
         start: boolean;
         disableCancel?: boolean;
+        storageKey?: string;
     }
 
     let { 
         steps = [], 
         start = $bindable(false), 
         driverObj = $bindable(),
-        disableCancel
+        disableCancel,
+        storageKey = 'showedFirstTour'
     }: Props = $props();
 
     
@@ -25,7 +27,7 @@
         driverObj?.destroy();
     }
 
-    onMount(() => {
+    function createDriver() {
         // Add skip functionality to the first step
         const stepsWithSkip: DriveStep[] = steps.map((step, index) => {
             if (index === 0 && disableCancel) {
@@ -37,7 +39,7 @@
                         onCloseClick: () => {
                             // Save that tour was skipped
                             if (typeof localStorage !== 'undefined') {
-                                localStorage.setItem("showedFirstTour", "true");
+                                localStorage.setItem(storageKey, "true");
                             }
                             onClose();
                         }
@@ -52,10 +54,13 @@
             disableActiveInteraction: true,
             overlayOpacity: 0.35,
             overlayClickBehavior: undefined,
-            onDestroyed: () => {start = false},
+            onDestroyed: () => {
+                start = false;
+                driverObj = undefined;
+            },
             onCloseClick: () => {
                 if (typeof localStorage !== 'undefined') {
-                    localStorage.setItem("showedFirstTour", "true");
+                    localStorage.setItem(storageKey, "true");
                 }
                 onClose();
             },
@@ -63,6 +68,10 @@
             showButtons: ['next', 'previous', 'close'],
             progressText: '{{current}} of {{total}}'
         });
+    }
+
+    onMount(() => {
+        createDriver();
     });
 
     onDestroy(() => {
@@ -72,10 +81,11 @@
         }
     });
 
-    $effect( () => {
-        if (driverObj && start) {
-            driverObj.drive();
-        } else if (driverObj && !start) {
+    $effect(() => {
+        if (start) {
+            if (!driverObj) createDriver();
+            driverObj?.drive();
+        } else if (driverObj) {
             driverObj.destroy();
         }
     });

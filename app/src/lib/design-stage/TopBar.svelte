@@ -12,6 +12,7 @@
     } from "$lib/stores/stores.svelte";
     import { isNameValid } from "$lib/helpers";
     import { goto } from "$app/navigation";
+    import { CircleQuestionMark } from '@lucide/svelte';
 
     interface Props {
         stage: 'concept' | 'design';
@@ -104,7 +105,7 @@
     }
 
 </script>
-<div class="main-top-bar shadow-md">
+<div id="design-topbar" class="main-top-bar shadow-md">
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <span class="undo-redo-cont">
         <button class="top-btn undo {($history.currentIndex === 0 || $history.data.length === 1) ? "inactive" : "active"}" aria-label="Undo"
@@ -161,6 +162,16 @@
             />
     </div>
     <Button onClick={() => {goto('/');}}>Save</Button>
+    <button
+        id="stage-help-btn"
+        type="button"
+        class="help-btn"
+        aria-label={`Start ${stage} stage tutorial tour`}
+        title={`Start ${stage} stage tutorial tour`}
+        onclick={() => { window.dispatchEvent(new CustomEvent('editor-tour-request', { detail: { stage } })); }}
+    >
+        <CircleQuestionMark size={17} />
+    </button>
     <button
         type="button"
         class="delete-btn"
@@ -256,6 +267,25 @@
         opacity: 0.9;
         display: inline;
         margin-bottom: 4px;
+    }
+    .help-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .help-btn:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-1px);
     }
     .delete-btn {
         background: none;

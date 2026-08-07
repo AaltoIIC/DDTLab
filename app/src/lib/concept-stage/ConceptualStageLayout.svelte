@@ -22,7 +22,7 @@
     import type { NodeView } from './nodeViewStore';
     import { onMount, onDestroy } from 'svelte';
     import { get } from 'svelte/store';
-    import { Save, CircleQuestionMark, Repeat, Send, Eye, EyeOff } from '@lucide/svelte';
+    import { Save, Repeat, Send, Eye, EyeOff } from '@lucide/svelte';
     import { saveTemplate } from '$lib/stores/stores.svelte';
     import {
         createAnalysisRequest,
@@ -291,7 +291,7 @@
             }
         },
         { 
-            element: '#help-btn', 
+            element: '#stage-help-btn',
             popover: { 
                 title: 'Help button', 
                 description: 
@@ -511,8 +511,22 @@
         return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
     }
     
+    function requestConceptTour(event: Event) {
+        const stage = (event as CustomEvent<{ stage?: string }>).detail?.stage;
+        if (stage !== 'concept') return;
+
+        firstTimeOpen = false;
+        // Force a false -> true transition so Tour can rebuild its driver
+        // after the previous run has been destroyed.
+        startTour = false;
+        setTimeout(() => {
+            startTour = true;
+        }, 0);
+    }
+
     // Clear the navigation stack when component mounts (start at root)
     onMount(() => {
+        window.addEventListener('editor-tour-request', requestConceptTour);
         // If we have a stack, save current state and go to root
         if (get(navigationStack).length > 0) {
             navigateToRoot();
@@ -550,6 +564,8 @@
             // Save any pending changes
             navigateToRoot();
         }
+
+        window.removeEventListener('editor-tour-request', requestConceptTour);
 
         // Ensure tour is properly destroyed
         if (driver) {
@@ -836,13 +852,6 @@
                         {showAnalysisPanel ? 'Hide' : 'Show'} Analysis
                     </button>
                 {/if}
-                <button 
-                    id="help-btn" 
-                    title="Start tutorial tour" 
-                    onclick={() => {startTour = true} /* removeOtherSystems() FOR DEBUGGING PURPOSES */} 
-                >
-                    <CircleQuestionMark size={16} />
-                </button>
             </div>
         </div>
         
@@ -1249,24 +1258,6 @@
     .analysis-status-error {
         color: #991b1b;
         font-size: 12px;
-    }
-
-    #help-btn {
-        border: none;
-        background: none;
-        cursor: pointer;
-        border-radius: 15px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        transition: all 0.2s;
-        width: 25px;
-        height: 25px;
-    }
-
-    #help-btn:hover {
-        background-color: #e5edfc;
-        transform: translateY(-1px);
     }
 
     .dialog-overlay {

@@ -355,7 +355,7 @@
         }
     }
 </script>
-<div class="main-sidebar shadow-sm">
+<div id="design-sidebar" class="main-sidebar shadow-sm">
     <div class="top-buttons">
         <Tooltip text="Home" position="right">
             <button class="menu-option-logo" onclick={() => {goto('/')}}>
@@ -382,13 +382,14 @@
                 onClick={handleAddElement}
                 bind:isOpen={isAddDropdownOpen}
                 ariaLabel="Add component or subsystem"
+                id="design-add-menu"
                 icon={`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>`}
             />
         </Tooltip>
         <Tooltip text="Manage Requirements" position="right">
-            <button class="menu-option" aria-label="Add requirements"
+            <button id="design-requirements-btn" class="menu-option" aria-label="Add requirements"
                 onclick={() => {isReqsOpen = !isReqsOpen}}>
                 <svg class="option-icon req {isReqsOpen ? 'active' : ''}" width="23" height="14" viewBox="0 0 23 14" fill="none" xmlns="http://www.w3.org/2000/svg" stroke-width="1.2" stroke="currentColor">
                     <path d="M9.875 1.375H21.875M11.0742 6.625H21.875M9.875 11.875H21.875" stroke-linecap="round" stroke-linejoin="round"/>
@@ -397,7 +398,7 @@
             </button>
         </Tooltip>
         <Tooltip text="Test Scenarios" position="right">
-            <button class="menu-option" aria-label="Test Scenarios"
+            <button id="design-test-scenarios-btn" class="menu-option" aria-label="Test Scenarios"
                 onclick={() => {isTestScenariosOpen = !isTestScenariosOpen}}>
             <svg class="option-icon test-scenarios {isTestScenariosOpen ? 'active' : ''}" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke-width="1.5" stroke="currentColor">
                 <path d="M5 3l14 9-14 9V3z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -413,7 +414,7 @@
             </button>
         </Tooltip>
         <Tooltip text="FMI Components" position="right">
-            <button class="menu-option" aria-label="FMI Components"
+            <button id="design-fmi-btn" class="menu-option" aria-label="FMI Components"
                 onclick={() => {isFMIOpen = !isFMIOpen}}>
                 <svg class="option-icon fmi {isFMIOpen ? 'active' : ''}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
@@ -421,7 +422,7 @@
             </button>
         </Tooltip>
     </div>
-    <div class="bottom-buttons">
+    <div id="design-import-export" class="bottom-buttons">
         <Tooltip text="Upload TTL/SSD/ZIP" position="right" disabled={isUploadDropdownOpen}>
             <MenuOption
                 options={['TTL', 'SSD', 'ZIP']}
@@ -433,6 +434,7 @@
                 onClick={handleUpload}
                 bind:isOpen={isUploadDropdownOpen}
                 ariaLabel="Upload TTL, SSD, or ZIP"
+                id="design-upload-menu"
                 icon={`<svg class="option-icon upload" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                 </svg>`}
@@ -471,6 +473,7 @@
                 onClick={downloadFile}
                 bind:isOpen={isDownloadDropdownOpen}
                 ariaLabel="Download TTL, SSD, or ZIP"
+                id="design-download-menu"
                 icon={`<svg class="option-icon download" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                 </svg>  `}

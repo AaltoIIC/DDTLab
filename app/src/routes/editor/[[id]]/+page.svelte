@@ -16,8 +16,11 @@
     import { startEditorNavigationLifecycle } from "$lib/app/navigation/editorNavigationLifecycle";
 
     let { data } = $props();
+    // svelte-ignore state_referenced_locally -- intentional one-time session init capture
     const initialStage: EditorStage = data.stage === 'concept' ? 'concept' : 'design';
+    // svelte-ignore state_referenced_locally -- intentional one-time session init capture
     const initialRouteKey = `${data.id ?? 'new'}:${initialStage}`;
+    // svelte-ignore state_referenced_locally -- intentional one-time session init capture
     const initialResult = initializeEditorSession({
         id: data.id,
         stage: initialStage

@@ -370,8 +370,9 @@
       });
   </script>
 
-  <div class="popover-wrapper" onclick={onclose}>
-      <div class="popover-content test-scenarios-popover" onclick={(e) => e.stopPropagation()}>
+  <div class="popover-wrapper" onclick={onclose} onkeydown={(e) => e.key === 'Escape' && onclose()} role="button" tabindex="0">
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <div class="popover-content test-scenarios-popover" onclick={(e) => e.stopPropagation()} role="dialog" tabindex="-1">
           <div class="popover-header">
               <h3>Test Scenarios</h3>
               <button class="close-button" onclick={onclose} aria-label="Close test scenarios">

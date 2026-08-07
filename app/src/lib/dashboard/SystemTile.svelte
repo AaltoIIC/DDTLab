@@ -15,7 +15,7 @@
     let { system }: Props = $props();
     let dialogBox: DialogBox | undefined = $state();
 
-    const stageParam = system.stage === 'concept' ? '?stage=concept' : '';
+    const stageParam = $derived(system.stage === 'concept' ? '?stage=concept' : '');
 
     const handleMenu = (option: string) => {
         if (option === "Duplicate") {

@@ -33,8 +33,10 @@
         trigger = null
     }: Props = $props();
 
+    // svelte-ignore state_referenced_locally -- one-time seed from props
     let isExistingConnector = connectorName !== null;
 
+    // svelte-ignore state_referenced_locally -- guarded check from static-at-open props
     if (connectorName === null && type === null) {
         throw new Error("Either `connectorName` or `type` must be defined.");
     }
@@ -290,8 +292,9 @@
 <!-- Custom Data Type Dialog -->
 {#if isAddingCustomType}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="custom-type-dialog-overlay" onclick={() => isAddingCustomType = false}>
+    <div class="custom-type-dialog-overlay" onclick={() => isAddingCustomType = false} onkeydown={(e) => e.key === 'Escape' && (isAddingCustomType = false)} role="button" tabindex="0">
         <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div class="custom-type-dialog" onclick={(e) => e.stopPropagation()}>
             <h3>Add Custom Data Type</h3>
             <div class="dialog-content">
@@ -445,10 +448,6 @@
         font-size: 14px;
         color: rgba(0, 0, 0, 0.7);
         margin-bottom: 8px;
-    }
-    .dialog-content input {
-        margin-top: 8px;
-        width: 100%;
     }
     .error-message {
         display: block;

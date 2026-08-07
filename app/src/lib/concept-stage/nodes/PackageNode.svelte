@@ -336,6 +336,7 @@
         <div class="package-header-left">
             <Package size={22} />
             {#if editingName}
+                <!-- svelte-ignore a11y_autofocus -->
                 <input
                     class="package-title"
                     class:error={isNameError}
@@ -409,6 +410,7 @@
             />
             {#if showComment}
                 {#if infoClicked}
+                    <!-- svelte-ignore a11y_autofocus -->
                     <input
                         class="package-comment"
                         type="text"
@@ -802,8 +804,7 @@
         border-color: #3b82f6;
     }
 
-    .viewpoint-option input[type="checkbox"],
-    .viewpoint-option input[type="radio"] {
+    .viewpoint-option input[type="checkbox"] {
         cursor: pointer;
     }
 

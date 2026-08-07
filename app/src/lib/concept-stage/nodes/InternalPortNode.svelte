@@ -139,9 +139,6 @@
         gap: 8px;
     }
 
-    .port-icon {
-        color: #6b7280;
-    }
 
     /* Hide nodes not in viewpoint */
     .internal-port-node.hidden-by-viewpoint {

@@ -50,12 +50,14 @@
 
     let currentSearch: string = $state("");
 
+    // svelte-ignore state_referenced_locally -- type never changes for a given instance
     const defaultClasses = (type === 'element' ? Object.keys(VSSo.elementTypes) :
         Object.values(VSSo.elementTypes).flat());
 
     // Combine default classes with custom variables
     let allClasses = $derived([...defaultClasses, ...$customVSSoVariables]);
 
+    // svelte-ignore state_referenced_locally -- seed value, updated reactively via updateResults()
     let shownClasses: string[] = $state(allClasses);
     const updateResults = () => {
         shownClasses = allClasses.filter((VSSoClass) => {
@@ -115,6 +117,7 @@
     currentNodes.subscribe((value) => {
         const node = value.find((node) => node.id === id);
         if (node) {
+            // svelte-ignore state_referenced_locally -- type never changes for a given instance
             if (type === 'element') {
                 currentClass = (node.data as any).element.VSSoClass;
             }
@@ -125,6 +128,7 @@
     // Make popover element compensate for zoom level
     const { viewport } = useSvelteFlow();
     let zoomLevel = $state(1);
+    // svelte-ignore state_referenced_locally -- type never changes for a given instance
     if (type === 'element') {
         viewport.subscribe((value) => {
             zoomLevel = value.zoom;
@@ -202,8 +206,14 @@
 <!-- Custom Variable Dialog -->
 {#if isAddingCustomVariable}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="custom-var-dialog-overlay" onclick={() => isAddingCustomVariable = false}>
+    <div 
+        class="custom-var-dialog-overlay" 
+        onclick={() => isAddingCustomVariable = false} 
+        onkeydown={(e) => e.key === 'Escape' && (isAddingCustomVariable = false)} 
+        role="button" tabindex="0"
+    >
         <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div class="custom-var-dialog" onclick={(e) => e.stopPropagation()}>
             <h3>Add Custom Variable</h3>
             <div class="dialog-content">
@@ -399,10 +409,6 @@
         color: rgba(0, 0, 0, 0.7);
         margin-bottom: 8px;
         font-weight: 500;
-    }
-    .dialog-content input {
-        margin-top: 8px;
-        width: 100%;
     }
     .error-message {
         display: block;

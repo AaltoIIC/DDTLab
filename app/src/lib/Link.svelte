@@ -10,7 +10,7 @@
     let { text, url, newPage = true }: Props = $props();
 </script>
 <div class="link-outer" style="max-width: {text.length * 7.4 + 16}px;">
-    <a class="link" href={url} target="{newPage ? '_blank' : '_self'}">
+    <a class="link" href={url} target="{newPage ? '_blank' : '_self'}" aria-label="Open external link">
         <span class="main-txt" use:truncate={{text}}></span>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />

@@ -19,17 +19,21 @@
 
     let description = $state(''); // TODO: Implement description adding
 
+    // svelte-ignore state_referenced_locally -- one-time seed from editDef prop
     let currentName = $state(editDef?.name ?? '');
     let inputName = $state(currentName);
     let isNameError = $state(false);
 
+    // svelte-ignore state_referenced_locally -- one-time seed from editDef prop
     let attributes: Array<{key: string, value: null}> = $state(toMetadata(editDef?.data.attributes));
 
+    // svelte-ignore state_referenced_locally -- one-time seed from editDef prop
     let partMetadata: Array<{key: string, value: null}> = $state(toMetadata(editDef?.data.partRefs ?? [])); 
     let partRefs: PartDefinition[] = $derived(partMetadata.map( data => {
         return $currentPartDefinitions.find( p => p.name === data.key);
     }).filter( ref => ref !== undefined ));
 
+    // svelte-ignore state_referenced_locally -- one-time seed from editDef prop
     let itemMetadata: Array<{key: string, value: null}> = $state(toMetadata(editDef?.data.itemRefs));
     let itemRefs: ItemDefinition[] = $derived(itemMetadata.map( data => {
         return $currentItemDefinitions.find( it => it.name === data.key);

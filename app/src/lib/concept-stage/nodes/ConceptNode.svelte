@@ -146,6 +146,7 @@
     let allPortNames = $derived([...(data.inputs || []), ...(data.outputs || [])].map(p => p.name));
 
     // Create port handlers
+    // svelte-ignore state_referenced_locally -- id never changes after mount
     const { addInput, removeInput, addOutput, removeOutput, updatePortInterface, updatePortInfo } = createPortHandlers<NodeData>(id);
     
     function handleUpdateInputInterface(index: number, interfaceType: string | undefined) {
@@ -468,6 +469,7 @@
         <div class="field">
             <span class="field-label">Name:</span>
             {#if editingName}
+                <!-- svelte-ignore a11y_autofocus -->
                 <input
                     class="field-input"
                     class:error={isNameError}
@@ -503,6 +505,7 @@
         <div class="field">
             <span class="field-label">Comment:</span>
             {#if editingComment}
+                <!-- svelte-ignore a11y_autofocus -->
                 <input
                     class="field-input"
                     type="text"
@@ -534,6 +537,7 @@
         <div class="field">
             <span class="field-label">Mass (kg):</span>
             {#if editingMass}
+                <!-- svelte-ignore a11y_autofocus -->
                 <input
                     class="field-input"
                     type="number"
@@ -735,10 +739,6 @@
         padding: 2px 8px;
     }
 
-    .badge-icon {
-        display: inline-block;
-        vertical-align: middle;
-    }
 
     .content {
         display: flex;

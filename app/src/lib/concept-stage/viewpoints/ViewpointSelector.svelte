@@ -146,6 +146,7 @@
               class="viewpoint-item custom"
               class:selected={vp.id === $activeViewpoint}
               onclick={() => selectViewpoint(vp.id)}
+              onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && selectViewpoint(vp.id)}
               role="button"
               tabindex="0"
             >
@@ -177,13 +178,16 @@
 
 <!-- Create/Edit Dialog -->
 {#if showCreateDialog}
-  <div class="dialog-overlay" transition:fade={{ duration: 150 }} onclick={closeDialog}>
-    <div class="dialog" onclick={(e) => e.stopPropagation()}>
+  <div class="dialog-overlay" transition:fade={{ duration: 150 }} onclick={closeDialog} onkeydown={(e) => e.key === 'Escape' && closeDialog()} role="button" tabindex="0">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="dialog" onclick={(e) => e.stopPropagation()} role="dialog" tabindex="-1">
       <h3>{editingViewpoint ? 'Edit' : 'Create'} Custom View</h3>
 
       <div class="form-group">
-        <label>Name</label>
+        <label for="viewpoint-name-input">Name</label>
+        <!-- svelte-ignore a11y_autofocus -->
         <input
+          id="viewpoint-name-input"
           type="text"
           bind:value={viewpointName}
           placeholder="Enter view name"
@@ -352,10 +356,6 @@
     color: #dc2626;
   }
 
-  .check {
-    color: #10b981;
-    margin-left: auto;
-  }
 
   .create-btn {
     width: 100%;
@@ -449,48 +449,6 @@
     border: 1px solid #e5e7eb;
   }
 
-  .node-list {
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    padding: 8px;
-  }
-
-  .node-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .node-item:hover {
-    background: #f9fafb;
-  }
-
-  .node-item input {
-    cursor: pointer;
-  }
-
-  .node-name {
-    font-size: 13px;
-    color: #374151;
-  }
-
-  .node-type {
-    color: #9ca3af;
-    font-size: 12px;
-  }
-
-  .empty {
-    text-align: center;
-    color: #9ca3af;
-    font-size: 13px;
-    padding: 20px;
-  }
 
   .dialog-buttons {
     display: flex;

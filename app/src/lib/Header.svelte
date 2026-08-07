@@ -71,27 +71,6 @@
         height: 20px;
         color: rgba(0, 0, 0, 0.8);
     }
-    .icon-arrow {
-        width: 16px;
-        height: 16px;
-        margin-top: 2px;
-    }
-    .header-btn {
-        width: fit-content;
-        border: var(--main-border);
-        border-radius: 50px;
-        padding: 6.5px 14px;
-        backdrop-filter: var(--main-backdrop);
-        font-size: 14px;
-        color: rgba(0, 0, 0, 0.7);
-        display: flex;
-        gap: 4px;
-        background-color: transparent;
-        transition: background-color 0.2s;
-    }
-    .header-btn:hover {
-        background-color: rgba(0, 0, 0, 0.02);
-    }
     .main-header {
         position: sticky;
         top: 0;
@@ -165,9 +144,6 @@
             display: flex;
             align-items: center;
             margin-right: 12px;
-        }
-        .create-sys-btn {
-            display: none;
         }
     }
 </style>

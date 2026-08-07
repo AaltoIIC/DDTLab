@@ -129,6 +129,7 @@
     }
 
     // handle VSSo class selection
+    // svelte-ignore state_referenced_locally -- one-time seed from data prop
     let currentVSSoClass = $state(data.element.VSSoClass);
     const updateVSSOClass = (value: string) => {
         currentNodes.update((nodes) => {
@@ -249,6 +250,7 @@
         document.addEventListener('mousedown', handleOutsideClick);
         return () => document.removeEventListener('mousedown', handleOutsideClick);
     });
+    // svelte-ignore state_referenced_locally -- referential guard for unused spread props
     rest
 </script>
 <!-- svelte-ignore a11y_no_static_element_interactions -->

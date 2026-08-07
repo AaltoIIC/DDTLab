@@ -64,7 +64,7 @@
 
 </script>
 
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="main-section {direction}"
     bind:this={container}
     on:mousemove={(event) => {
@@ -76,7 +76,7 @@
         `${sizeProp}: ${specifiedSizeIs === 'first' ? `${specifiedSize}px` : nonSpecifiedSize};`}>
         <slot name="1"></slot>
     </div>
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="resize-slider {isResizing ? 'active' : ''}"
         style={`
             width: 100%;

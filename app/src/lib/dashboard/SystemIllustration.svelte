@@ -54,7 +54,9 @@
     });
 
     const elementWidthPercent = 22;
+    // svelte-ignore state_referenced_locally
     const nodeIds = new Set(filteredNodes.map((node) => node.id));
+    // svelte-ignore state_referenced_locally
     const edgePaths = system.edges
         .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
         .map(edge => {

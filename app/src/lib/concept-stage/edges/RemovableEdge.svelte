@@ -69,6 +69,8 @@
 <g 
     onmouseenter={() => isHovered = true}
     onmouseleave={() => isHovered = false}
+    role="button"
+    tabindex="-1"
 >
     <BaseEdge 
         path={edgePath[0]} 

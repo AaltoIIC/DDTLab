@@ -148,6 +148,7 @@
                 <div class="metadata-item">
                     {#if editingIndex === index && type === 'attribute'}
                         <div class="edit-form">
+                            <!-- svelte-ignore a11y_autofocus -->
                             <input
                                 class="metadata-input {isNameError ? 'error' : ''}"
                                 type="text"
@@ -211,6 +212,7 @@
             {#if showAddForm}
                 <div class = "combobox">
                     <div class="add-form">
+                        <!-- svelte-ignore a11y_autofocus -->
                         <input
                             bind:this={inputRef}
                             class="metadata-input {isNameError ? 'error' : ''}"

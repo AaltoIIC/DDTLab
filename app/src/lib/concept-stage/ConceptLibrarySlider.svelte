@@ -163,7 +163,10 @@
 {#if isOpen}
     <div 
         class="slider-overlay {isDragging ? 'dragging' : ''}" 
-        onclick={onClose} 
+        onclick={onClose}
+        onkeydown={(e) => e.key === 'Escape' && onClose()}
+        role="button"
+        tabindex="0"
         transition:fade={{ duration: 200 }}
     ></div>
     <div class="slider-panel" transition:slide={{ duration: 300, axis: 'x' }}>
@@ -223,6 +226,7 @@
                                             draggable="true"
                                             ondragstart={(e) => handleDragStart(e, component)}
                                             ondragend={handleDragEnd}
+                                            role="listitem"
                                         >
                                             <Package size={14} />
                                             <span>{component.name}</span>
@@ -283,6 +287,7 @@
                                                                         ondragstart={(e) => handleDragStart(e, component)}
                                                                         ondragend={handleDragEnd}
                                                                         title={component.description || component.name}
+                                                                        role="listitem"
                                                                     >
                                                                         <Package size={12} />
                                                                         <span class="component-name">{component.name}</span>
@@ -390,6 +395,7 @@
                                                     ondragstart={(e) => handleDesignDragStart(e, design)}
                                                     ondragend={handleDragEnd}
                                                     title={design.description}
+                                                    role="listitem"
                                                 >
                                                     <div class="design-header">
                                                         <SvelteComponent 
@@ -746,14 +752,6 @@
         padding: 20px;
     }
     
-    /* Other */
-    .placeholder-text {
-        color: #9ca3af;
-        font-size: 13px;
-        text-align: center;
-        padding: 20px;
-        margin: 0;
-    }
     
     /* Design Library Styles */
     .clear-search-btn {
@@ -887,10 +885,6 @@
         margin-bottom: 8px;
     }
     
-    .design-icon {
-        color: #3b82f6;
-        flex-shrink: 0;
-    }
     
     .design-info h4 {
         margin: 0;

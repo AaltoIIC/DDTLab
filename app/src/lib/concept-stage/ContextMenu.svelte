@@ -49,6 +49,9 @@
         class="context-menu"
         style="left: {x}px; top: {y}px;"
         onclick={stopPropagation(bubble('click'))}
+        onkeydown={(e) => e.key === 'Escape' && (visible = false)}
+        role="menu"
+        tabindex="-1"
     >
         <button
             class="context-menu-item"

@@ -84,7 +84,7 @@
     </div>
     <Handle
         id={`${elementName}.${handleId || connectorName}`}
-        type="{type === 'input' ? 'target' : 'source'}"
+        type={type === 'input' ? 'target' : 'source'}
         position={type === 'input' ? Position.Left : Position.Right}
         style="position: relative; top: 0; left: 0; transform: none; z-index: 4;"
     />

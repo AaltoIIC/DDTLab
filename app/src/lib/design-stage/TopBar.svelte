@@ -10,7 +10,7 @@
         undoHistory,
         redoHistory
     } from "$lib/stores/stores.svelte";
-    import { isNameValid } from "$lib/helpers";
+    import { isNameValid, MAX_NAME_LENGTH, truncateName } from "$lib/helpers";
     import { goto } from "$app/navigation";
     import { CircleQuestionMark } from '@lucide/svelte';
 
@@ -22,6 +22,7 @@
 
     let currentName = $state($currentSystemMeta.name);
     let isNameError = $state(false);
+    let nameInput: HTMLInputElement | undefined = $state();
 
     // The current system record (has the stage + concept/design linkage fields).
     const currentSystem = $derived($systems.find(s => s.id === $currentSystemMeta.id));
@@ -83,6 +84,8 @@
     });
 
     const updateSystemName = () => {
+        // Cap the system name at MAX_NAME_LENGTH characters
+        currentName = truncateName(currentName);
         const isNameTaken = $systems.filter(s => s.id !== $currentSystemMeta.id)
             .map(s => s.name.replace(/\s+/g, '').toLowerCase())
             .includes(currentName.replace(/\s+/g, '').toLowerCase());
@@ -102,6 +105,8 @@
             currentName = $currentSystemMeta.name;
             isNameError = false;
         }
+        // When unfocused, show the beginning of the name again if it was scrolled
+        if (nameInput) nameInput.scrollLeft = 0;
     }
 
 </script>
@@ -156,9 +161,13 @@
     <div class="main-name-cont {isNameError ? 'error' : ''}">
         System: <input type="text"
             bind:value={currentName}
+            bind:this={nameInput}
+            spellcheck={false}
+            maxlength={MAX_NAME_LENGTH}
             oninput={updateSystemName}
             onblur={handleNameBlur}
             aria-label="System name"
+            title={currentName}
             />
     </div>
     <Button onClick={() => {goto('/');}}>Save</Button>

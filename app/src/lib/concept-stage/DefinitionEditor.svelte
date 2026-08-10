@@ -3,7 +3,7 @@
     import { type Writable } from 'svelte/store';
     import { currentPartDefinitions, currentItemDefinitions, addToHistory } from '$lib/stores/stores.svelte'
     import MetadataEditor from "./MetadataEditor.svelte";
-    import { generateId, validateName } from '$lib/helpers';
+    import { generateId, validateName, MAX_NAME_LENGTH, truncateName } from '$lib/helpers';
     import { slide } from 'svelte/transition';
     import _, { capitalize, update } from 'lodash';
     import { toMetadata, createData } from './utils/templateInstantiation';
@@ -48,7 +48,7 @@
         if (!isNameError) {
             const baseDef = {
                 id: generateId($currentDefs.map( p => p.id )),
-                name: inputName,
+                name: truncateName(inputName),
                 type,
                 description: description,
                 createdAt: new Date().toISOString(),
@@ -99,7 +99,7 @@
 
             const baseDef = {
                 ...editDef,
-                name: inputName,
+                name: truncateName(inputName),
                 description: description,
                 updatedAt: new Date().toISOString(),
                 data: {
@@ -164,6 +164,7 @@
                 id="nameinput"
                 class="name-input {isNameError ? 'error' : ''}"
                 type="text"
+                maxlength={MAX_NAME_LENGTH}
                 bind:value={inputName}
                 oninput={validateNameLocal}
             />

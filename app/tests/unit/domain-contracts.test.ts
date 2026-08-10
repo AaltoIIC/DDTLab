@@ -8,7 +8,7 @@ vi.mock('$lib/stores/stores.svelte', () => ({
 }));
 import { appendHistoryCursor, redoHistoryIndex, undoHistoryIndex } from '$lib/editor-core/history/historyTransitions';
 import { cloneSystemName, normalizeSystemRecord } from '$lib/domains/system/services/systemRecordNormalization';
-import { generateElementName, generateName, isNameValid, validateName } from '$lib/shared/validation/nameValidation';
+import { generateElementName, generateName, isNameValid, validateName, MAX_NAME_LENGTH, truncateName } from '$lib/shared/validation/nameValidation';
 import { generateId } from '$lib/shared/identifiers';
 import { checkCompatibility } from '$lib/concept-stage/interfaces/compatibility';
 import { ensureUniqueName, sanitizeXMLName } from '$lib/exporters/ssd/mappings';
@@ -48,6 +48,13 @@ describe('shared naming and identifier contracts', () => {
     expect(validateName('Old', 'New', ['Other'])).toBe(false);
     expect(generateName('New System', ['New System', 'New System (2)'])).toBe('New System (3)');
     expect(generateElementName('subsystem', ['New Subsystem'], [])).toBe('New Subsystem (2)');
+  });
+
+  it('caps names at MAX_NAME_LENGTH characters', () => {
+    expect(MAX_NAME_LENGTH).toBe(40);
+    expect(truncateName('short')).toBe('short');
+    expect(truncateName('x'.repeat(60))).toBe('x'.repeat(40));
+    expect(truncateName('x'.repeat(40))).toBe('x'.repeat(40));
   });
 
   it('generates a six-character id not present in the supplied ids', () => {

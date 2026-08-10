@@ -3,7 +3,9 @@ import { generateId as generateIdValue } from '$lib/shared/identifiers';
 import {
     generateName as generateNameValue,
     isNameValid as isNameValidValue,
-    validateName as validateNameValue
+    validateName as validateNameValue,
+    MAX_NAME_LENGTH as MAX_NAME_LENGTHValue,
+    truncateName as truncateNameValue
 } from '$lib/shared/validation/nameValidation';
 import {
     formatDate as formatDateValue,
@@ -19,6 +21,12 @@ export { nameElement } from '$lib/domains/editor-core/services/activeEditorActio
 export const isNameValid = isNameValidValue;
 
 export const validateName = validateNameValue;
+
+// Maximum name length enforced across the concept and design stages
+export const MAX_NAME_LENGTH = MAX_NAME_LENGTHValue;
+
+// Cut a name down to MAX_NAME_LENGTH characters
+export const truncateName = truncateNameValue;
 
 // function to automatically give a unique name
 export const generateName = generateNameValue;

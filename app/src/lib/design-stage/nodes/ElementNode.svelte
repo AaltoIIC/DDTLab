@@ -5,7 +5,7 @@
     import Connectors from "./Connectors.svelte";
     import { type ElementDataType, type SubsystemDataType } from "$lib/types/types";
     import {
-        generateId, generateName, validateName
+        generateId, generateName, validateName, MAX_NAME_LENGTH, truncateName
      } from "$lib/helpers";
     import {
         currentEdges,
@@ -25,7 +25,7 @@
         removeSystem,
     } from "$lib/stores/stores.svelte";
     import VSSoSelect from "./VSSoSelect.svelte";
-    import { onMount } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import { get } from 'svelte/store';
     import _ from 'lodash';
 
@@ -89,6 +89,32 @@
     let inputName = $state(currentName);
     let isNameError = $state(false);
 
+    let nameField: HTMLTextAreaElement | undefined = $state();
+    let isNameFocused = $state(false);
+
+    // Unfocused name display: plain text. Names are capped at MAX_NAME_LENGTH
+    // characters (maxlength on the textarea + truncation on save), so no
+    // ellipsis/truncation logic is needed here.
+    const autoResizeNameField = () => {
+        if (!nameField) return;
+        nameField.style.height = 'auto';
+        nameField.style.height = `${nameField.scrollHeight}px`;
+    };
+
+    // Switching from the clamped display to the editable textarea
+    const startEditing = async () => {
+        isNameFocused = true;
+        await tick();
+        autoResizeNameField();
+        nameField?.focus();
+        nameField?.setSelectionRange(nameField.value.length, nameField.value.length);
+    };
+
+    const stopEditing = () => {
+        saveNodeName();
+        isNameFocused = false;
+    };
+
     const validateNodeName = () => {
     // const validateName = () => {
         const nodeNames = get(currentNodes)
@@ -105,6 +131,12 @@
     }
 
     const saveNodeName = () => {
+        // The name field is a textarea, so collapse pasted newlines into spaces
+        // and cap the length at MAX_NAME_LENGTH characters
+        inputName = truncateName(inputName.replace(/\n+/g, ' '));
+        autoResizeNameField();
+        // When unfocused, show the beginning of the name again if it was scrolled
+        if (nameField) nameField.scrollTop = 0;
         if (!isNameError && inputName !== data.name) {
             currentNodes.update((nodes) => {
                 const nodeIndex = nodes.findIndex((node) => node.data.name === data.name);
@@ -205,7 +237,7 @@
         const target = e.target as HTMLElement;
         const interactiveTags = ['INPUT', 'BUTTON', 'SELECT', 'TEXTAREA'];
         if (interactiveTags.includes(target.tagName) ||
-            target.closest('button, input, select, textarea, svg, .delete-btn') 
+            target.closest('button, input, select, textarea, svg, .delete-btn, .name-display')
         ) { return; }
         if (isSubsystemNode(data)) {
             const subsystemData = data.element as SubsystemDataType;
@@ -248,7 +280,10 @@
 
     onMount(() => {
         document.addEventListener('mousedown', handleOutsideClick);
-        return () => document.removeEventListener('mousedown', handleOutsideClick);
+        autoResizeNameField();
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+        };
     });
     // svelte-ignore state_referenced_locally -- referential guard for unused spread props
     rest
@@ -266,11 +301,44 @@
     
     <div class="element-node-inner">
         <div class="top-param-cont">
-            <input class="main-name-field {isNameError ? 'error' : ''}"
-                type="text"
-                bind:value={inputName}
-                oninput={validateNodeName}
-                onblur={saveNodeName} />
+            {#if isNameFocused}
+                <textarea class="main-name-field {isNameError ? 'error' : ''}"
+                    rows={1}
+                    spellcheck={false}
+                    maxlength={MAX_NAME_LENGTH}
+                    bind:this={nameField}
+                    bind:value={inputName}
+                    title={inputName}
+                    oninput={() => {
+                        inputName = inputName.replace(/\n+/g, ' ');
+                        validateNodeName();
+                        autoResizeNameField();
+                    }}
+                    onblur={stopEditing}
+                    onkeydown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.currentTarget.blur();
+                        }
+                    }}
+                ></textarea>
+            {:else}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <div class="main-name-field name-display nodrag {isNameError ? 'error' : ''}"
+                    role="textbox"
+                    tabindex="0"
+                    aria-label="Node name"
+                    title={inputName}
+                    onclick={startEditing}
+                    onkeydown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            startEditing();
+                        }
+                    }}
+                >{inputName}</div>
+            {/if}
             <div class="element-type-cont {data.element.type === 'system' ? 'subsystem-type' : ''}">
                 {#if data.element.type === 'system'}
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -390,6 +458,7 @@
         width: calc(100% - 20px);
         display: flex;
         justify-content: space-between;
+        align-items: flex-start;
         gap: 6px;
     }
     .element-type-cont {
@@ -424,19 +493,32 @@
         font-size: 14px;
         color: rgba(0, 0, 0, 0.8);
         padding: 8px;
-        line-height: 1;
+        line-height: 1.2;
         background: none;
         border-radius: 5px;
-        transition: .2s;
+        /* Only the focus border animates; animating max-height would make the
+           name field grow/shrink and corrupt the JS truncation measurements. */
+        transition: border-color .2s;
         margin-bottom: 8px;
         border: solid 2px rgba(0, 0, 0, 0);
         outline: none !important;
+        resize: none;
+        overflow: hidden;
+        overflow-wrap: break-word;
+        white-space: pre-wrap;
     }
     .main-name-field:focus {
         border: solid 2px rgba(0, 0, 0, 0.1);
     }
     .main-name-field.error {
         border: solid 2px var(--main-error-color);
+    }
+    /* Unfocused: plain text. Names are capped at MAX_NAME_LENGTH characters,
+       so the display simply wraps naturally without truncation. */
+    .name-display {
+        white-space: normal;
+        overflow-wrap: break-word;
+        cursor: text;
     }
     .main-element-node {
         width: 200px;

@@ -13,6 +13,19 @@ export function isNameValid(name: string): boolean {
 }
 
 /**
+ * Maximum length of a system / node / definition name.
+ * Enforced on the name inputs (maxlength) and when saving.
+ */
+export const MAX_NAME_LENGTH = 40;
+
+/**
+ * Cuts a name down to MAX_NAME_LENGTH characters. No-op for shorter names.
+ */
+export function truncateName(name: string): string {
+    return name.length > MAX_NAME_LENGTH ? name.slice(0, MAX_NAME_LENGTH) : name;
+}
+
+/**
  * Returns true when the proposed name is invalid or already used.
  * The historical helper API returns this error-state boolean rather than validity.
  */

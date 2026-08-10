@@ -5,7 +5,7 @@
     import { Grid2X2, Squircle, X, Lock } from '@lucide/svelte';
     import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
-    import { validateName, generateName } from '$lib/helpers';
+    import { validateName, generateName, MAX_NAME_LENGTH, truncateName } from '$lib/helpers';
     import { navigateIntoNode } from '../nodeViewStore';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
@@ -233,8 +233,9 @@
     }
 
     function handleNameEdit() {
-        if (!isNameError && tempName.trim()) {
-            updateNodeData('declaredName', tempName.trim());
+        const trimmedName = truncateName(tempName.trim());
+        if (!isNameError && trimmedName) {
+            updateNodeData('declaredName', trimmedName);
         } else {
             tempName = data.declaredName;
             isNameError = false;
@@ -474,6 +475,7 @@
                     class="field-input"
                     class:error={isNameError}
                     type="text"
+                    maxlength={MAX_NAME_LENGTH}
                     bind:value={tempName}
                     oninput={validateNameLocal}
                     onblur={handleNameEdit}

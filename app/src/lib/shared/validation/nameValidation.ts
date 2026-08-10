@@ -13,10 +13,17 @@ export function isNameValid(name: string): boolean {
 }
 
 /**
- * Maximum length of a system / node / definition name.
- * Enforced on the name inputs (maxlength) and when saving.
+ * Hard cap for a stored system / node / definition name. Duplicate names
+ * ("X (2)", "X (3)", ...) may reach this length.
  */
 export const MAX_NAME_LENGTH = 40;
+
+/**
+ * Soft cap for the name edit fields. Four below MAX_NAME_LENGTH so a 36-character
+ * name leaves room for the " (n)" duplicate suffix (e.g. "X (2)") within the hard
+ * cap; longer suffixes fall back to trimming the base name in duplicateName.
+ */
+export const MAX_EDIT_NAME_LENGTH = 36;
 
 /**
  * Cuts a name down to MAX_NAME_LENGTH characters. No-op for shorter names.
@@ -65,4 +72,25 @@ export function generateElementName(
     const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
     const allNames = [...elementNames, ...systemNames];
     return generateName(`New ${capitalizedType}`, allNames);
+}
+
+/**
+ * Generates a unique duplicate name for a copy of `originalName` using the
+ * "<name> (2)", "<name> (3)", ... convention. Skips any name already in
+ * `takenNames` and stays within MAX_NAME_LENGTH, trimming the base name if the
+ * numeric suffix would overflow the cap (so "X (10)" never gets cut mid-suffix).
+ */
+export function duplicateName(originalName: string, takenNames: string[]): string {
+    const taken = new Set(takenNames);
+    let suffix = 2;
+    let candidate = '';
+
+    do {
+        const suffixText = ` (${suffix})`;
+        const base = originalName.slice(0, MAX_NAME_LENGTH - suffixText.length);
+        candidate = `${base}${suffixText}`;
+        suffix += 1;
+    } while (taken.has(candidate));
+
+    return candidate;
 }

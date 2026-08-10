@@ -93,7 +93,7 @@ test.describe('dashboard and editor lifecycle', () => {
     await expect(page.locator('.driver-popover-title')).toHaveText('Top bar');
   });
 
-  test('caps design-stage node names at 40 characters and exposes them via tooltip', async ({ page }) => {
+  test('caps design-stage node names at 36 characters and suffixes duplicates within the hard cap', async ({ page }) => {
     await resetBrowserState(page);
     await page.getByRole('button', { name: 'New' }).click();
     await page.getByRole('button', { name: 'Design Stage' }).click();
@@ -114,11 +114,11 @@ test.describe('dashboard and editor lifecycle', () => {
     const nameField = page.locator('textarea.main-name-field');
     await expect(nameField).toBeVisible();
     await expect(nameField).toHaveAttribute('spellcheck', 'false');
-    await expect(nameField).toHaveAttribute('maxlength', '40');
+    await expect(nameField).toHaveAttribute('maxlength', '36');
 
-    // Rename it to a name longer than the 40-character cap
+    // Rename it to a name longer than the 36-character edit-field cap
     const longName = 'A very long design component name that would normally be truncated';
-    const cappedName = longName.slice(0, 40);
+    const cappedName = longName.slice(0, 36);
     await nameField.fill(longName);
     await nameField.blur();
 
@@ -130,9 +130,19 @@ test.describe('dashboard and editor lifecycle', () => {
     // Clicking the display opens the editor with the capped name
     await display.click();
     await expect(nameField).toHaveValue(cappedName);
+
+    // Duplicating the node appends a numbered suffix: 36-char base + " (2)"
+    // lands exactly on the 40-character hard cap
+    await nameField.blur();
+    await page.locator('.main-element-node').click({ button: 'right' });
+    await page.locator('.custom-menu-item', { hasText: 'Duplicate' }).click();
+    const displays = page.locator('.name-display');
+    await expect(displays).toHaveCount(2);
+    const duplicateName = `${cappedName} (2)`;
+    await expect(page.locator('.name-display').filter({ hasText: duplicateName })).toHaveCount(1);
   });
 
-  test('caps concept-stage definition names at 40 characters', async ({ page }) => {
+  test('caps concept-stage definition names at 36 characters', async ({ page }) => {
     await resetBrowserState(page);
     await page.getByRole('button', { name: 'New' }).click();
     await page.getByRole('button', { name: 'Conceptual Stage' }).click();
@@ -144,10 +154,10 @@ test.describe('dashboard and editor lifecycle', () => {
 
     const nameInput = page.locator('#nameinput');
     await expect(nameInput).toBeVisible();
-    await expect(nameInput).toHaveAttribute('maxlength', '40');
+    await expect(nameInput).toHaveAttribute('maxlength', '36');
 
     const longName = 'An extremely long concept part definition name exceeding the cap';
-    const cappedName = longName.slice(0, 40);
+    const cappedName = longName.slice(0, 36);
     await nameInput.fill(longName);
     await page.locator('#def-editor').getByRole('button', { name: 'Add', exact: true }).click();
 
@@ -156,7 +166,51 @@ test.describe('dashboard and editor lifecycle', () => {
     await expect(page.locator('.template-name', { hasText: cappedName })).toHaveText(cappedName);
   });
 
-  test('caps the TopBar system name at 40 characters and keeps it as a tooltip', async ({ page }) => {
+  test('caps design-stage connector names at 36 characters', async ({ page }) => {
+    await resetBrowserState(page);
+    await page.getByRole('button', { name: 'New' }).click();
+    await page.getByRole('button', { name: 'Design Stage' }).click();
+    await expect(page).toHaveURL(/\/editor\/[^/]+\/?$/);
+
+    // Add a component node through the sidebar
+    await page.locator('#design-add-menu').click();
+    await page.getByRole('button', { name: 'Component', exact: true }).click();
+    await expect(page.locator('.main-element-node')).toHaveCount(1);
+
+    // Open the connector add popup on the output side
+    const addConnectorBtn = page.locator('.main-connectors.output [aria-label="Add Connector"]');
+    await addConnectorBtn.click();
+    const popup = page.locator('.main-add-layover.open');
+    await expect(popup).toBeVisible();
+
+    // The name input enforces the 36-character edit-field cap
+    const nameInput = popup.locator('input').first();
+    await expect(nameInput).toHaveAttribute('maxlength', '36');
+
+    // Fill in a connector name longer than the cap
+    const longName = 'An extremely long connector name that would exceed forty characters';
+    const cappedName = longName.slice(0, 36);
+    await nameInput.fill(longName);
+
+    // A VSSo variable must be selected before the connector can be added
+    await popup.locator('.main-class-cont').click();
+    await popup.locator('.main-class-list button').first().click();
+    await popup.getByRole('button', { name: /Add Output/ }).click();
+
+    // The connector is saved with the capped name (poll in case of async persistence)
+    await expect
+      .poll(async () => {
+        const systems = await page.evaluate(() => JSON.parse(localStorage.getItem('systems') || '[]'));
+        return systems[0]?.nodes.flatMap((n: any) => (n.data?.element?.connectors ?? []).map((c: any) => c.name)) ?? [];
+      })
+      .toContain(cappedName);
+    const finalSystems = await page.evaluate(() => JSON.parse(localStorage.getItem('systems') || '[]'));
+    const connectorNames = finalSystems[0].nodes.flatMap((n: any) => (n.data?.element?.connectors ?? []).map((c: any) => c.name));
+    expect(connectorNames.some((name: string) => name.length > 40)).toBe(false);
+
+  });
+
+  test('caps the TopBar system name at 36 characters and keeps it as a tooltip', async ({ page }) => {
     await resetBrowserState(page);
     await page.getByRole('button', { name: 'New' }).click();
     await page.getByRole('button', { name: 'Design Stage' }).click();
@@ -164,10 +218,10 @@ test.describe('dashboard and editor lifecycle', () => {
 
     const nameInput = page.getByRole('textbox', { name: 'System name' });
     await expect(nameInput).toHaveAttribute('spellcheck', 'false');
-    await expect(nameInput).toHaveAttribute('maxlength', '40');
+    await expect(nameInput).toHaveAttribute('maxlength', '36');
 
     const longName = 'A very long system name that exceeds the width of the top bar field';
-    const cappedName = longName.slice(0, 40);
+    const cappedName = longName.slice(0, 36);
     await nameInput.fill(longName);
     await nameInput.focus();
     await nameInput.evaluate((el) => {

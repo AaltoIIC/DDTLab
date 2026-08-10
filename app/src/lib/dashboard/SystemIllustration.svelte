@@ -1,6 +1,5 @@
 <script lang="ts">
     import type {SystemType} from "$lib/types/types";
-    import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
     import {
         getSmoothStepPath,
         Position
@@ -13,7 +12,7 @@
     let { system }: Props = $props();
 
     // TODO: Maybe change this in the future so that packages are included somehow in the illustration
-    let filteredNodes = $derived(stripSyntheticRootNodes(system.nodes).filter(n => n.type !== 'package'));
+    let filteredNodes = $derived(system.nodes.filter(n => n.type !== 'package'));
 
     // get node dimensions
     let highestX = 0,
@@ -39,7 +38,7 @@
 
     // get px to percent ratio
     const [width, height] = [highestX - lowestX, highestY - lowestY];
-    // Keep single-node layouts finite now that there is no large synthetic root boundary.
+    // Keep single-node layouts finite by flooring the reference span at 1.
     const pxToPercent = Math.max(Math.max(width, height), 1) / 100;
 
     const [addToX, addToY] = (width > height) ? [0, (width - height) / 2] : [(height - width) / 2, 0];

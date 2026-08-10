@@ -22,7 +22,6 @@
         parseTTLToRequirements
     } from "./conversions";
     import { parseSSDFile, isValidSSD } from "$lib/importers/ssdParser";
-    import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
     import Tooltip from "$lib/Tooltip.svelte";
     import type { SubsystemDataType } from "$lib/types/types";
     import JSZip from 'jszip';  
@@ -169,7 +168,7 @@
             await new Promise(resolve => setTimeout(resolve, 10));
 
             // Then update nodes and edges
-            currentNodes.set(stripSyntheticRootNodes(nodes));
+            currentNodes.set(nodes);
             currentEdges.set(edges);
 
             // Add to history after a small delay to ensure renders complete
@@ -250,7 +249,7 @@
 
                     await new Promise(resolve => setTimeout(resolve, 10));
 
-                    currentNodes.set(stripSyntheticRootNodes(nodes));
+                    currentNodes.set(nodes);
                     currentEdges.set(edges);
 
                     console.log(`Successfully imported SSD: ${systemName} from ${ssdFileName}`);

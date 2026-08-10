@@ -17,7 +17,6 @@ import type {
     SSDAnnotation,
     ConversionContext
 } from './types';
-import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
 import {
     DATA_TYPE_MAPPING,
     formatVSSoAnnotation,
@@ -290,8 +289,8 @@ export function convertSystem(
     const elements: (SSDComponent | SSDSystem)[] = [];
     const connections: SSDConnection[] = [];
 
-    // Filter out internal port nodes; design systems no longer contain a synthetic root node.
-    const nonRootNodes = stripSyntheticRootNodes(system.nodes).filter(n => n.type !== 'Internal');
+    // Filter out internal port nodes (re-created on navigation, not persisted content).
+    const nonRootNodes = system.nodes.filter(n => n.type !== 'Internal');
 
     // Convert each node
     for (const node of nonRootNodes) {
@@ -310,7 +309,7 @@ export function convertSystem(
         }
     }
 
-    // Convert only connections whose endpoints survive legacy-root sanitization.
+    // Convert only connections whose endpoints are part of this system's nodes.
     const nodeIds = new Set(nonRootNodes.map((node) => node.id));
     for (const edge of system.edges.filter((candidate) => nodeIds.has(candidate.source) && nodeIds.has(candidate.target))) {
         const connection = convertConnection(edge, nonRootNodes, context);
@@ -345,7 +344,7 @@ function calculateSystemGeometry(nodes: Node[]): SSDElementGeometry | undefined 
     let minX = Infinity, minY = Infinity;
     let maxX = -Infinity, maxY = -Infinity;
 
-    for (const node of stripSyntheticRootNodes(nodes)) {
+    for (const node of nodes) {
         minX = Math.min(minX, node.position.x);
         minY = Math.min(minY, node.position.y);
         maxX = Math.max(maxX, node.position.x + COMPONENT_SIZE.width);

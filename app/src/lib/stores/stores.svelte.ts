@@ -21,9 +21,11 @@ import {
     type Edge
 } from '@xyflow/svelte';
 import {
+    duplicateName,
     generateId,
     generateName
 } from '$lib/helpers';
+
 import { writable, get, derived } from 'svelte/store';
 import persistentStore from './persistentStore';
 import {
@@ -61,7 +63,6 @@ import {
 import _ from 'lodash';
 import { saveCurrentSystem } from '$lib/domains/editor-core/services/activeEditorActions';import ConceptTemplateSlider from '$lib/concept-stage/ConceptTemplateSlider.svelte';
   import { navigationStack } from '$lib/concept-stage/nodeViewStore';
-import { stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
 
 
 export type ConceptFmuBinding = {
@@ -122,7 +123,7 @@ export const setCurrentSystem = (id: string) => {
             name: system.name,
             date: system.date
         });
-        currentNodes.set(stripSyntheticRootNodes(system.nodes));
+        currentNodes.set(system.nodes.map((node) => ({ ...node })));
         currentEdges.set(system.edges);
         currentReqs.set(system.requirements || []);
         currentPartDefinitions.set(system.partDefinitions);
@@ -151,7 +152,7 @@ export const convertToDesign = (
     ));
     const stack = get(navigationStack);
     const rootLevel = stack.length > 0 ? stack[0] : null;
-    const rootNodes = rootLevel ? stripSyntheticRootNodes(rootLevel.nodes) : stripSyntheticRootNodes(get(currentNodes));
+    const rootNodes = rootLevel ? rootLevel.nodes : get(currentNodes);
     const rootEdges = rootLevel ? rootLevel.edges : get(currentEdges);
 
     // Re-conversion: reuse the existing design child so its ID (and with it any analysis
@@ -895,7 +896,7 @@ export function duplicateTemplate(id: string): ConceptTemplate | PackageTemplate
   
   const duplicate = saveTemplate({
     ...original,
-    name: `${original.name} (Copy)`,
+    name: duplicateName(original.name, get(templates).map(t => t.name)),
     description: original.description
   });
   

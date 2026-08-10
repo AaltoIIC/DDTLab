@@ -1,6 +1,6 @@
 import { get } from 'svelte/store';
 import type { SystemType } from '$lib/types/types';
-import { normalizeNodePositions, stripSyntheticRootNodes } from '$lib/editor-core/canvas/nodePositionNormalization';
+import { normalizeNodePositions } from '$lib/editor-core/canvas/nodePositionNormalization';
 import {
     currentEdges,
     currentItemDefinitions,
@@ -46,7 +46,7 @@ export function initializeEditorSession(input: EditorRouteInput): EditorSessionR
             // A route can be reopened while the active stores still contain this
             // system. Re-anchor that active graph too, without replacing it with
             // the persisted snapshot and losing in-progress edits.
-            currentNodes.set(normalizeNodePositions(stripSyntheticRootNodes(get(currentNodes))));
+            currentNodes.set(normalizeNodePositions(get(currentNodes)));
             return { kind: 'ready', stage: input.stage, systemId: input.id };
         }
 
@@ -105,7 +105,7 @@ function loadSystemIntoEditor(system: SystemType): void {
         date: system.date,
         id: system.id
     });
-    currentNodes.set(normalizeNodePositions(stripSyntheticRootNodes(system.nodes)));
+    currentNodes.set(normalizeNodePositions(system.nodes));
     currentEdges.set(system.edges);
     currentReqs.set(system.requirements || []);
     currentPartDefinitions.set(system.partDefinitions || []);

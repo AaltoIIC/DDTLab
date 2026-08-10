@@ -2,17 +2,6 @@ import type { Node } from '@xyflow/svelte';
 
 export const EDITOR_LAYOUT_ORIGIN = { x: 100, y: 100 } as const;
 
-/** Remove the synthetic root node used by older design-stage records. */
-export function stripSyntheticRootNodes(nodes: Node[]): Node[] {
-    return nodes
-        .filter((node) => node.id !== 'root' && node.type !== 'RootSystem')
-        .map((node) => {
-            if (node.parentId !== 'root') return { ...node };
-            const { parentId: _legacyRootParentId, ...nodeWithoutParent } = node;
-            return nodeWithoutParent;
-        });
-}
-
 /**
  * Re-anchor a graph without changing the distance between any of its nodes.
  *

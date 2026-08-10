@@ -17,10 +17,7 @@ import {
     currentSystemMeta
 } from '$lib/domains/editor-core/state/activeEditorSessionStore';
 import { getSystem } from '$lib/domains/system/state/systemCatalogStore';
-import {
-    normalizeNodePositions,
-    stripSyntheticRootNodes
-} from '$lib/editor-core/canvas/nodePositionNormalization';
+import { normalizeNodePositions } from '$lib/editor-core/canvas/nodePositionNormalization';
 
 export const history = writable<{ currentIndex: number; data: HistoryEntryType[] }>({
     currentIndex: -1,
@@ -150,7 +147,7 @@ export function navigateToSubsystem(subsystemId: string, parentNodeId: string): 
     // each enter/leave cycle. Content-only normalization is idempotent.
     const subNodes = [
         ...normalizeNodePositions(
-            stripSyntheticRootNodes(subsystem.nodes).filter((node) => node.type !== 'Internal')
+            subsystem.nodes.filter((node) => node.type !== 'Internal')
         ),
         ...internalPortNodes
     ];
@@ -192,7 +189,7 @@ export function navigateToParent(): void {
             : ''
     }));
     currentSystemMeta.set(parentMeta);
-    currentNodes.set(normalizeNodePositions(stripSyntheticRootNodes(parentSystem.nodes)));
+    currentNodes.set(normalizeNodePositions(parentSystem.nodes));
     currentEdges.set(parentSystem.edges);
     currentReqs.set(parentSystem.requirements || []);
     currentPartDefinitions.set(parentSystem.partDefinitions || []);

@@ -1,21 +1,15 @@
-import type { SystemStage, SystemType } from '$lib/types/types';
+import type { SystemType } from '$lib/types/types';
 import persistentStore from '$lib/stores/persistentStore';
 import { get } from 'svelte/store';
 import { generateId } from '$lib/shared/identifiers';
-import { generateName } from '$lib/shared/validation/nameValidation';
-import { cloneSystemName, normalizeSystemRecord } from '$lib/domains/system/services/systemRecordNormalization';
+import { duplicateName, generateName } from '$lib/shared/validation/nameValidation';
 import _ from 'lodash';
 
 export const systems = persistentStore<SystemType[]>('systems', []);
 
-type PersistedSystem = Omit<SystemType, 'stage'> & { stage?: SystemStage };
-
-// Legacy records are normalized when read or written. Avoid eagerly rewriting
-// the catalog so merely opening the app does not alter older serialized records.
-
 export function getSystem(id: string): SystemType | null {
     const system = get(systems).find((candidate) => candidate.id === id);
-    return system ? _.cloneDeep(normalizeSystemRecord(system as PersistedSystem) as SystemType) : null;
+    return system ? _.cloneDeep(system) : null;
 }
 
 export function createSystem(): SystemType {
@@ -36,8 +30,6 @@ export function createSystem(): SystemType {
 export function saveSystem(system: SystemType): void {
     systems.update((storedSystems) => {
         const index = storedSystems.findIndex((storedSystem) => storedSystem.id === system.id);
-        // Preserve the historical serialized shape exactly. Legacy records are
-        // normalized only by getSystem when they enter domain logic.
         const nextSystem = _.cloneDeep(system);
 
         if (index === -1) {
@@ -86,10 +78,9 @@ export function cloneSystem(id: string, namesInCurrentSession: string[] = []): S
 
     const clone = _.cloneDeep(system);
     clone.id = generateId(get(systems).map((storedSystem) => storedSystem.id));
-    clone.name = cloneSystemName(
+    clone.name = duplicateName(
         clone.name,
-        namesInCurrentSession,
-        get(systems).map((storedSystem) => storedSystem.name)
+        [...namesInCurrentSession, ...get(systems).map((storedSystem) => storedSystem.name)]
     );
     saveSystem(clone);
     return clone;

@@ -8,7 +8,7 @@
     import type { InterfaceCategory, Port } from '../interfaces';
     import { standardInterfaces, getInterfacesByCategory } from '../interfaces';
     import { customInterfaces, addCustomInterface, getCustomInterfaces } from '../interfaces/customInterfaceStore';
-    import { isNameValid } from '$lib/helpers';
+    import { isNameValid, MAX_EDIT_NAME_LENGTH, truncateName } from '$lib/helpers';
 
     type TabCategory = InterfaceCategory | 'all';
     
@@ -83,8 +83,9 @@
     }
 
     function createCustomInterface(index: number) {
-        if (customInterfaceName.trim()) {
-            const newId = addCustomInterface(customInterfaceName.trim());
+        const trimmedName = truncateName(customInterfaceName.trim());
+        if (trimmedName) {
+            const newId = addCustomInterface(trimmedName);
             selectInterface(index, newId);
         }
     }
@@ -199,8 +200,9 @@
     }
 
     function applyPortInfo(index: number) {
-        if (!isPortNameError && onUpdatePort && tempPortName.trim()) {
-            onUpdatePort(index, tempPortName.trim(), tempPortDescription.trim());
+        const trimmedName = truncateName(tempPortName.trim());
+        if (!isPortNameError && onUpdatePort && trimmedName) {
+            onUpdatePort(index, trimmedName, tempPortDescription.trim());
         }
         showPortInfoEditor = null;
     }
@@ -272,6 +274,7 @@
                                 type="text"
                                 class="port-info-input"
                                 class:error={isPortNameError}
+                                maxlength={MAX_EDIT_NAME_LENGTH}
                                 bind:value={tempPortName}
                                 bind:this={portNameInputRef}
                                 oninput={() => validatePortNameLocal(tempPortName, port.name)}
@@ -414,6 +417,7 @@
                                         type="text"
                                         class="custom-input"
                                         placeholder="Enter interface name..."
+                                        maxlength={MAX_EDIT_NAME_LENGTH}
                                         bind:value={customInterfaceName}
                                         onkeydown={(e) => {
                                             if (e.key === 'Enter') {

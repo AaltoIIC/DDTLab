@@ -5,7 +5,7 @@
     import Connectors from "./Connectors.svelte";
     import { type ElementDataType, type SubsystemDataType } from "$lib/types/types";
     import {
-        generateId, generateName, validateName, MAX_NAME_LENGTH, truncateName
+        generateId, duplicateName, validateName, MAX_EDIT_NAME_LENGTH, truncateName
      } from "$lib/helpers";
     import {
         currentEdges,
@@ -92,9 +92,9 @@
     let nameField: HTMLTextAreaElement | undefined = $state();
     let isNameFocused = $state(false);
 
-    // Unfocused name display: plain text. Names are capped at MAX_NAME_LENGTH
-    // characters (maxlength on the textarea + truncation on save), so no
-    // ellipsis/truncation logic is needed here.
+    // Unfocused name display: plain text. Typing is capped at MAX_EDIT_NAME_LENGTH
+    // (maxlength on the textarea) and names are truncated to MAX_NAME_LENGTH on
+    // save, so no ellipsis/truncation logic is needed here.
     const autoResizeNameField = () => {
         if (!nameField) return;
         nameField.style.height = 'auto';
@@ -132,7 +132,7 @@
 
     const saveNodeName = () => {
         // The name field is a textarea, so collapse pasted newlines into spaces
-        // and cap the length at MAX_NAME_LENGTH characters
+        // and cap the length at MAX_NAME_LENGTH characters on save
         inputName = truncateName(inputName.replace(/\n+/g, ' '));
         autoResizeNameField();
         // When unfocused, show the beginning of the name again if it was scrolled
@@ -201,7 +201,6 @@
         const nodes = get(currentNodes);
         const currentNode = nodes.find(n => n.id === id);
         const elementNames = nodes.map(elem => elem.data.name) as string[];
-        const allNames = elementNames.concat(get(systems).map(s => s.name));
 
         if (currentNode) {
             const newNode = {
@@ -223,7 +222,7 @@
                 subsystemData.subsystemId = newSubsystem.id;
             }
             else {
-                newNode.data.name = generateName('Copy of ' + currentNode.data.name, elementNames);
+                newNode.data.name = duplicateName(String(currentNode.data.name), elementNames);
             }
 
             currentNodes.update(n => [...n, newNode]);
@@ -305,7 +304,7 @@
                 <textarea class="main-name-field {isNameError ? 'error' : ''}"
                     rows={1}
                     spellcheck={false}
-                    maxlength={MAX_NAME_LENGTH}
+                    maxlength={MAX_EDIT_NAME_LENGTH}
                     bind:this={nameField}
                     bind:value={inputName}
                     title={inputName}
@@ -515,6 +514,7 @@
     }
     /* Unfocused: plain text. Names are capped at MAX_NAME_LENGTH characters,
        so the display simply wraps naturally without truncation. */
+
     .name-display {
         white-space: normal;
         overflow-wrap: break-word;

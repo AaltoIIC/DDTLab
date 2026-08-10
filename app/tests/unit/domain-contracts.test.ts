@@ -1,14 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
 
 // The catalog metadata functions are pure, but their current compatibility
-// module also imports the legacy catalog store. Mock that boundary so unit
-// tests do not initialize the browser-facing store graph.
+// module also imports the browser-facing store graph. Mock that boundary so
+// unit tests do not initialize the localStorage-backed stores.
 vi.mock('$lib/stores/stores.svelte', () => ({
   ckanSites: { subscribe: () => () => {} }
 }));
 import { appendHistoryCursor, redoHistoryIndex, undoHistoryIndex } from '$lib/editor-core/history/historyTransitions';
-import { cloneSystemName, normalizeSystemRecord } from '$lib/domains/system/services/systemRecordNormalization';
-import { generateElementName, generateName, isNameValid, validateName, MAX_NAME_LENGTH, truncateName } from '$lib/shared/validation/nameValidation';
+import {
+  generateElementName,
+  generateName,
+  duplicateName,
+  isNameValid,
+  validateName,
+  MAX_NAME_LENGTH,
+  MAX_EDIT_NAME_LENGTH,
+  truncateName
+} from '$lib/shared/validation/nameValidation';
+import { addCustomInterface, getCustomInterfaces } from '$lib/concept-stage/interfaces/customInterfaceStore';
 import { generateId } from '$lib/shared/identifiers';
 import { checkCompatibility } from '$lib/concept-stage/interfaces/compatibility';
 import { ensureUniqueName, sanitizeXMLName } from '$lib/exporters/ssd/mappings';
@@ -27,16 +36,9 @@ describe('editor history transitions', () => {
 });
 
 describe('system compatibility contracts', () => {
-  it('normalizes legacy records without mutating the input', () => {
-    const legacy = { stage: undefined, requirements: undefined, partDefinitions: undefined, itemDefinitions: undefined, packages: undefined };
-    const normalized = normalizeSystemRecord(legacy);
-    expect(normalized).toMatchObject({ stage: 'design', requirements: [], partDefinitions: [], itemDefinitions: [], packages: [] });
-    expect(legacy).toEqual({ stage: undefined, requirements: undefined, partDefinitions: undefined, itemDefinitions: undefined, packages: undefined });
-  });
-
-  it('keeps clone names unique across the active session and catalog', () => {
-    expect(cloneSystemName('Ship', ['Copy of Ship'], ['Ship'])).toBe('Copy of Ship (2)');
-    expect(cloneSystemName('Ship', [], ['Ship'])).toBe('Copy of Ship');
+  it('keeps duplicate names unique across the active session and catalog', () => {
+    expect(duplicateName('Ship', ['Ship', 'Ship (2)'])).toBe('Ship (3)');
+    expect(duplicateName('Ship', ['Ship'])).toBe('Ship (2)');
   });
 });
 
@@ -55,6 +57,29 @@ describe('shared naming and identifier contracts', () => {
     expect(truncateName('short')).toBe('short');
     expect(truncateName('x'.repeat(60))).toBe('x'.repeat(40));
     expect(truncateName('x'.repeat(40))).toBe('x'.repeat(40));
+  });
+
+  it('leaves room for duplicate suffixes via the edit-field soft cap', () => {
+    expect(MAX_EDIT_NAME_LENGTH).toBe(36);
+    expect(MAX_EDIT_NAME_LENGTH).toBeLessThan(MAX_NAME_LENGTH);
+  });
+
+  it('generates numbered duplicates that fit the hard cap', () => {
+    // A 36-char name plus " (2)" reaches exactly MAX_NAME_LENGTH
+    const maxBase = 'x'.repeat(36);
+    expect(duplicateName(maxBase, [maxBase])).toBe('x'.repeat(36) + ' (2)');
+    expect(duplicateName(maxBase, [maxBase]).length).toBe(MAX_NAME_LENGTH);
+    // A longer base is trimmed so the numeric suffix is never cut off
+    const longBase = 'y'.repeat(50);
+    const duplicate = duplicateName(longBase, [longBase]);
+    expect(duplicate.length).toBeLessThanOrEqual(MAX_NAME_LENGTH);
+    expect(duplicate.endsWith('(2)')).toBe(true);
+  });
+
+  it('caps custom interface names when created', () => {
+    const longName = 'x'.repeat(60);
+    const id = addCustomInterface(longName);
+    expect(getCustomInterfaces().find(i => i.id === id)?.name).toBe('x'.repeat(40));
   });
 
   it('generates a six-character id not present in the supplied ids', () => {

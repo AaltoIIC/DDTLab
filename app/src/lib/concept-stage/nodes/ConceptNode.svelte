@@ -5,7 +5,7 @@
     import { Grid2X2, Squircle, X, Lock } from '@lucide/svelte';
     import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
-    import { validateName, generateName, MAX_NAME_LENGTH, truncateName } from '$lib/helpers';
+    import { validateName, duplicateName, MAX_EDIT_NAME_LENGTH, truncateName } from '$lib/helpers';
     import { navigateIntoNode } from '../nodeViewStore';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
@@ -317,7 +317,7 @@
                 data: {
                     ...currentNode.data,
                     id: `${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-                    declaredName: generateName(String(currentNode.data.declaredName), existingNames),
+                    declaredName: duplicateName(String(currentNode.data.declaredName), existingNames),
                     mass: currentNode.data.mass || 0, // Copy mass value
                     inputs: Array.isArray(currentNode.data.inputs) ? currentNode.data.inputs.map(input => ({...input})) : [],
                     outputs: Array.isArray(currentNode.data.outputs) ? currentNode.data.outputs.map(output => ({...output})) : [],
@@ -475,7 +475,7 @@
                     class="field-input"
                     class:error={isNameError}
                     type="text"
-                    maxlength={MAX_NAME_LENGTH}
+                    maxlength={MAX_EDIT_NAME_LENGTH}
                     bind:value={tempName}
                     oninput={validateNameLocal}
                     onblur={handleNameEdit}

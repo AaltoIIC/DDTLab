@@ -2,7 +2,7 @@
     import { type Writable } from 'svelte/store';
     import { type ItemDefinition, type PartDefinition, type SysMLDefinition } from '$lib/types/types'
     import { currentPartDefinitions, currentItemDefinitions, addToHistory } from '$lib/stores/stores.svelte'
-    import { formatDate, generateId } from '$lib/helpers';
+    import { formatDate, generateId, duplicateName } from '$lib/helpers';
     import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, Search, CirclePlus, SquarePen, defaultAttributes, Grid2x2, Squircle } from '@lucide/svelte';
     import { slide, fade } from 'svelte/transition';
     import { capitalize } from 'lodash';
@@ -61,7 +61,7 @@
         const duplicate: SysMLDefinition = {
             ...original,
             id: generateId($currentDefs.map( p => p.id )),
-            name: `${original.name} (Copy)`,
+            name: duplicateName(original.name, $currentDefs.map(d => d.name)),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };

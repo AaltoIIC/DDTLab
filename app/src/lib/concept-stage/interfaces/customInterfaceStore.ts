@@ -1,6 +1,7 @@
 import { writable, derived, get } from 'svelte/store';
 import type { InterfaceDefinition } from './types';
 import { standardInterfaces } from './definitions';
+import { truncateName } from '$lib/helpers';
 
 // Store for custom user-defined interfaces
 export const customInterfaces = writable<Record<string, InterfaceDefinition>>({});
@@ -10,7 +11,7 @@ export function addCustomInterface(name: string, description?: string): string {
   const id = `custom-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   const newInterface: InterfaceDefinition = {
     id,
-    name,
+    name: truncateName(name),
     category: 'other',
     specifications: {
       // Custom interfaces don't have predefined specifications

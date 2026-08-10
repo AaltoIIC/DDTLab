@@ -38,7 +38,7 @@ describe('editor session controller', () => {
     expect(get(session.currentEdges)).toEqual([]);
   });
 
-  it('creates a design session without a synthetic root node', async () => {
+  it('creates a design session with empty nodes and a canonical redirect', async () => {
     const { controller, session } = await loadSessionModules();
     const result = controller.initializeEditorSession({ stage: 'design' });
 
@@ -56,7 +56,7 @@ describe('editor session controller', () => {
       id: 'system-1',
       name: 'Existing',
       date: 'today',
-      nodes: [{ id: 'root', type: 'RootSystem', data: {}, position: { x: 0, y: 150 } } as Node, ...nodes],
+      nodes,
       edges: [],
       requirements: [],
       partDefinitions: [],
@@ -67,8 +67,6 @@ describe('editor session controller', () => {
     systems.set([system]);
 
     expect(controller.initializeEditorSession({ id: system.id, stage: 'concept' }).kind).toBe('ready');
-    expect(get(session.currentNodes).every((node) => node.id !== 'root' && node.type !== 'RootSystem')).toBe(true);
-    expect(get(session.currentNodes).every((node) => node.parentId !== 'root')).toBe(true);
     expect(get(session.currentNodes).map((node) => node.position)).toEqual([
       { x: 100, y: 100 },
       { x: 450, y: 380 }

@@ -14,7 +14,9 @@
         isNameValid,
         generateName,
         generateId,
-        selectNode
+        selectNode,
+        MAX_EDIT_NAME_LENGTH,
+        truncateName
     } from '$lib/helpers';
 
     interface Props {
@@ -143,7 +145,7 @@
             (newNodes[nodeIndex].data.element as any).connectors.push(
                 {
                     handleId: generateId(existingHandleIds),
-                    name: newConnectorName,
+                    name: truncateName(newConnectorName),
                     VSSoClass: newConnectorClass,
                     type: type,
                     dataType: newConnectorDataType?.value,
@@ -163,7 +165,7 @@
             const connector = (newNodes.find((node) => node.id === elementName)?.data as any)
                 .element.connectors.find((connector: any) => connector.name === connectorName)
 
-            connector.name = newConnectorName;
+            connector.name = truncateName(newConnectorName);
             connector.VSSoClass = newConnectorClass;
             connector.dataType = newConnectorDataType?.value;
             connector.unit = newConnectorUnit?.value;
@@ -210,6 +212,7 @@
         <span>Name:</span>
         <Input class="w-[142px] h-8 {isNameError ? 'error-outline' : ''}"
             bind:value={newConnectorName}
+            maxlength={MAX_EDIT_NAME_LENGTH}
             on:input={validateConnectorName}
         />
     </div>

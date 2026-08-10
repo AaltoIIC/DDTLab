@@ -5,7 +5,7 @@
         import { useUpdateNodeInternals, NodeResizeControl, type Node, type Edge } from '@xyflow/svelte';
         import { currentNodes, currentEdges, addToHistory, currentPackages } from '$lib/stores/stores.svelte';
     import type { PackageTemplate } from '$lib/types/types';
-    import { generateName, validateName, MAX_NAME_LENGTH, truncateName } from '$lib/helpers';
+    import { generateName, validateName, MAX_EDIT_NAME_LENGTH, truncateName } from '$lib/helpers';
     import { activeViewpointDetails, viewpoints } from '../viewpoints/viewpointStore';
     import ContextMenu from '../ContextMenu.svelte';
     import { get } from 'svelte/store';
@@ -342,7 +342,7 @@
                     class="package-title"
                     class:error={isNameError}
                     type="text"
-                    maxlength={MAX_NAME_LENGTH}
+                    maxlength={MAX_EDIT_NAME_LENGTH}
                     bind:value={tempName}
                     oninput={validateNameLocal}
                     onblur={handleNameEdit}

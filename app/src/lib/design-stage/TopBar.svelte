@@ -10,7 +10,7 @@
         undoHistory,
         redoHistory
     } from "$lib/stores/stores.svelte";
-    import { isNameValid, MAX_NAME_LENGTH, truncateName } from "$lib/helpers";
+    import { isNameValid, MAX_EDIT_NAME_LENGTH, truncateName } from "$lib/helpers";
     import { goto } from "$app/navigation";
     import { CircleQuestionMark } from '@lucide/svelte';
 
@@ -84,7 +84,7 @@
     });
 
     const updateSystemName = () => {
-        // Cap the system name at MAX_NAME_LENGTH characters
+        // Cap the system name at MAX_NAME_LENGTH characters on save/input
         currentName = truncateName(currentName);
         const isNameTaken = $systems.filter(s => s.id !== $currentSystemMeta.id)
             .map(s => s.name.replace(/\s+/g, '').toLowerCase())
@@ -163,7 +163,7 @@
             bind:value={currentName}
             bind:this={nameInput}
             spellcheck={false}
-            maxlength={MAX_NAME_LENGTH}
+            maxlength={MAX_EDIT_NAME_LENGTH}
             oninput={updateSystemName}
             onblur={handleNameBlur}
             aria-label="System name"

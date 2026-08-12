@@ -495,6 +495,7 @@ function mapDatasetToComponent(
 		parameterCount,
 		variables,
 		catalogSource: 'digitalTwin',
+		isSecure: site.isSecure,
 		dcatOpenTorsionMetadata: otMetadata
 	} as FMIComponentType;
 }

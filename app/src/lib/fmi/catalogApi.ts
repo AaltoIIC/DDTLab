@@ -251,7 +251,8 @@ function mapCatalogFmuToComponent(fmu: CatalogFmu): FMIComponentType {
         outputCount: fmu.output_count,
         parameterCount: fmu.parameter_count,
         variables: (fmu.variables || []).map(mapCatalogVariable).filter(Boolean) as FMIVariableType[],
-        catalogSource: 'api'
+        catalogSource: 'api',
+        isSecure: true
     };
 }
 

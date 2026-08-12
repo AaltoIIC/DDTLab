@@ -27,6 +27,7 @@ import {
 } from '$lib/helpers';
 
 import { writable, get, derived } from 'svelte/store';
+import { browser } from '$app/environment';
 import persistentStore from './persistentStore';
 import {
     notification,
@@ -756,7 +757,8 @@ function mergeBoundFmiComponents(bindingsBySourceNodeId: Record<string, ConceptF
                 isUserUploaded: false,
                 oemName: binding.oemName ?? undefined,
                 oemShortCode: binding.oemShortCode ?? undefined,
-                catalogSource: 'api'
+                catalogSource: 'api',
+                isSecure: true
             });
             existingIds.add(binding.fmuId);
         }
@@ -807,6 +809,8 @@ export interface CkanSite {
 	name: string;
 	baseUrl: string;
 	catalogUrl: string;
+	/** Whether this catalog is a trusted/secure source. Secure catalogs (and their digital twins) get a green checkmark in the FMU catalog. */
+	isSecure: boolean;
 }
 
 export const ckanSites = persistentStore<CkanSite[]>('ckanSites', [
@@ -814,20 +818,31 @@ export const ckanSites = persistentStore<CkanSite[]>('ckanSites', [
 		id: 'securedigitaltwins',
 		name: 'securedigitaltwins.com',
 		baseUrl: 'https://securedigitaltwins.com',
-		catalogUrl: 'https://securedigitaltwins.com/catalog.jsonld'
-	},
-	{
-		id: 'trustedtwincatalog',
-		name: 'trustedtwincatalog.com',
-		baseUrl: 'https://trustedtwincatalog.com',
-		catalogUrl: 'https://trustedtwincatalog.com/catalog.jsonld'
+		catalogUrl: 'https://securedigitaltwins.com/catalog.jsonld',
+		isSecure: true
 	}
 ]);
 
-export function addCkanSite(name: string, catalogUrl: string) {
+// One-time migration of previously persisted ckanSites data (v1 → v2):
+// - legacy entries lack `isSecure`; backfill it (securedigitaltwins is the trusted default)
+// - drop the legacy trustedtwincatalog entry so it can be re-added manually for validation
+if (browser && !localStorage.getItem('ckanSites.migrated.v2')) {
+	const migrated = get(ckanSites)
+		.map(site => ({
+			...site,
+			isSecure: typeof site.isSecure === 'boolean'
+				? site.isSecure
+				: site.id === 'securedigitaltwins' || site.baseUrl.includes('securedigitaltwins.com')
+		}))
+		.filter(site => site.id !== 'trustedtwincatalog');
+	ckanSites.set(migrated);
+	localStorage.setItem('ckanSites.migrated.v2', '1');
+}
+
+export function addCkanSite(name: string, catalogUrl: string, isSecure = false) {
 	const baseUrl = new URL(catalogUrl).origin;
 	const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `ckan-${Date.now()}`;
-	const site: CkanSite = { id, name, baseUrl, catalogUrl };
+	const site: CkanSite = { id, name, baseUrl, catalogUrl, isSecure };
 
 	ckanSites.update(sites => {
 		if (sites.some(s => s.id === id || s.catalogUrl === catalogUrl)) return sites;

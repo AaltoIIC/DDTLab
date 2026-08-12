@@ -194,6 +194,8 @@ export interface FMIComponentType {
     parameterCount?: number;
     variables?: FMIVariableType[];
     catalogSource?: 'api' | 'mock' | 'upload' | 'digitalTwin';
+    /** Whether this component comes from a trusted/secure catalog source (OEM platform or a secure CKAN catalog). */
+    isSecure?: boolean;
     /** OpenTorsion-compatible metadata key-value pairs for simulation */
     dcatOpenTorsionMetadata?: Array<{ key: string; value: string }>;
 }

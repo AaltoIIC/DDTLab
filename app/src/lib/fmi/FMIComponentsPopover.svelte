@@ -29,15 +29,16 @@
     let newCatalogUrl = $state('');
     let addCatalogError = $state('');
     let isAddingCatalog = $state(false);
+    let newCatalogIsSecure = $state(false);
 
     const popoverWidth = 360;
 
     // ─── Dynamic source filters: OEM Platform (hardcoded) + CKAN sites from store ───
 
     let sourceFilters = $derived([
-        { value: 'all', label: 'All sources' },
-        { value: 'oem', label: 'OEM Platform' },
-        ...$ckanSites.map((site) => ({ value: site.id, label: site.name }))
+        { value: 'all', label: 'All sources', isSecure: false },
+        { value: 'oem', label: 'OEM Platform', isSecure: true },
+        ...$ckanSites.map((site) => ({ value: site.id, label: site.name, isSecure: site.isSecure }))
     ]);
 
     // ─── Dynamic manufacturer filters: derived from actual oemName on components ───
@@ -310,10 +311,13 @@
                 const text = await response.text().catch(() => '');
                 throw new Error(`Catalog fetch failed (${response.status}): ${text.slice(0, 120)}`);
             }
-            addCkanSite(name, url);
+            addCkanSite(name, url, newCatalogIsSecure);
             newCatalogName = '';
             newCatalogUrl = '';
+            newCatalogIsSecure = false;
             showAddCatalog = false;
+            // Load the newly added catalog's digital twins immediately (bypasses the session cache)
+            loadCatalogComponents(true);
         } catch (error) {
             addCatalogError = error instanceof Error ? error.message : 'Failed to add catalog';
         } finally {
@@ -493,6 +497,10 @@
             <div class="add-catalog-form">
                 <input type="text" placeholder="Catalog name (e.g., My Catalog)" bind:value={newCatalogName} class="add-catalog-input" />
                 <input type="url" placeholder="https://example.com/catalog.jsonld" bind:value={newCatalogUrl} class="add-catalog-input" />
+                <label class="add-catalog-secure">
+                    <input type="checkbox" bind:checked={newCatalogIsSecure} />
+                    <span>Secure catalog</span>
+                </label>
                 <button class="add-catalog-btn" onclick={handleAddCatalog} disabled={isAddingCatalog}>
                     {isAddingCatalog ? 'Adding...' : 'Add Catalog'}
                 </button>
@@ -506,6 +514,9 @@
                     <span class="ckan-sites-label">Active catalogs</span>
                     {#each $ckanSites as site}
                         <div class="ckan-site-row">
+                            <span class="ckan-site-secure {site.isSecure ? 'is-secure' : ''}" title={site.isSecure ? 'Secure catalog' : 'Not secure catalog'}>
+                                {site.isSecure ? 'Secure' : 'Not secure'}
+                            </span>
                             <span class="ckan-site-name">{site.name}</span>
                             <button class="ckan-site-remove" onclick={() => handleRemoveCatalog(site.id)} title="Remove {site.name}">
                                 <Trash2 size={12} />
@@ -543,6 +554,11 @@
                     onclick={() => sourceFilter = filter.value}
                     title={filter.label}
                 >
+                    {#if filter.isSecure}
+                        <svg class="source-secure-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m9 12 2 2 4-4" />
+                        </svg>
+                    {/if}
                     {filter.label}
                 </button>
             {/each}
@@ -593,11 +609,21 @@
                                 >
                                     <div class="component-main">
                                         <span class="component-name">{component.name}</span>
-                                        {#if $componentLinks[selectedNodeId || ''] === component.id}
-                                            <svg class="link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                                            </svg>
-                                        {/if}
+                                        <div class="component-main-actions">
+                                            {#if component.isSecure}
+                                                <span class="secure-check" title="Secure source">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                        <circle cx="12" cy="12" r="9" fill="rgba(22, 163, 74, 0.12)" stroke="currentColor" />
+                                                        <path d="m8.5 12.5 2.5 2.5 4.5-5" />
+                                                    </svg>
+                                                </span>
+                                            {/if}
+                                            {#if $componentLinks[selectedNodeId || ''] === component.id}
+                                                <svg class="link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                                                </svg>
+                                            {/if}
+                                        </div>
                                     </div>
                                     <div class="component-description">{component.description}</div>
                                     <div class="component-details">
@@ -849,6 +875,21 @@
         cursor: not-allowed;
     }
 
+    .add-catalog-secure {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: rgba(0, 0, 0, 0.65);
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .add-catalog-secure input {
+        accent-color: #16a34a;
+        cursor: pointer;
+    }
+
     .add-catalog-error {
         margin-top: 6px;
         font-size: 11px;
@@ -889,6 +930,22 @@
         white-space: nowrap;
         flex: 1;
         min-width: 0;
+    }
+
+    .ckan-site-secure {
+        font-size: 10px;
+        font-weight: 500;
+        padding: 1px 5px;
+        border-radius: 3px;
+        margin-right: 6px;
+        background: rgba(0, 0, 0, 0.06);
+        color: rgba(0, 0, 0, 0.5);
+        flex-shrink: 0;
+    }
+
+    .ckan-site-secure.is-secure {
+        background: rgba(22, 163, 74, 0.12);
+        color: #16a34a;
     }
 
     .ckan-site-remove {
@@ -982,6 +1039,9 @@
         font-weight: 500;
         line-height: 1.2;
         text-align: left;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
     }
 
     .source-filter button:hover {
@@ -992,6 +1052,13 @@
         background: white;
         color: var(--main-dark-color);
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .source-secure-check {
+        width: 10px;
+        height: 10px;
+        color: #16a34a;
+        flex-shrink: 0;
     }
 
     .source-badge {
@@ -1150,6 +1217,27 @@
         line-clamp: 2;
     }
     
+    .component-main-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+
+    .secure-check {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #16a34a;
+        flex-shrink: 0;
+    }
+
+    .secure-check svg {
+        width: 14px;
+        height: 14px;
+    }
+
     .link-icon {
         width: 14px;
         height: 14px;

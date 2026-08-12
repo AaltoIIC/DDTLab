@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { RefreshCw, Plus, Trash2 } from '@lucide/svelte';
+    import { RefreshCw, Plus, ShieldCheck, ShieldOff, Trash2 } from '@lucide/svelte';
     import { fmiComponents, componentLinks, currentNodes, ckanSites, addCkanSite, removeCkanSite, type CkanSite } from '$lib/stores/stores.svelte';
     import type { FMIComponentType } from '$lib/types/types';
     import { fetchCatalogFmuComponents, getCatalogApiBaseUrl } from './catalogApi';
@@ -288,11 +288,16 @@
     async function handleAddCatalog() {
         addCatalogError = '';
         const name = newCatalogName.trim();
-        const url = newCatalogUrl.trim();
+        let url = newCatalogUrl.trim();
 
         if (!name || !url) {
             addCatalogError = 'Both name and catalog URL are required.';
             return;
+        }
+
+        // Allow scheme-less input like "trustedtwincatalog.com/catalog.jsonld"
+        if (!/^https?:\/\//i.test(url)) {
+            url = `https://${url}`;
         }
 
         // Only accept jsonld catalog URLs
@@ -514,8 +519,14 @@
                     <span class="ckan-sites-label">Active catalogs</span>
                     {#each $ckanSites as site}
                         <div class="ckan-site-row">
-                            <span class="ckan-site-secure {site.isSecure ? 'is-secure' : ''}" title={site.isSecure ? 'Secure catalog' : 'Not secure catalog'}>
-                                {site.isSecure ? 'Secure' : 'Not secure'}
+                            <span class="ckan-site-secure {site.isSecure ? 'is-secure' : 'is-insecure'}" title={site.isSecure ? 'Secure catalog' : 'Not secure catalog'}>
+                                {#if site.isSecure}
+                                    <ShieldCheck size={11} strokeWidth={2.4} />
+                                    <span>Secure</span>
+                                {:else}
+                                    <ShieldOff size={11} strokeWidth={2.4} />
+                                    <span>Not secure</span>
+                                {/if}
                             </span>
                             <span class="ckan-site-name">{site.name}</span>
                             <button class="ckan-site-remove" onclick={() => handleRemoveCatalog(site.id)} title="Remove {site.name}">
@@ -554,10 +565,16 @@
                     onclick={() => sourceFilter = filter.value}
                     title={filter.label}
                 >
-                    {#if filter.isSecure}
-                        <svg class="source-secure-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m9 12 2 2 4-4" />
-                        </svg>
+                    {#if filter.value !== 'all'}
+                        {#if filter.isSecure}
+                            <span class="source-secure-check">
+                                <ShieldCheck size={14} strokeWidth={2.5} />
+                            </span>
+                        {:else}
+                            <span class="source-insecure-check">
+                                <ShieldOff size={14} strokeWidth={2.5} />
+                            </span>
+                        {/if}
                     {/if}
                     {filter.label}
                 </button>
@@ -610,12 +627,13 @@
                                     <div class="component-main">
                                         <span class="component-name">{component.name}</span>
                                         <div class="component-main-actions">
-                                            {#if component.isSecure}
+                                            {#if component.isSecure === true}
                                                 <span class="secure-check" title="Secure source">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                                        <circle cx="12" cy="12" r="9" fill="rgba(22, 163, 74, 0.12)" stroke="currentColor" />
-                                                        <path d="m8.5 12.5 2.5 2.5 4.5-5" />
-                                                    </svg>
+                                                    <ShieldCheck size={18} strokeWidth={2.7} />
+                                                </span>
+                                            {:else if component.isSecure === false}
+                                                <span class="insecure-check" title="Not a secure source">
+                                                    <ShieldOff size={18} strokeWidth={2.7} />
                                                 </span>
                                             {/if}
                                             {#if $componentLinks[selectedNodeId || ''] === component.id}
@@ -933,9 +951,12 @@
     }
 
     .ckan-site-secure {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
         font-size: 10px;
         font-weight: 500;
-        padding: 1px 5px;
+        padding: 2px 6px;
         border-radius: 3px;
         margin-right: 6px;
         background: rgba(0, 0, 0, 0.06);
@@ -946,6 +967,11 @@
     .ckan-site-secure.is-secure {
         background: rgba(22, 163, 74, 0.12);
         color: #16a34a;
+    }
+
+    .ckan-site-secure.is-insecure {
+        background: rgba(220, 38, 38, 0.1);
+        color: #dc2626;
     }
 
     .ckan-site-remove {
@@ -1055,9 +1081,16 @@
     }
 
     .source-secure-check {
-        width: 10px;
-        height: 10px;
+        display: inline-flex;
+        align-items: center;
         color: #16a34a;
+        flex-shrink: 0;
+    }
+
+    .source-insecure-check {
+        display: inline-flex;
+        align-items: center;
+        color: #dc2626;
         flex-shrink: 0;
     }
 
@@ -1233,10 +1266,14 @@
         flex-shrink: 0;
     }
 
-    .secure-check svg {
-        width: 14px;
-        height: 14px;
+    .insecure-check {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #dc2626;
+        flex-shrink: 0;
     }
+
 
     .link-icon {
         width: 14px;

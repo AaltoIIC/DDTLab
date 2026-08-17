@@ -182,6 +182,10 @@
         zoomLevel = value.zoom;
     });
 
+    // Hide the button once the canvas is zoomed out below this factor (default zoom is 1)
+    const ZOOM_HIDE_THRESHOLD = 0.5;
+    let hiddenByZoom = $derived(zoomLevel < ZOOM_HIDE_THRESHOLD);
+
     const deleteElementNode = () => {
         currentNodes.update((nodes) => {
             return nodes.filter((node) => node.id !== id);
@@ -372,7 +376,7 @@
 
     </div>
     <div class="delete-btn-wrapper">
-        <button class="delete-btn {hover ? 'hover' : ''}" aria-label="Delete"
+        <button class="delete-btn {hover ? 'hover' : ''} {hiddenByZoom ? 'zoom-hidden' : ''}" aria-label="Delete"
         onclick={deleteElementNode}
         style="transform: scale({1/zoomLevel});">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -441,6 +445,9 @@
     .delete-btn.hover {
         opacity: 1;
         pointer-events: all;
+    }
+    .delete-btn.zoom-hidden {
+        display: none;
     }
     .delete-btn-wrapper {
         width: 52px;

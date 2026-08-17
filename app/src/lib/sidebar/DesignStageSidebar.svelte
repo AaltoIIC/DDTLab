@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
+    import { useSvelteFlow } from '@xyflow/svelte';
     import MenuOption from "$lib/sidebar/MenuOption.svelte";
     import {
         currentNodes,
@@ -303,14 +304,32 @@
         }
     }
 
+    // The design stage shares a single SvelteFlowProvider, so the sidebar can
+    // use the flow instance to convert screen coordinates to canvas coordinates.
+    const { screenToFlowPosition } = useSvelteFlow();
+
+    // Returns the top-left position for a new 200x200 element node placed at the
+    // center of the currently visible canvas, so new nodes land where the user is
+    // looking regardless of how the viewport has been panned/zoomed.
+    const getViewportCenterPosition = () => {
+        const editor = document.getElementById('design-editor');
+        const rect = editor?.getBoundingClientRect();
+        if (!rect) return { x: 0, y: 0 };
+        const center = screenToFlowPosition(
+            { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+            { snapToGrid: false }
+        );
+        return { x: center.x - 100, y: center.y - 100 };
+    };
+
     const handleAddElement = (option: string) => {
-        const nodesLength = $currentNodes.length;
+        const position = getViewportCenterPosition();
         if (option === 'Component') {
             currentNodes.update((nodes) => {
                 return [...nodes, {
                     id: generateId($currentNodes.map(n => n.id)),
                     type: 'Element',
-                    position: { x: 100, y: 100 + nodesLength * 100 },
+                    position,
                     data: {
                         name: nameElement('component'),
                         element: {
@@ -339,7 +358,7 @@
             const node = {
                 id: nodeId,
                 type: 'Element',
-                position: { x: 30, y: 30 + nodesLength * 100 },
+                position,
                 data: {
                     name: sysName,
                     element: elementData

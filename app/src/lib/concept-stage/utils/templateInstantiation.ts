@@ -122,7 +122,7 @@ export function createData(definition: SysMLDefinition): {nodes: Node[], edges: 
             type: def.type,
             position: initialPos,
             data: {
-                declaredName: `New "${def.name}" ${capitalize(def.type)}`,
+                declaredName: `New ${def.name} ${capitalize(def.type)}`,
                 definition: def.name,
                 comment: '',
                 mass: 0, // Initialize mass to 0

@@ -36,8 +36,8 @@
       return 'x';
     }
 </script>
-<!-- Design stage canvas: warm orange tint + the dot pattern used on the dashboard
-     illustrations, over a subtle vertical gradient. -->
+<!-- Design stage canvas: blueprint-style tile grid + a soft top glow, in the
+     design stage's warm orange theme. -->
 <div id="design-editor" class="design-canvas">
   <SvelteFlow
     nodes={currentNodes}
@@ -56,11 +56,10 @@
     fitView
   >
     <Controls position="bottom-right" />
-    <!-- The × pattern lives in xyflow's <Background> so it pans/zooms with the
-         viewport; the wrapper only carries the static gradient tint. The Cross
-         variant draws a + tile; the :global rule below rotates it 45° so the
-         pattern reads as ×'s. -->
-    <Background variant={BackgroundVariant.Cross} gap={140} size={100} lineWidth={2} patternColor="rgba(253, 82, 0, 0.1)" bgColor="transparent" />
+    <!-- The grid lines live in xyflow's <Background> so they pan/zoom with the
+         viewport; the wrapper carries the static tint + glow. The Lines variant
+         tiles into a continuous grid, matching the concept stage. -->
+    <Background variant={BackgroundVariant.Lines} gap={60} lineWidth={2} patternColor="rgba(253, 82, 0, 0.05)" bgColor="transparent" />
     <MiniMap nodeColor={minimapNodeColor}/>
     <ViewportFitter signal={$currentViewSystemId} />
   </SvelteFlow>
@@ -69,7 +68,14 @@
     .design-canvas {
         width: 100%;
         height: 100%;
-        background: linear-gradient(180deg, rgba(253, 80, 0, 0.05) 0%, rgba(253, 80, 0, 0.1) 100%);
+        /* Blueprint-style tile look (mirrors the concept stage) but in the
+           design stage's orange theme: light warm base + a soft white glow from
+           the top. The gridlines are drawn by <Background> and pan/zoom with
+           the viewport. */
+        background-color: #fdf4ec;
+        background-image:
+            radial-gradient(120% 85% at 50% 0%, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 55%);
+        background-size: 100% 100%;
     }
     /* Keep the flow itself transparent so the themed wrapper shows through, and
        make it a stacking context (isolation: isolate) so xyflow's pattern layer
@@ -77,14 +83,5 @@
     .design-canvas :global(.svelte-flow) {
         background-color: transparent;
         isolation: isolate;
-    }
-    /* Rotate the Cross-variant pattern so the + marks become ×'s. The path
-       lives inside xyflow's SVG <pattern>, so it must be targeted globally;
-       transform-box: fill-box makes the rotation spin around the cross's own
-       center, keeping the tiling aligned. */
-    .design-canvas :global(.svelte-flow__background-pattern.cross) {
-        transform: rotate(45deg);
-        transform-box: fill-box;
-        transform-origin: center;
     }
 </style>

@@ -25,6 +25,10 @@
     viewport.subscribe((value) => {
         zoomLevel = value.zoom;
     });
+
+    // Hide the button once the canvas is zoomed out below this factor (default zoom is 1)
+    const ZOOM_HIDE_THRESHOLD = 0.5;
+    let hiddenByZoom = $derived(zoomLevel < ZOOM_HIDE_THRESHOLD);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -33,7 +37,7 @@
     style="transform: scale({1/zoomLevel});"
     onmouseenter={() => {btnOnHover = true; nodeOnHover = false;}}
     onmouseleave={() => {btnOnHover = false; nodeOnHover = true;}}>
-    <button class="add-btn {nodeOnHover || btnOnHover || isAddingNew ? 'hover' : ''}"
+    <button class="add-btn {nodeOnHover || btnOnHover || isAddingNew ? 'hover' : ''} {hiddenByZoom ? 'zoom-hidden' : ''}"
         aria-label="Add Connector"
         onclick={() => {selectNode(elementName);}}
         bind:this={addBtn}>
@@ -81,5 +85,8 @@
     .add-btn.hover {
         opacity: 1;
         pointer-events: all;
+    }
+    .add-btn.zoom-hidden {
+        display: none;
     }
 </style>

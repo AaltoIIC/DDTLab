@@ -177,7 +177,9 @@ test.describe('dashboard and editor lifecycle', () => {
     await page.getByRole('button', { name: 'Component', exact: true }).click();
     await expect(page.locator('.main-element-node')).toHaveCount(1);
 
-    // Open the connector add popup on the output side
+    // Open the connector add popup on the output side. The button is only
+    // revealed while the node is hovered, so hover the node first (like a user).
+    await page.locator('.main-element-node').hover();
     const addConnectorBtn = page.locator('.main-connectors.output [aria-label="Add Connector"]');
     await addConnectorBtn.click();
     const popup = page.locator('.main-add-layover.open');

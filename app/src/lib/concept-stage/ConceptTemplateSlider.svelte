@@ -2,7 +2,8 @@
     import { formatDate, generateName } from '$lib/helpers';
     import { ChevronRight, X, FileText, Trash2, Download, Upload, Copy, PackagePlus } from '@lucide/svelte';
     import { fade, slide } from 'svelte/transition';
-    import { templates, deleteTemplate, duplicateTemplate, exportTemplate, importTemplate, currentPackages, currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
+    import { templates, deleteTemplate, duplicateTemplate, exportTemplate, importTemplate, currentPackages, currentNodes, currentEdges, addToHistory, canvasNodeIdForPackageEntry } from '$lib/stores/stores.svelte';
+    import { deleteCanvasPackageMembers } from './sysml/session';
     import type { ConceptTemplate, PackageTemplate } from '$lib/types/types';
     import type { Node } from '@xyflow/svelte';
     
@@ -41,6 +42,14 @@
     
     function handleDelete(template: ConceptTemplate | PackageTemplate) {
         if (confirm(`Are you sure you want to delete "${template.name}"?`)) {
+            if (template.type === 'package') {
+                // The saved-package list is the source of truth: deleting the
+                // entry unwraps the model package (its members move back to the
+                // model root). The canvas package node itself stays — it turns
+                // back into an unsaved "New Package" overlay (gray styling).
+                const canvasNodeId = canvasNodeIdForPackageEntry(template.id);
+                if (canvasNodeId) deleteCanvasPackageMembers(canvasNodeId);
+            }
             deleteTemplate(template);
         }
     }

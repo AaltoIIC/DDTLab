@@ -10,7 +10,8 @@
     import { get } from 'svelte/store';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { generateName } from '$lib/helpers';
-    import { currentNodeView } from './nodeViewStore';
+    import { currentNodeView, navigationStack } from './nodeViewStore';
+    import { mirrorConnectToScope, seedNodesIntoScope, seedRootCanvasToModel } from './sysml/session';
     import { checkCompatibility } from './interfaces';
     import type { Port } from './interfaces';
     import { instantiateSimpleComponent } from './utils/simpleInstantiation';
@@ -131,6 +132,19 @@
             }
 
             addToHistory();
+
+            // Mirror the dropped content into the semantic session so the new
+            // nodes have model elements (usages, ports, relationships). At the
+            // root level the whole canvas is re-seeded (add-only, idempotent);
+            // inside a model-backed drill-down the drop is seeded under the
+            // view's scope usage. Content dropped inside a legacy nested view
+            // is skipped — those nodes have no model representation.
+            const view = get(currentNodeView);
+            if (view?.semantic?.scopeId) {
+                seedNodesIntoScope(view.semantic.scopeId, newNodes, newEdges);
+            } else if (!view) {
+                seedRootCanvasToModel(get(currentNodes), get(currentEdges));
+            }
         } catch (error) {
             console.error('Failed to instantiate:', error);
         }
@@ -232,6 +246,10 @@
             edge.sourceHandle === pendingConnection.sourceHandle &&
             edge.targetHandle === pendingConnection.targetHandle
         );
+
+        // The canvas edge created below (if any) — mirrored into the model for
+        // a model-backed drill-down connection.
+        let createdCanvasEdge: Edge | undefined;
         
         if (duplicateEdgeIndex !== -1) {
             // console.log('Updating existing edge with compatibility data');
@@ -255,11 +273,26 @@
                 type: 'default',
                 data: edgeData
             };
+            createdCanvasEdge = newEdge;
             
             currentEdges.update(edges => [...edges, newEdge]);
         }
         
         addToHistory();
+
+        // Mirror the connection into the semantic session. At the root the whole
+        // canvas is re-seeded (handles the duplicate-update branch too); inside
+        // a model-backed drill-down the freshly created canvas edge is mirrored
+        // to a relationship owned by the view's scope usage.
+        const view = get(currentNodeView);
+        if (view?.semantic?.scopeId) {
+            if (createdCanvasEdge) {
+                mirrorConnectToScope(view.semantic.scopeId, createdCanvasEdge, get(currentNodes));
+            }
+        } else if (!view) {
+            seedRootCanvasToModel(get(currentNodes), get(currentEdges));
+        }
+
         showConnectionDropdown = false;
         pendingConnection = null;
     }

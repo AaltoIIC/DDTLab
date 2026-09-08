@@ -33,6 +33,8 @@ export {
   namesInNamespace,
   getPortIds
 } from './namespaces';
+export { collectViewElements } from './viewScoping';
+export type { CollectedViewElements, ViewScopeId } from './viewScoping';
 export {
   METACLASS_REGISTRY,
   METACLASS_KEYS,

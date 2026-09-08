@@ -20,6 +20,10 @@
     import DialogBox from '$lib/DialogBox.svelte';
     import { currentNodeView, navigationStack, navigateToRoot, navigateIntoNode } from './nodeViewStore';
     import type { NodeView } from './nodeViewStore';
+    import {
+        bindConceptStageSession,
+        unbindConceptStageSession
+    } from './sysml/session';
     import { onMount, onDestroy } from 'svelte';
     import { get } from 'svelte/store';
     import { Save, Repeat, Send, Eye, EyeOff } from '@lucide/svelte';
@@ -533,6 +537,14 @@
         }
         navigationStack.set([]);
 
+        // Bind the semantic session for this concept system so drill-downs can
+        // be model-backed. Legacy content is never converted: content enters
+        // the model through the semantic authoring path.
+        const systemMeta = get(currentSystemMeta);
+        if (systemMeta?.id) {
+            bindConceptStageSession(systemMeta.id, systemMeta.name);
+        }
+
         // Start the tour only if it's the first time and hasn't been shown
         if (typeof localStorage !== 'undefined' && localStorage.getItem("showedFirstTour") !== "true") {
             firstTimeOpen = true;
@@ -565,6 +577,12 @@
             navigateToRoot();
         }
 
+        // Detach the semantic session for this system.
+        const systemMeta = get(currentSystemMeta);
+        if (systemMeta?.id) {
+            unbindConceptStageSession(systemMeta.id);
+        }
+
         window.removeEventListener('editor-tour-request', requestConceptTour);
 
         // Ensure tour is properly destroyed
@@ -585,6 +603,7 @@
             firstTimeOpen = false;
         }
     }
+
     
     function handleSaveAsTemplate() {
         // Store current view stack before navigating to root

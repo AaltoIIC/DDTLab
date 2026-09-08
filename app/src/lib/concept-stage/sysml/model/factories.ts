@@ -1,7 +1,7 @@
 import { generateId } from '$lib/shared/identifiers';
 import { getMetaclassInfo } from './metaclassRegistry';
 import { SYSML_NORMATIVE } from './normativeConfig';
-import { registerOwnedElement, requireOwner } from './ownership';
+import { registerOwnedElement, requireOwner, requirePortOwner } from './ownership';
 import type {
   AttributeDefinitionElement,
   AttributeUsageElement,
@@ -169,8 +169,7 @@ export function addPortUsage(
   direction?: PortUsageElement['direction']
 ): PortUsageElement {
   requireDefinition(document, definitionId, 'portDefinition', 'Port definition');
-  requireOwner(document, ownerId);
-  if (document.elements[ownerId].metaclass !== 'partUsage') throw new Error(`Port usage owner ${ownerId} cannot own members`);
+  requirePortOwner(document, ownerId);
   const element = {
     ...createElementBase(document, 'portUsage', name, ownerId),
     category: 'usage',

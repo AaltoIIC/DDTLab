@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addItemDefinition,
+  addItemUsage,
+  addPackage,
   addPartDefinition,
   addPartUsage,
   addPortDefinition,
@@ -58,8 +61,18 @@ describe('SysML model finalization (Phase 1)', () => {
     const portDefinition = addPortDefinition(document, 'PowerPort');
     expect(() => addPortUsage(document, 'power', portDefinition.id, 'missing-owner')).toThrow(/does not exist/);
 
+    // Ports are features of part/item types: part definitions and item
+    // usages (tanks, inlets) may own them; plain packages may not.
     const partDefinition = addPartDefinition(document, 'Motor');
-    expect(() => addPortUsage(document, 'power', portDefinition.id, partDefinition.id)).toThrow(/cannot own members/);
+    const typed = addPortUsage(document, 'power', portDefinition.id, partDefinition.id, 'in');
+    expect(typed.ownerId).toBe(partDefinition.id);
+
+    const itemUsage = addItemUsage(document, 'tank', addItemDefinition(document, 'Tank').id);
+    const onItem = addPortUsage(document, 'fuel', portDefinition.id, itemUsage.id, 'out');
+    expect(onItem.ownerId).toBe(itemUsage.id);
+
+    const library = addPackage(document, 'Library');
+    expect(() => addPortUsage(document, 'loose', portDefinition.id, library.id)).toThrow(/cannot own port/);
   });
 
   it('leaves the document untouched when construction fails', () => {

@@ -4,6 +4,11 @@ import { currentNodes, currentEdges } from '$lib/domains/editor-core/state/activ
 import { addToHistory } from '$lib/domains/editor-core/state/editorHistoryNavigationStore';
 import { saveCurrentSystem } from '$lib/domains/editor-core/services/activeEditorActions';
 import { normalizeNodePositions } from '$lib/editor-core/canvas/nodePositionNormalization';
+import {
+    semanticDrillDownScope,
+    projectSemanticDrillDownView,
+    syncDrillDownPresentation
+} from './sysml/session';
 
 /**
  * A level of the concept-stage drill-down navigation. Double-clicking a part or
@@ -17,6 +22,8 @@ export interface NodeView {
     parentId?: string;
     nodes: Node[];
     edges: Edge[];
+    /** Present when this level is a model-backed (semantic) drill-down view. */
+    semantic?: { scopeId: string };
 }
 
 // Stack of nested node views for breadcrumb navigation
@@ -38,6 +45,45 @@ export function navigateIntoNode(nodeId: string, nodeName: string, parentId?: st
     // containers that wrap nodes at the same level, so they cannot be entered.
     const node = nodes.find(n => n.id === nodeId);
     if (!node || (node.type !== 'part' && node.type !== 'item')) return;
+
+    // Model-backed drill-down (Phase 3 live wiring): when the node maps to a
+    // part/item usage in the active semantic session and carries no legacy
+    // nested diagram, the view comes from the model (owned usages + boundary
+    // port artifacts) instead of node.data.nodes. Otherwise the legacy path
+    // below runs unchanged.
+    const semanticScope = semanticDrillDownScope(node);
+    if (semanticScope) {
+        const projected = projectSemanticDrillDownView(semanticScope);
+        // Snapshot the current level into the stack exactly like the legacy path.
+        if (stack.length === 0) {
+            navigationStack.update(s => [{
+                nodeId: 'root',
+                nodeName: 'Root',
+                nodes,
+                edges
+            }]);
+        } else {
+            navigationStack.update(s => {
+                const updated = [...s];
+                updated[updated.length - 1] = { ...updated[updated.length - 1], nodes, edges };
+                return updated;
+            });
+        }
+
+        const newView: NodeView = {
+            nodeId,
+            nodeName,
+            parentId,
+            nodes: projected.nodes,
+            edges: projected.edges,
+            semantic: { scopeId: semanticScope }
+        };
+        navigationStack.update(stack => [...stack, newView]);
+        currentNodes.set(newView.nodes);
+        currentEdges.set(newView.edges);
+        addToHistory();
+        return;
+    }
 
     // If we're at root level (stack is empty), create a root view to save current state
     if (stack.length === 0) {
@@ -130,27 +176,35 @@ export function navigateBack() {
     if (stack.length > 1) {
         // Save current content before navigating back
         const currentView = stack[stack.length - 1];
-        const currentNodeId = currentView.nodeId;
-
-        // Filter out internal port nodes before saving
-        const currentNodesFiltered = get(currentNodes).filter(n => n.type !== 'internalPort');
-        const currentEdgesValue = get(currentEdges);
-
-        // Update the node in the parent level with the current content
         const parentView = stack[stack.length - 2];
-        parentView.nodes = parentView.nodes.map(node => {
-            if (node.id === currentNodeId) {
-                return {
-                    ...node,
-                    data: {
-                        ...node.data,
-                        nodes: currentNodesFiltered,
-                        edges: currentEdgesValue
-                    }
-                };
-            }
-            return node;
-        });
+
+        if (currentView.semantic) {
+            // Model-backed level: drags were already committed to the
+            // presentation map on exit; the model owns the topology, so
+            // nothing is written back into the parent node's legacy data.
+            syncDrillDownPresentation(get(currentNodes));
+        } else {
+            const currentNodeId = currentView.nodeId;
+
+            // Filter out internal port nodes before saving
+            const currentNodesFiltered = get(currentNodes).filter(n => n.type !== 'internalPort');
+            const currentEdgesValue = get(currentEdges);
+
+            // Update the node in the parent level with the current content
+            parentView.nodes = parentView.nodes.map(node => {
+                if (node.id === currentNodeId) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            nodes: currentNodesFiltered,
+                            edges: currentEdgesValue
+                        }
+                    };
+                }
+                return node;
+            });
+        }
 
         // Remove current view from stack
         navigationStack.update(stack => stack.slice(0, -1));
@@ -178,20 +232,32 @@ export function navigateToLevel(targetIndex: number) {
     if (currentLevel >= 0) {
         let updatedStack = [...stack];
 
-        // Filter out internal port nodes before saving
-        const currentNodesFiltered = get(currentNodes).filter(n => n.type !== 'internalPort');
+        if (updatedStack[currentLevel].semantic) {
+            // Model-backed level: persist drags to the presentation map; the
+            // projected nodes stay authoritative in the model, so the stored
+            // stack copy is not overwritten (internal-port artifacts must be
+            // kept for a later restore of this level).
+            syncDrillDownPresentation(get(currentNodes));
+        } else {
+            // Filter out internal port nodes before saving
+            const currentNodesFiltered = get(currentNodes).filter(n => n.type !== 'internalPort');
 
-        updatedStack[currentLevel] = {
-            ...updatedStack[currentLevel],
-            nodes: currentNodesFiltered,
-            edges: get(currentEdges)
-        };
+            updatedStack[currentLevel] = {
+                ...updatedStack[currentLevel],
+                nodes: currentNodesFiltered,
+                edges: get(currentEdges)
+            };
+        }
 
         // Now propagate changes up the stack
         // Start from current level and work backwards to update all parent references
         for (let i = currentLevel; i > targetIndex; i--) {
             const childView = updatedStack[i];
             const parentView = updatedStack[i - 1];
+
+            // Model-backed levels own their content; nothing is folded into
+            // the parent node's legacy data.
+            if (childView.semantic) continue;
 
             // Filter out internal port nodes from child view
             const childNodesFiltered = childView.nodes.filter(n => n.type !== 'internalPort');

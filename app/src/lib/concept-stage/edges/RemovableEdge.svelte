@@ -2,6 +2,7 @@
     import { fade } from 'svelte/transition';
     import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/svelte';
     import { currentEdges, addToHistory } from '$lib/stores/stores.svelte';
+    import { deleteModelRelationshipForLegacyEdge } from '../sysml/session';
     import type { CompatibilityStatus } from '../interfaces';
     
     interface Props {
@@ -63,6 +64,9 @@
     function handleDelete() {
         currentEdges.update(edges => edges.filter(edge => edge.id !== id));
         addToHistory();
+        // Remove the mirrored relationship when the edge is model-mapped (root)
+        // or is a model-backed (`e_`) drill-down edge.
+        deleteModelRelationshipForLegacyEdge(id);
     }
 </script>
 

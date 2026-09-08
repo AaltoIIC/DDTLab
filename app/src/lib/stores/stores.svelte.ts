@@ -40,7 +40,13 @@ import {
     customVSSoVariables,
     currentPartDefinitions,
     currentItemDefinitions,
-    currentPackages
+    currentPackages,
+    packageEntryForCanvasNode,
+    isCanvasNodeSaved,
+    upsertPackageEntryForCanvasNode,
+    removePackageEntryForCanvasNode,
+    canvasNodeIdForPackageEntry,
+    renamePackageEntryForCanvasNode
 } from '$lib/domains/editor-core/state/activeEditorSessionStore';
 import {
     systems,
@@ -88,7 +94,13 @@ export {
     customVSSoVariables,
     currentPartDefinitions,
     currentItemDefinitions,
-    currentPackages
+    currentPackages,
+    packageEntryForCanvasNode,
+    isCanvasNodeSaved,
+    upsertPackageEntryForCanvasNode,
+    removePackageEntryForCanvasNode,
+    canvasNodeIdForPackageEntry,
+    renamePackageEntryForCanvasNode
 };
 export { systems };
 export {

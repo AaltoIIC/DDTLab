@@ -9,6 +9,19 @@ const OWNING_METACLASSES = new Set([
 ]);
 
 /**
+ * Metaclasses that may own port usages. Ports are features of part/item
+ * types, so a port belongs to a part/item definition (the type) or to a
+ * part/item usage (the instance). Packages and plain namespaces cannot own
+ * ports directly — a bare port in a package has no owner to attach to.
+ */
+export const PORT_OWNER_METACLASSES: ReadonlySet<string> = new Set([
+  'partDefinition',
+  'itemDefinition',
+  'partUsage',
+  'itemUsage'
+]);
+
+/**
  * Validate that `ownerId` exists and is allowed to own members. Throws before
  * any element is inserted, so factory construction stays atomic: a rejected
  * add leaves the document untouched.
@@ -31,6 +44,14 @@ export function requireOwner(document: SysmlDocument, ownerId: ElementId | null)
  * This is the single place that knows which metaclasses hold ownership, so
  * the element factories and the relationship factories cannot drift apart.
  */
+/** Validate that `ownerId` exists and may own port usages (atomic, pre-insert). */
+export function requirePortOwner(document: SysmlDocument, ownerId: ElementId): void {
+  requireOwner(document, ownerId);
+  if (!PORT_OWNER_METACLASSES.has(document.elements[ownerId].metaclass)) {
+    throw new Error(`Cannot own port: ${document.elements[ownerId].metaclass} cannot own ports`);
+  }
+}
+
 export function registerOwnedElement(
   document: SysmlDocument,
   elementId: ElementId,

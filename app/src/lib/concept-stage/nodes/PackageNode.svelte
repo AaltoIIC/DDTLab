@@ -1,11 +1,11 @@
 <script lang="ts">
     import { run } from 'svelte/legacy';
 
-        import { Package, X, MoveDiagonal2, Info, Save, FolderPlus } from '@lucide/svelte';
+        import { Package, X, MoveDiagonal2, Info, Save } from '@lucide/svelte';
         import { useUpdateNodeInternals, NodeResizeControl, type Node, type Edge } from '@xyflow/svelte';
-        import { currentNodes, currentEdges, addToHistory, currentPackages } from '$lib/stores/stores.svelte';
-    import type { PackageTemplate } from '$lib/types/types';
-    import { generateName, validateName, MAX_EDIT_NAME_LENGTH, truncateName } from '$lib/helpers';
+        import { currentNodes, currentEdges, addToHistory, isCanvasNodeSaved, upsertPackageEntryForCanvasNode, renamePackageEntryForCanvasNode, removePackageEntryForCanvasNode } from '$lib/stores/stores.svelte';
+    import { deleteModelContentForLegacyNode, saveCanvasPackageMembers, deleteCanvasPackageMembers, renameCanvasPackageInModel } from '../sysml/session';
+    import { validateName, MAX_EDIT_NAME_LENGTH, truncateName } from '$lib/helpers';
     import { activeViewpointDetails, viewpoints } from '../viewpoints/viewpointStore';
     import ContextMenu from '../ContextMenu.svelte';
     import { get } from 'svelte/store';
@@ -78,7 +78,13 @@
     // Create a "stable" trigger string that only changes when nodes move or resize
     let geometryTrigger = $derived(
         $currentNodes.map(n => `${n.id}:${n.position.x},${n.position.y},${n.width},${n.height}`).join('|')
-        );    
+        );
+
+    // A canvas package node is "saved" when the saved-package list holds an
+    // entry bound to this canvas node (canvasNodeId === id). Unsaved packages
+    // render in a neutral gray; saved ones take the blue "tied to the model"
+    // styling until they are deleted from the list again.
+    let saved = $derived(isCanvasNodeSaved(id));
 
     $effect(() => {
         // We want this to run whenever currentNodes changes
@@ -187,19 +193,19 @@
     function handleSavePackage() {
         const {inNodes: nodes, inEdges: edges} = getInsideData();
 
-        const savedPackage: PackageTemplate = {
-            id: `${id}-${Math.random().toString(36).substring(2, 9)}`,
-            name: generateName(data.declaredName, $currentPackages.map( p => p.name )),
+        // Mirror the saved grouping into the semantic model: the mapped usage
+        // nodes inside the canvas rectangle are re-owned under a model Package
+        // element bound to this canvas node (no-op when no session is bound).
+        saveCanvasPackageMembers(id, data.declaredName, nodes);
+
+        // The saved-package list is the source of truth: saving upserts the
+        // single entry bound to this canvas node (no duplicates on re-save).
+        upsertPackageEntryForCanvasNode(id, {
+            name: data.declaredName,
             type: 'package',
             description: data.comment,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
             data: { nodes, edges }
-        }
-
-
-        // console.log(JSON.stringify(savedPackage, null, 2));
-        currentPackages.update(pkgs => [...pkgs, savedPackage]);
+        });
         addToHistory();
     }
 
@@ -214,6 +220,10 @@
         const trimmedName = truncateName(tempName.trim());
         if (!isNameError && trimmedName) {
             updateNodeData('declaredName', trimmedName);
+            // Keep the saved list entry name (and the model Package element
+            // name when this package is saved) in sync with the canvas node.
+            renamePackageEntryForCanvasNode(id, trimmedName);
+            renameCanvasPackageInModel(id, trimmedName);
         } else {
             tempName = data.declaredName;
             isNameError = false;
@@ -236,10 +246,16 @@
     }
 
     function handleDelete() {
+        // Deleting a bound canvas package removes its saved list entry too and
+        // unwraps the model package (members move back to the model root).
+        removePackageEntryForCanvasNode(id);
+        deleteCanvasPackageMembers(id);
         // Remove this node and any connected edges
         currentNodes.update(nodes => nodes.filter(n => n.id !== id));
         currentEdges.update(edges => edges.filter(e => e.source !== id && e.target !== id));
         addToHistory();
+        // Model-mapped packages/usages mirror their deletion into the session.
+        deleteModelContentForLegacyNode(id);
     }
 
     function getUnderlyingElement(e: PointerEvent, current: HTMLElement) {
@@ -328,6 +344,7 @@
     class="package-node"
     class:selected={selected}
     class:hidden-by-viewpoint={isHiddenByViewpoint}
+    class:saved={saved}
 >
     <div class="drag-handle top" onpointerdown={() => selectInsideNodes()} oncontextmenu={handleContextMenu}></div>
     <div class="drag-handle bottom" onpointerdown={() => selectInsideNodes()} oncontextmenu={handleContextMenu}></div>
@@ -560,20 +577,38 @@
         width: 100%;
         height: 100%;
         justify-content: space-between;
-        border: 4px dashed rgba(59, 130, 246, 0.5);
-        background-color: rgba(239, 246, 255, 0.12);
+        border: 4px dashed #9ca3af;
+        background-color: rgba(243, 244, 246, 0.18);
         color: #6f7f9e;
         border-radius: 10px;
         padding: 10px;
     }
 
     .package-node:hover {
-        border-color: rgba(59, 130, 246, 0.55);
+        border-color: #6b7280;
         cursor: pointer;
     }
 
     .package-node.selected {
         border-color: #0055ff; 
+    }
+
+    /* Saved packages (bound to the saved-package list) take a light blue
+       "tied to a real package" treatment; unsaved "New Package" overlays
+       stay neutral gray until saved again. */
+    .package-node.saved {
+        border-style: solid;
+        border-color: rgba(37, 99, 235, 0.75);
+        background-color: rgba(219, 234, 254, 0.35);
+        color: #1e40af;
+    }
+
+    .package-node.saved:hover {
+        border-color: rgba(29, 78, 216, 0.9);
+    }
+
+    .package-node.saved.selected {
+        border-color: #0055ff;
     }
 
     .drag-handle {

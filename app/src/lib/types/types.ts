@@ -233,6 +233,13 @@ export interface ConceptTemplate {
 
 export interface PackageTemplate extends ConceptTemplate {
     type?: 'package';
+    /**
+     * Binding back to the canvas package node this entry was saved from
+     * (Phase 3 saved-package list ↔ canvas-node binding). The canvas node id
+     * is the stable key: saving upserts the entry with this id, renaming the
+     * node syncs the entry name, and deleting either side removes the other.
+     */
+    canvasNodeId?: string;
 };
 
 interface PartData {

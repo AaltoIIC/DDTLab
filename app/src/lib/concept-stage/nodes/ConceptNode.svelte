@@ -6,7 +6,12 @@
     import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
     import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
     import { validateName, duplicateName, MAX_EDIT_NAME_LENGTH, truncateName } from '$lib/helpers';
-    import { navigateIntoNode } from '../nodeViewStore';
+    import { currentNodeView, navigateIntoNode } from '../nodeViewStore';
+    import {
+        seedNodesIntoScope,
+        renameModelElementForLegacyNode,
+        deleteModelContentForLegacyNode
+    } from '../sysml/session';
     import { createPortHandlers, type PortData } from './portUtils';
     import PortHandles from './PortHandles.svelte';
     import AttributeEditor from '../MetadataEditor.svelte';
@@ -236,6 +241,8 @@
         const trimmedName = truncateName(tempName.trim());
         if (!isNameError && trimmedName) {
             updateNodeData('declaredName', trimmedName);
+            // Keep the model element name in sync when this node is model-mapped.
+            renameModelElementForLegacyNode(id, trimmedName);
         } else {
             tempName = data.declaredName;
             isNameError = false;
@@ -265,6 +272,9 @@
         currentNodes.update(nodes => nodes.filter(n => n.id !== id));
         currentEdges.update(edges => edges.filter(e => e.source !== id && e.target !== id));
         addToHistory();
+        // Cascade the deletion into the semantic session when the node is
+        // model-mapped (root) or is a model-backed (`n_`) drill-down child.
+        deleteModelContentForLegacyNode(id);
     }
 
     function handleDoubleClick(event: MouseEvent) {
@@ -307,6 +317,10 @@
             const existingNames = nodes
                 .map(n => n.data?.declaredName)
                 .filter((name): name is string => typeof name === 'string');
+            // A duplicate is a *new* model element: drop the original usage id
+            // from the copied data so the copy never resolves to the source
+            // usage, then seed it below as its own usage.
+            const { modelId: _sourceModelId, ...sourceData } = (currentNode.data ?? {}) as Record<string, unknown>;
             const newNode = {
                 ...currentNode,
                 id: `${type}-${Date.now()}`,
@@ -315,7 +329,7 @@
                     y: currentNode.position.y + 30
                 },
                 data: {
-                    ...currentNode.data,
+                    ...sourceData,
                     id: `${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
                     declaredName: duplicateName(String(currentNode.data.declaredName), existingNames),
                     mass: currentNode.data.mass || 0, // Copy mass value
@@ -330,6 +344,16 @@
             
             currentNodes.update(n => [...n, newNode]);
             addToHistory();
+
+            // Mirror the duplicated usage into the semantic session so the copy
+            // has model elements. Root-level and model-backed drill-down
+            // duplicates get their own usage owned by the current scope.
+            const view = get(currentNodeView);
+            if (view?.semantic?.scopeId) {
+                seedNodesIntoScope(view.semantic.scopeId, [newNode], []);
+            } else if (!view) {
+                seedNodesIntoScope(null, [newNode], []);
+            }
         }
         showContextMenu = false;
     }

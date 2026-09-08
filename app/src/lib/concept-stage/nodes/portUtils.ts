@@ -2,6 +2,12 @@ import { get } from 'svelte/store';
 import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
 import { checkCompatibility, type Port } from '../interfaces';
 import type { Node } from '@xyflow/svelte';
+import {
+    addModelPort,
+    removeModelPort,
+    renameModelPort,
+    setModelPortInterface
+} from '../sysml/session';
 
 export interface PortData {
     inputs?: Port[];
@@ -42,12 +48,13 @@ export function findPort(node: Node | undefined, handleId: string | null | undef
 
 export function createPortHandlers<T extends PortData>(nodeId: string) {
     function addInput() {
+        const existing = get(currentNodes).find(n => n.id === nodeId) as { data?: T } | undefined;
+        const portName = generatePortName('input', existing?.data?.inputs || []);
         currentNodes.update(nodes => {
             return nodes.map(node => {
                 if (node.id === nodeId) {
                     const nodeData = node.data as T;
                     const inputs = [...(nodeData.inputs || [])];
-                    const portName = generatePortName('input', inputs);
                     const newPort: Port = {
                         id: generatePortId(),
                         name: portName,
@@ -72,6 +79,8 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
             });
         });
         addToHistory();
+        // Mirror the added port into the model when this node is model-mapped.
+        addModelPort(nodeId, { name: portName, direction: 'in' });
     }
 
     function removeInput(index: number) {
@@ -101,18 +110,21 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
             if (port) {
                 const handleId = `${nodeId}-input-${port.name}`;
                 currentEdges.update(edges => edges.filter(e => e.targetHandle !== handleId));
+                // Mirror the removal (plus relationships referencing it).
+                removeModelPort(nodeId, port.name);
             }
             addToHistory();
         }
     }
 
     function addOutput() {
+        const existing = get(currentNodes).find(n => n.id === nodeId) as { data?: T } | undefined;
+        const portName = generatePortName('output', existing?.data?.outputs || []);
         currentNodes.update(nodes => {
             return nodes.map(node => {
                 if (node.id === nodeId) {
                     const nodeData = node.data as T;
                     const outputs = [...(nodeData.outputs || [])];
-                    const portName = generatePortName('output', outputs);
                     const newPort: Port = {
                         id: generatePortId(),
                         name: portName,
@@ -132,6 +144,8 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
             });
         });
         addToHistory();
+        // Mirror the added port into the model when this node is model-mapped.
+        addModelPort(nodeId, { name: portName, direction: 'out' });
     }
 
     function removeOutput(index: number) {
@@ -161,6 +175,8 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
             if (port) {
                 const handleId = `${nodeId}-output-${port.name}`;
                 currentEdges.update(edges => edges.filter(e => e.sourceHandle !== handleId));
+                // Mirror the removal (plus relationships referencing it).
+                removeModelPort(nodeId, port.name);
             }
             addToHistory();
         }
@@ -212,12 +228,16 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
                     return edge;
                 });
             });
+            // Mirror the rename into the model when this node is model-mapped.
+            renameModelPort(nodeId, oldName, newName);
         }
 
         addToHistory();
     }
 
     function updatePortInterface(type: 'input' | 'output', index: number, interfaceType: string | undefined) {
+        const node = get(currentNodes).find(n => n.id === nodeId) as { data?: T } | undefined;
+        const portName = (type === 'input' ? node?.data?.inputs?.[index] : node?.data?.outputs?.[index])?.name;
         currentNodes.update(nodes => {
             return nodes.map(node => {
                 if (node.id === nodeId) {
@@ -240,6 +260,11 @@ export function createPortHandlers<T extends PortData>(nodeId: string) {
                 return node;
             });
         });
+
+        // Mirror the display-only interface label when this node is model-mapped.
+        if (portName && interfaceType !== undefined) {
+            setModelPortInterface(nodeId, portName, interfaceType);
+        }
 
         const nodes = get(currentNodes);
         currentEdges.update(edges => {

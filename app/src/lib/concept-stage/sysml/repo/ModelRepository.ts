@@ -110,6 +110,46 @@ export class ModelRepository {
     return { ok: true, diagnostics: [] };
   }
 
+  /**
+   * Re-own `id` under `newOwnerId` (null = the document root) — the dedicated
+   * ownership-changing operation (plain `update` rejects `ownerId` patches,
+   * REPO005). Used by the package wrap/unwrap flow: wrapping moves canvas
+   * usages under a saved Package; unwrapping moves them back to the package's
+   * owner before the Package element itself is deleted.
+   *
+   * The move is atomic and convergent: the element leaves its current owner's
+   * membership list and is appended to the new owner's list; name uniqueness
+   * in the destination namespace (WF001) is enforced by the full-document
+   * validation, so a conflicting move is rejected and rolled back.
+   */
+  public move(id: ElementId, newOwnerId: ElementId | null): MutationResult<void> {
+    const existing = this.document.elements[id];
+    if (!existing) {
+      return { ok: false, diagnostics: [errorDiagnostic('WF006-no-dangling-refs', `Element ${id} does not exist`, id)] };
+    }
+    if (newOwnerId === id) {
+      return { ok: false, diagnostics: [errorDiagnostic('REPO006-invalid-move', 'An element cannot own itself', id)] };
+    }
+    if (newOwnerId !== null) {
+      const owner = this.document.elements[newOwnerId];
+      if (!owner) {
+        return { ok: false, diagnostics: [errorDiagnostic('WF003-ownership', `Owner ${newOwnerId} does not exist`, id)] };
+      }
+      if (!['package', 'partDefinition', 'itemDefinition', 'partUsage', 'itemUsage'].includes(owner.metaclass)) {
+        return { ok: false, diagnostics: [errorDiagnostic('WF003-ownership', `${owner.metaclass} cannot own members`, id)] };
+      }
+    }
+
+    // A move both removes the element from its current owner's list and
+    // registers it under the new one, so it must be atomic. The transaction
+    // path validates the final document (name uniqueness, dangling refs) and
+    // rolls back on any conflict.
+    return this.transaction((transaction) => {
+      transaction.reown(id, newOwnerId);
+    });
+  }
+
+
   public transaction<T>(operation: (repository: TransactionRepository) => T): MutationResult<T> {
     const candidate = cloneDocument(this.document);
     const working = new TransactionRepository(candidate);
@@ -258,6 +298,48 @@ export class TransactionRepository {
         owner.metaclass === 'partUsage' ||
         owner.metaclass === 'itemUsage'
       ) owner.ownedUsageIds.push(element.id);
+      else throw new Error(`${owner.metaclass} cannot own members`);
+    }
+  }
+
+  /** Shallow delete mirroring `ModelRepository.delete`, without emitting. */
+  public delete(id: ElementId): void {
+    if (!this.document.elements[id]) throw new Error(`Element ${id} does not exist`);
+    const ownerId = this.document.elements[id].ownerId;
+    delete this.document.elements[id];
+    removeOwnership(this.document, id, ownerId);
+  }
+
+  /**
+   * Re-own `id` under `newOwnerId` inside the active transaction (the
+   * non-emitting counterpart of `ModelRepository.move`). Name uniqueness and
+   * reference integrity are enforced by the final transaction validation.
+   */
+  public reown(id: ElementId, newOwnerId: ElementId | null): void {
+    const element = this.document.elements[id];
+    if (!element) throw new Error(`Element ${id} does not exist`);
+    if (newOwnerId === id) throw new Error('An element cannot own itself');
+    if (newOwnerId !== null) {
+      const owner = this.document.elements[newOwnerId];
+      if (!owner) throw new Error(`Owner ${newOwnerId} does not exist`);
+      if (!['package', 'partDefinition', 'itemDefinition', 'partUsage', 'itemUsage'].includes(owner.metaclass)) {
+        throw new Error(`${owner.metaclass} cannot own members`);
+      }
+    }
+    if (element.ownerId === newOwnerId) return;
+    const oldOwnerId = element.ownerId;
+    removeOwnership(this.document, id, oldOwnerId);
+    element.ownerId = newOwnerId;
+    if (newOwnerId === null) this.document.root.memberIds.push(id);
+    else {
+      const owner = this.document.elements[newOwnerId];
+      if (owner.metaclass === 'package') owner.memberIds.push(id);
+      else if (
+        owner.metaclass === 'partDefinition' ||
+        owner.metaclass === 'itemDefinition' ||
+        owner.metaclass === 'partUsage' ||
+        owner.metaclass === 'itemUsage'
+      ) owner.ownedUsageIds.push(id);
       else throw new Error(`${owner.metaclass} cannot own members`);
     }
   }

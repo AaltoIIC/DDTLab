@@ -2,6 +2,7 @@ import { cloneDocument } from '../model/immutable';
 import { getQualifiedName } from '../model/namespaces';
 import { registerOwnedElement } from '../model/ownership';
 import type { AnySysmlElement, ElementId, SysmlDocument } from '../model/elements';
+import { referenceIdsOf, validateDocument } from '../validate';
 import { errorDiagnostic, type Diagnostic, type MutationResult } from './diagnostics';
 
 export interface RepositoryChange {
@@ -21,8 +22,10 @@ export type ElementUpdate = Partial<Omit<AnySysmlElement, 'id' | 'metaclass'>>;
 
 /**
  * Repository-owned semantic model boundary. Mutations are performed on a
- * cloned candidate, validated, and committed only on success. Subscribers
- * receive a cloned read-only snapshot and cannot mutate repository state.
+ * cloned candidate, validated by the WF001–WF008 rule engine, and committed
+ * only when no error-severity diagnostic is produced (decision 8; warnings
+ * never block — plan §5 Phase 4). Subscribers receive a cloned read-only
+ * snapshot and cannot mutate repository state.
  */
 export class ModelRepository {
   private document: SysmlDocument;
@@ -30,7 +33,9 @@ export class ModelRepository {
 
   public constructor(initialDocument: SysmlDocument) {
     const candidate = cloneDocument(initialDocument);
-    const diagnostics = this.validateDocument(candidate);
+    // Validation runs on load; an error-severity model cannot enter the
+    // repository (invalid models are not created through the repository API).
+    const diagnostics = validateDocument(candidate);
     if (diagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
       throw new Error(diagnostics.map((diagnostic) => diagnostic.message).join('; '));
     }
@@ -39,6 +44,14 @@ export class ModelRepository {
 
   public read(): SysmlDocument {
     return cloneDocument(this.document);
+  }
+
+  /**
+   * Run the full WF001–WF008 rule engine over the committed document. The
+   * passive "model health" indicator reads this after every repository change.
+   */
+  public validate(): Diagnostic[] {
+    return validateDocument(this.document);
   }
 
   public getElement(id: ElementId): AnySysmlElement | undefined {
@@ -65,13 +78,35 @@ export class ModelRepository {
     return () => this.listeners.delete(listener);
   }
 
+  /**
+   * Create an element. The incoming element is registered into a cloned
+   * candidate and the FULL rule engine runs over the result, so duplicate
+   * names (WF001), containment (WF003), dangling references (WF006) and the
+   * remaining rules are all enforced at creation time — not just on update.
+   */
   public create(element: AnySysmlElement): MutationResult<AnySysmlElement> {
-    const candidate = cloneDocument(this.document);
-    const diagnostics = this.validateCreate(candidate, element);
-    if (diagnostics.length > 0) return { ok: false, diagnostics };
+    if (this.document.elements[element.id]) {
+      return { ok: false, diagnostics: [errorDiagnostic('REPO004-duplicate-id', `Element id ${element.id} already exists`, element.id)] };
+    }
+    if (element.ownerId !== null && !this.document.elements[element.ownerId]) {
+      return { ok: false, diagnostics: [errorDiagnostic('WF003-ownership', `Owner ${element.ownerId} does not exist`, element.id)] };
+    }
 
+    const candidate = cloneDocument(this.document);
     candidate.elements[element.id] = cloneDocument({ ...candidate, elements: { [element.id]: element } }).elements[element.id];
-    registerOwnedElement(candidate, element.id, element.ownerId);
+    try {
+      registerOwnedElement(candidate, element.id, element.ownerId);
+    } catch (error) {
+      return {
+        ok: false,
+        diagnostics: [errorDiagnostic('WF003-ownership', error instanceof Error ? error.message : String(error), element.id)]
+      };
+    }
+
+    const diagnostics = validateDocument(candidate);
+    if (diagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
+      return { ok: false, diagnostics };
+    }
     this.commit(candidate, { type: 'create', elementId: element.id, document: candidate });
     return { ok: true, value: this.getElement(element.id), diagnostics: [] };
   }
@@ -84,8 +119,8 @@ export class ModelRepository {
     }
     const candidate = cloneDocument(this.document);
     candidate.elements[id] = { ...candidate.elements[id], ...patch } as AnySysmlElement;
-    const diagnostics = this.validateDocument(candidate);
-    if (diagnostics.length > 0) return { ok: false, diagnostics };
+    const diagnostics = validateDocument(candidate);
+    if (diagnostics.some((diagnostic) => diagnostic.severity === 'error')) return { ok: false, diagnostics };
     this.commit(candidate, { type: 'update', elementId: id, document: candidate });
     return { ok: true, value: this.getElement(id), diagnostics: [] };
   }
@@ -106,6 +141,10 @@ export class ModelRepository {
     const ownerId = candidate.elements[id].ownerId;
     delete candidate.elements[id];
     removeOwnership(candidate, id, ownerId);
+    // Belt-and-braces: the remaining document must stay well-formed
+    // (e.g. the root membership invariant, WF007).
+    const diagnostics = validateDocument(candidate);
+    if (diagnostics.some((diagnostic) => diagnostic.severity === 'error')) return { ok: false, diagnostics };
     this.commit(candidate, { type: 'delete', elementId: id, document: candidate });
     return { ok: true, diagnostics: [] };
   }
@@ -155,8 +194,8 @@ export class ModelRepository {
     const working = new TransactionRepository(candidate);
     try {
       const value = operation(working);
-      const diagnostics = this.validateDocument(candidate);
-      if (diagnostics.length > 0) return { ok: false, diagnostics };
+      const diagnostics = validateDocument(candidate);
+      if (diagnostics.some((diagnostic) => diagnostic.severity === 'error')) return { ok: false, diagnostics };
       this.commit(candidate, { type: 'transaction', document: candidate });
       return { ok: true, value, diagnostics: [] };
     } catch (error) {
@@ -187,59 +226,10 @@ export class ModelRepository {
     return [];
   }
 
-  private validateCreate(document: SysmlDocument, element: AnySysmlElement): Diagnostic[] {
-    if (document.elements[element.id]) return [errorDiagnostic('REPO004-duplicate-id', `Element id ${element.id} already exists`, element.id)];
-    if (element.ownerId !== null) {
-      const owner = document.elements[element.ownerId];
-      if (!owner) return [errorDiagnostic('WF003-ownership', `Owner ${element.ownerId} does not exist`, element.id)];
-      if (!['package', 'partDefinition', 'itemDefinition', 'partUsage', 'itemUsage'].includes(owner.metaclass)) {
-        return [errorDiagnostic('WF003-ownership', `${owner.metaclass} cannot own members`, element.id)];
-      }
-    }
-    return this.validateElementReferences(document, element);
-  }
-
-  private validateDocument(document: SysmlDocument): Diagnostic[] {
-    const diagnostics: Diagnostic[] = [];
-    const names = new Map<string, ElementId>();
-    for (const element of Object.values(document.elements)) {
-      const key = `${element.ownerId ?? document.root.id}::${element.name}`;
-      const previous = names.get(key);
-      if (previous) diagnostics.push(errorDiagnostic('WF001-name-uniqueness', `Duplicate member name ${element.name}`, element.id));
-      names.set(key, element.id);
-      diagnostics.push(...this.validateElementReferences(document, element));
-    }
-    return diagnostics;
-  }
-
-  private validateElementReferences(document: SysmlDocument, element: AnySysmlElement): Diagnostic[] {
-    const refs: ElementId[] = [];
-    if ('definitionId' in element && element.definitionId !== null) refs.push(element.definitionId);
-    if ('connectionDefinitionId' in element && element.connectionDefinitionId !== null) refs.push(element.connectionDefinitionId);
-    if ('flowDefinitionId' in element && element.flowDefinitionId !== null) refs.push(element.flowDefinitionId);
-    if ('endA' in element) refs.push(element.endA);
-    if ('endB' in element) refs.push(element.endB);
-    if ('sourceEnd' in element) refs.push(element.sourceEnd);
-    if ('targetEnd' in element) refs.push(element.targetEnd);
-    if ('endIds' in element) refs.push(...element.endIds);
-    if ('memberElementId' in element) refs.push(element.memberElementId);
-    for (const ref of refs) {
-      if (!document.elements[ref]) return [errorDiagnostic('WF006-no-dangling-refs', `Reference ${ref} from ${element.id} does not resolve`, element.id)];
-    }
-    if (element.ownerId !== null && !document.elements[element.ownerId]) {
-      return [errorDiagnostic('WF003-ownership', `Owner ${element.ownerId} from ${element.id} does not resolve`, element.id)];
-    }
-    return [];
-  }
-
   private findReferences(document: SysmlDocument, targetId: ElementId): ElementId[] {
     return Object.values(document.elements)
-      .filter((element) => this.references(element).includes(targetId))
+      .filter((element) => referenceIdsOf(element).includes(targetId))
       .map((element) => element.id);
-  }
-
-  private references(element: AnySysmlElement): ElementId[] {
-    return referenceIds(element);
   }
 }
 
@@ -262,27 +252,13 @@ function removeOwnership(document: SysmlDocument, id: ElementId, ownerId: Elemen
   if (index >= 0) ids.splice(index, 1);
 }
 
-function referenceIds(element: AnySysmlElement): ElementId[] {
-  const refs: ElementId[] = [];
-    if ('definitionId' in element && element.definitionId !== null) refs.push(element.definitionId);
-    if ('connectionDefinitionId' in element && element.connectionDefinitionId !== null) refs.push(element.connectionDefinitionId);
-    if ('flowDefinitionId' in element && element.flowDefinitionId !== null) refs.push(element.flowDefinitionId);
-    if ('endA' in element) refs.push(element.endA);
-    if ('endB' in element) refs.push(element.endB);
-    if ('sourceEnd' in element) refs.push(element.sourceEnd);
-    if ('targetEnd' in element) refs.push(element.targetEnd);
-    if ('endIds' in element) refs.push(...element.endIds);
-    if ('memberElementId' in element) refs.push(element.memberElementId);
-    return refs;
-  }
-
 export class TransactionRepository {
   public constructor(private readonly document: SysmlDocument) {}
 
   public create(element: AnySysmlElement): void {
     if (this.document.elements[element.id]) throw new Error(`Element id ${element.id} already exists`);
     if (element.ownerId !== null && !this.document.elements[element.ownerId]) throw new Error(`Owner ${element.ownerId} does not exist`);
-    const refs = referenceIds(element);
+    const refs = referenceIdsOf(element);
     for (const ref of refs) {
       if (!this.document.elements[ref]) throw new Error(`Reference ${ref} from ${element.id} does not resolve`);
     }

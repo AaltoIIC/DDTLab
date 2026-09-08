@@ -11,6 +11,7 @@
     import DefinitionSlider from './DefinitionSlider.svelte';
     import ViewpointSelector from './viewpoints/ViewpointSelector.svelte';
     import MassCalculatorSlider from './MassCalculatorSlider.svelte';
+    import { modelHealth, semanticSession, type ModelHealthState } from './sysml/session';
     
     let isPackageOpen = $state(false);
     let isPartDefOpen = $state(false);
@@ -57,6 +58,16 @@
     function toggleTemplateSlider() {
         closeAllSliders();
         isTemplateSliderOpen = true;
+    }
+
+    // Passive "model health" badge (plan §5 Phase 4): non-blocking, reports
+    // the WF001–WF008 diagnostics of the committed semantic model. Errors are
+    // impossible in a committed document (the repository rejects them), so in
+    // practice this surfaces heuristic warnings.
+    function healthLabel(health: ModelHealthState): string {
+        if (health.errorCount > 0) return health.errorCount === 1 ? '1 model error' : `${health.errorCount} model errors`;
+        if (health.warningCount > 0) return health.warningCount === 1 ? '1 model warning' : `${health.warningCount} model warnings`;
+        return 'Model healthy';
     }
 </script>
 
@@ -146,6 +157,24 @@
                 <Weight class="option-icon" />
             </button>
         </Tooltip>
+
+        {#if $semanticSession}
+            <Tooltip text={healthLabel($modelHealth)} position="right">
+                <div
+                    class="model-health"
+                    class:ok={$modelHealth.errorCount === 0 && $modelHealth.warningCount === 0}
+                    class:warning={$modelHealth.errorCount === 0 && $modelHealth.warningCount > 0}
+                    class:error={$modelHealth.errorCount > 0}
+                >
+                    <span class="health-dot"></span>
+                    {#if $modelHealth.warningCount > 0 || $modelHealth.errorCount > 0}
+                        <span class="health-count">
+                            {$modelHealth.errorCount > 0 ? $modelHealth.errorCount : $modelHealth.warningCount}
+                        </span>
+                    {/if}
+                </div>
+            </Tooltip>
+        {/if}
 
         <div class="separator" style="margin-top: auto;"></div>
     <div class="bottom-buttons">
@@ -274,6 +303,47 @@
         height: 1px;
         background-color: #e5e7eb;
         margin: 8px 0;
+    }
+
+    .model-health {
+        width: 42px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        border-radius: 12px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+    }
+
+    .model-health.ok .health-dot {
+        background-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    }
+
+    .model-health.warning .health-dot {
+        background-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+    }
+
+    .model-health.error .health-dot {
+        background-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+    }
+
+    .health-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #d1d5db;
+    }
+
+    .health-count {
+        font-size: 11px;
+        font-weight: 600;
+        color: #4b5563;
+        line-height: 1;
     }
 
   </style>

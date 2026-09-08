@@ -13,8 +13,43 @@ import {
   setPresentation,
   modelEdgeId,
   modelNodeId,
-  type ProjectViewResult
+  type ProjectViewResult,
+  type Diagnostic
 } from '$lib/concept-stage/sysml';
+
+export interface ModelHealthState {
+  /** Live WF001–WF008 diagnostics for the committed model (warnings only in practice — errors reject mutations). */
+  diagnostics: Diagnostic[];
+  errorCount: number;
+  warningCount: number;
+  updatedAt: number;
+}
+
+export const emptyModelHealth = (): ModelHealthState => ({
+  diagnostics: [],
+  errorCount: 0,
+  warningCount: 0,
+  updatedAt: 0
+});
+
+/**
+ * Passive "model health" indicator (plan §5 Phase 4): refreshed on model load
+ * and after every repository change. Non-blocking — it never gates saving or
+ * rendering; error-severity diagnostics are already impossible in a committed
+ * document (the repository rejects them), so in practice this surfaces the
+ * heuristic warnings the validator produces.
+ */
+export const modelHealth: Writable<ModelHealthState> = writable(emptyModelHealth());
+
+function refreshModelHealth(session: ConceptStageSemanticSession): void {
+  const diagnostics = session.repository.validate();
+  modelHealth.set({
+    diagnostics,
+    errorCount: diagnostics.filter((diagnostic) => diagnostic.severity === 'error').length,
+    warningCount: diagnostics.filter((diagnostic) => diagnostic.severity === 'warning').length,
+    updatedAt: Date.now()
+  });
+}
 
 export interface ConceptStageSemanticSession {
   repository: ModelRepository;
@@ -55,17 +90,24 @@ export function unbindConceptStageSession(systemId: string): void {
   if (boundSystemId !== systemId) return;
   boundSystemId = null;
   semanticSession.set(null);
+  modelHealth.set(emptyModelHealth());
 }
 
 export function createSemanticSession(document: SysmlDocument): ConceptStageSemanticSession {
-  return {
-    repository: new ModelRepository(document),
+  const repository = new ModelRepository(document);
+  const session: ConceptStageSemanticSession = {
+    repository,
     presentation: createPresentationMap(),
     legacyToModel: new Map(),
     modelToLegacy: new Map(),
     legacyEdgeToModel: new Map(),
     modelToLegacyEdge: new Map()
   };
+  // Model-health runs on load and after every repository mutation (plan §5
+  // Phase 4); it is passive and never blocks rendering or saving.
+  refreshModelHealth(session);
+  repository.subscribe(() => refreshModelHealth(session));
+  return session;
 }
 
 export function initializeSemanticSession(name: string): ConceptStageSemanticSession {

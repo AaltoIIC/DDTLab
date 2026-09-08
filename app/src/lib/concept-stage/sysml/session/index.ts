@@ -1,5 +1,7 @@
 export {
   semanticSession,
+  modelHealth,
+  emptyModelHealth,
   createSemanticSession,
   initializeSemanticSession,
   setSemanticSession,
@@ -36,4 +38,4 @@ export {
   deleteCanvasPackageMembers,
   renameCanvasPackageInModel
 } from './packageAuthoring';
-export type { ConceptStageSemanticSession } from './conceptStageSemanticSession';
+export type { ConceptStageSemanticSession, ModelHealthState } from './conceptStageSemanticSession';

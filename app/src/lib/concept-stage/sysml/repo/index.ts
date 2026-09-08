@@ -1,9 +1,10 @@
 export { ModelRepository, TransactionRepository } from './ModelRepository';
-export { errorDiagnostic } from './diagnostics';
+export { errorDiagnostic, warningDiagnostic } from './diagnostics';
 export type {
   Diagnostic,
   DiagnosticSeverity,
-  MutationResult
+  MutationResult,
+  RuleLabel
 } from './diagnostics';
 export type {
   CreateOptions,

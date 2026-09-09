@@ -1,5 +1,6 @@
-import type { Node, Edge } from '@xyflow/svelte';
 import type { Icon as LucideIcon } from '@lucide/svelte';
+import type { SysmlDocument } from '../sysml/model';
+import type { PresentationMap } from '../sysml/presentation';
 
 // Ship powertrain types
 export type ShipPowertrainType = 
@@ -36,7 +37,8 @@ export interface ShipDesign {
   thumbnail?: string;
   icon?: LucideIcon;
   tags?: string[];
-  // The actual design structure (complete ship system)
+  // The actual design structure (complete ship system) — a semantic SysML
+  // model definition (Phase 5 rework; see `ComponentTemplate`).
   template: ShipDesignTemplate;
 }
 
@@ -61,7 +63,11 @@ export interface ShipSpecifications {
   passengers?: number;
 }
 
-// Template structure for a ship design
+/**
+ * Template structure for a ship design (Phase 5 rework). Same semantic shape
+ * as `ComponentTemplate`: a canonical `SysmlDocument` plus a presentation map
+ * keyed by element id; the canvas payload is projected at drag time.
+ */
 export interface ShipDesignTemplate {
   id: string;
   type: 'package';
@@ -69,12 +75,9 @@ export interface ShipDesignTemplate {
     declaredName: string;
     comment?: string;
     id: string;
-    nodes: Node[]; // Major systems (propulsion, power generation, etc.)
-    edges: Edge[]; // Connections between systems
     metadata: Array<{ key: string; value: string }>;
-    inputs?: any[];
-    outputs?: any[];
-    [key: string]: any;
+    document: SysmlDocument;
+    presentation: PresentationMap;
   };
 }
 

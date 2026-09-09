@@ -11,6 +11,14 @@ export interface PresentationEntry {
    * definition once the interface-catalog mapping (plan §9) is decided.
    */
   interfaceType?: string;
+  /**
+   * Tool metadata key/value pairs attached to an element (library example
+   * metadata, order status etc. — plan §3: “everything that is not SysML
+   * semantics stays as tool metadata”). Not semantic data; excluded from
+   * interchange. Kept out of the model so it can never collide with member
+   * names in the owning namespace (WF001).
+   */
+  metadata?: Array<{ key: string; value: string }>;
 }
 
 export type PresentationMap = Record<ElementId, PresentationEntry>;

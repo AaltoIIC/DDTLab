@@ -38,4 +38,13 @@ export {
   deleteCanvasPackageMembers,
   renameCanvasPackageInModel
 } from './packageAuthoring';
+export {
+  buildSemanticLibraryTemplate
+} from './libraryAuthoring';
+export type {
+  LibraryTemplateSpec,
+  LibraryUsageSpec,
+  LibraryPortSpec,
+  LibraryFlowSpec
+} from './libraryAuthoring';
 export type { ConceptStageSemanticSession, ModelHealthState } from './conceptStageSemanticSession';

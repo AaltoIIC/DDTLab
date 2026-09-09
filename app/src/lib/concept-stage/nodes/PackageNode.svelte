@@ -3,7 +3,7 @@
 
         import { Package, X, MoveDiagonal2, Info, Save } from '@lucide/svelte';
         import { useUpdateNodeInternals, NodeResizeControl, type Node, type Edge } from '@xyflow/svelte';
-        import { currentNodes, currentEdges, addToHistory, isCanvasNodeSaved, upsertPackageEntryForCanvasNode, renamePackageEntryForCanvasNode, removePackageEntryForCanvasNode } from '$lib/stores/stores.svelte';
+        import { currentNodes, currentEdges, currentPackages, addToHistory, upsertPackageEntryForCanvasNode, renamePackageEntryForCanvasNode, removePackageEntryForCanvasNode } from '$lib/stores/stores.svelte';
     import { deleteModelContentForLegacyNode, saveCanvasPackageMembers, deleteCanvasPackageMembers, renameCanvasPackageInModel } from '../sysml/session';
     import { validateName, MAX_EDIT_NAME_LENGTH, truncateName } from '$lib/helpers';
     import { activeViewpointDetails, viewpoints } from '../viewpoints/viewpointStore';
@@ -81,10 +81,16 @@
         );
 
     // A canvas package node is "saved" when the saved-package list holds an
-    // entry bound to this canvas node (canvasNodeId === id). Unsaved packages
-    // render in a neutral gray; saved ones take the blue "tied to the model"
-    // styling until they are deleted from the list again.
-    let saved = $derived(isCanvasNodeSaved(id));
+    // entry bound to this canvas node (canvasNodeId === id, with a legacy
+    // fallback match by node id). Unsaved packages render in a neutral gray;
+    // saved ones take the blue "tied to the model" styling until they are
+    // deleted from the list again. Derived from the auto-subscribed store so
+    // the color flips immediately on save/unsave.
+    let saved = $derived(
+        $currentPackages.some(
+            (entry) => entry.canvasNodeId === id || entry.id === id
+        )
+    );
 
     $effect(() => {
         // We want this to run whenever currentNodes changes

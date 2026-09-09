@@ -22,6 +22,7 @@
     import type { NodeView } from './nodeViewStore';
     import {
         bindConceptStageSession,
+        seedRootCanvasToModel,
         unbindConceptStageSession
     } from './sysml/session';
     import { onMount, onDestroy } from 'svelte';
@@ -543,6 +544,11 @@
         const systemMeta = get(currentSystemMeta);
         if (systemMeta?.id) {
             bindConceptStageSession(systemMeta.id, systemMeta.name);
+            // Rebuild the in-session model graph from the persisted root canvas
+            // (decision 29): the same add-only, idempotent authoring path every
+            // drop/connect uses, so save -> reload -> export yields the user's
+            // system instead of an empty document. No-ops on an empty canvas.
+            seedRootCanvasToModel(get(currentNodes), get(currentEdges));
         }
 
         // Start the tour only if it's the first time and hasn't been shown

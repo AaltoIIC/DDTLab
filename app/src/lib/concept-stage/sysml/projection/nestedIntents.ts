@@ -1,3 +1,4 @@
+import { generateId } from '$lib/shared/identifiers';
 import type { AnySysmlElement, ElementId } from '../model';
 import { getMetaclassInfo, type MetaclassKey } from '../model/metaclassRegistry';
 import { getOwnedIds } from '../model/namespaces';
@@ -15,12 +16,23 @@ import type { MutationResult } from '../repo/diagnostics';
  * removal can never be committed.
  */
 
-/** Mint a fresh semantic id for `metaclass` that is free in this repository. */
+/**
+ * Mint a fresh semantic id for `metaclass` that is free in this repository.
+ *
+ * The 6-character value comes from the shared `generateId` helper (decision 14:
+ * reuse `shared/identifiers.ts`, no new ID library), prefixed per metaclass
+ * from the registry. generateId compares the bare candidate against the
+ * supplied list, so the per-prefix suffixes already present in the repository
+ * are passed in — the returned id is then provably free in one call, with no
+ * collision loop needed.
+ */
 export function nextModelId(repository: ModelRepository, metaclass: MetaclassKey): ElementId {
   const prefix = getMetaclassInfo(metaclass).idPrefix;
-  let id = `${prefix}${Math.random().toString(36).slice(2, 10)}`;
-  while (repository.getElement(id)) id = `${prefix}${Math.random().toString(36).slice(2, 10)}`;
-  return id;
+  const usedSuffixes = Object.values(repository.read().elements)
+    .map((element) => element.id)
+    .filter((id) => id.startsWith(prefix))
+    .map((id) => id.slice(prefix.length));
+  return `${prefix}${generateId(usedSuffixes)}`;
 }
 
 export interface CreateUsageIntent {

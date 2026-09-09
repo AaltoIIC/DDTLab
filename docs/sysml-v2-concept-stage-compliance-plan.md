@@ -17,11 +17,13 @@
 
 > **Review status (2026-08-28):** Reviewed against the current concept-stage code and Clause 2 of the supplied specification. The original plan is directionally sound, but the annotations below are implementation gates: do not claim conformance until the model is actually canonical, the supported metaclasses/constraints are justified from the normative machine-readable model, and exported archives are checked against the exact KerML interchange layout.
 
-> **Implementation status (2026-09-09):** Phases 0–6 (export milestone) are **implemented** (module pointers and
-> test suites under each phase in §5; Vitest green, `npm run check` clean). Phase 7 remains, and `.kpar` **import**
-> stays deferred (Phase 6 export-only, per decision 3). Decisions made during implementation are recorded in §8
-> (18–28). Known boundary: the semantic document is session-scoped (decision 20) — content enters through the
-> authoring path; export to `.kpar` is live (Phase 6), persistence back into the session is not (no importer).
+> **Implementation status (2026-09-09):** Phases 0–7 are **implemented** (module pointers and
+> test suites under each phase in §5; Vitest green, `npm run check` clean, Playwright e2e green).
+> `.kpar` **import** stays deferred (export-only interchange, per decision 3). Decisions made during
+> implementation are recorded in §8 (18–29). Known boundary: the semantic document is session-scoped
+> (decision 20) — content enters through the authoring path and the model graph is rebuilt from the
+> durable canvas at session bind (decision 29), so save → reload → export yields the user's system;
+> `.kpar` import is not implemented.
 
 ---
 
@@ -418,7 +420,7 @@ check` and the projection tests render them identically to the current preview.
 parses in an external reference checker (e.g. the SysML v2 Pilot/Jupyter reference implementation) if available in
 CI — recommended but optional. (Round-trip import tests are deferred until the importer milestone.)
 
-### Phase 7 — Test strategy & compliance documentation (S)
+### Phase 7 — Test strategy & compliance documentation (S) — **[DONE]**
 - Vitest unit suites for model, repo, validators, emitter (all pure TS — no Svelte mocking needed).
 - Golden/projection snapshot tests to lock UI-identical behavior (Phase 3).
 - One Playwright e2e: build a two-part system with a flow connection, save, reload, export `.kpar` (and
@@ -429,6 +431,17 @@ CI — recommended but optional. (Round-trip import tests are deferred until the
   limitations + exact spec/metamodel version = the public “compliance statement” describing the tool as
   conformant on the documented subset.
 - Add a compliance fixture set containing valid and intentionally invalid models with expected diagnostics.
+
+> **Status (2026-09-09):** implemented — `docs/sysml-v2-concept-stage-subset.md` (the public compliance
+> statement: supported-metaclass table traced to the pinned artifacts, WF001–WF008 rule list with the
+> §5 review-correction labels, known limitations, exact spec/metamodel version). Playwright e2e
+> `tests/e2e/concept-export.spec.ts`: builds a two-part system through the real UI (library drop + a
+> user-drawn flow connection), persists, reloads (canvas restored, semantic session rebuilt at bind —
+> decision 29), exports `.kpar` from the sidebar control, and verifies the archive (Clause 10 layout,
+> metadata URIs, `.sysml` content carrying the parts and the flow, no presentation-only data). The
+> compliance fixture set (valid + intentionally invalid models with expected diagnostics) landed with
+> Phase 4 (`sysml/validate/fixtures.ts`). The one remaining open item is external-checker validation
+> of generated exports (no reference checker available in CI).
 
 **Overall acceptance (Definition of Done):**
 1. CRUD over the subset metaclasses via UI and repository API — ✔ Abstract Syntax Conformance.
@@ -583,6 +596,15 @@ CI — recommended but optional. (Round-trip import tests are deferred until the
     injectable and zip entries carry that date, so identical input produces byte-identical archives
     (deterministic UTF-8 output, stable membership ordering). The export is validation-gated: WF error
     severity blocks the archive entirely; heuristic warnings never block (decision 8).
+29. **Bind-time canvas reseed** — when the concept-stage session binds for a system whose persisted root
+    canvas already has content (reload, re-entry), the canvas is re-mirrored into the model via the same
+    add-only, idempotent authoring path every drop/connect uses (`seedRootCanvasToModel` in
+    `ConceptualStageLayout`'s onMount). This makes decision 20's "rebuilt in-session" concrete: the model
+    graph is derived from the durable canvas on every session, so the plan's Phase 7 e2e (build → save →
+    reload → export `.kpar`) exports the user's two-part system with its flow connection instead of an
+    empty document. This is **not** a legacy-format migration (decisions 25–26): only the root canvas
+    mirror is rebuilt — old-format definitions/templates/requirements and nested legacy views are never
+    converted, and `.kpar` import remains out of scope.
 
 These were raised earlier and are resolved by the decision record above (no action needed):
 
@@ -634,6 +656,10 @@ external-checker validation of generated exports) are implementation-time tasks,
   mapping remains open (port interface labels stay presentation-only, decision 21).
 - [x] Add a compliance fixture format before implementing the validator (implemented as part of Phase 4:
   `sysml/validate/fixtures.ts` — positive + negative fixtures per WF rule, driven by the Vitest suite).
+- [x] Phase 7 deliverables: `docs/sysml-v2-concept-stage-subset.md` (supported-metaclass table, WF001–WF008
+  rule list, known limitations, exact spec/metamodel version) and the Playwright export e2e
+  (`app/tests/e2e/concept-export.spec.ts` — build, save, reload, export `.kpar`, archive assertions).
+  External-checker validation of generated exports remains the one open item (no reference checker in CI).
 
 ## 10. Spec references
 

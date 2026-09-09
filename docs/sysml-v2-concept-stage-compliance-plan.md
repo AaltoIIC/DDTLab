@@ -17,6 +17,12 @@
 
 > **Review status (2026-08-28):** Reviewed against the current concept-stage code and Clause 2 of the supplied specification. The original plan is directionally sound, but the annotations below are implementation gates: do not claim conformance until the model is actually canonical, the supported metaclasses/constraints are justified from the normative machine-readable model, and exported archives are checked against the exact KerML interchange layout.
 
+> **Implementation status (2026-09-09):** Phases 0–6 (export milestone) are **implemented** (module pointers and
+> test suites under each phase in §5; Vitest green, `npm run check` clean). Phase 7 remains, and `.kpar` **import**
+> stays deferred (Phase 6 export-only, per decision 3). Decisions made during implementation are recorded in §8
+> (18–28). Known boundary: the semantic document is session-scoped (decision 20) — content enters through the
+> authoring path; export to `.kpar` is live (Phase 6), persistence back into the session is not (no importer).
+
 ---
 
 ## 0. Implementation quick-start (fresh-session bootstrap)
@@ -104,7 +110,7 @@ SysML/KerML metamodel and constraints, not only against the current UI vocabular
 | Connections | Edge `data.connectionType: 'binding' \| 'flow'` + `compatibility: 'direct' \| 'adapter' \| 'incompatible'` | `ConnectionTypeDropdown.svelte`, `edges/RemovableEdge.svelte` |
 | Nesting | Drill-down stack; nested content stored *inside node data* (`nodeData.nodes/edges`); internal port nodes synthesized on entry | `nodeViewStore.ts` |
 | History | Undo/redo + navigation history over canvas state | `editorHistoryNavigationStore.ts` |
-| Hardcoded example systems | Authored as raw `{ nodes, edges }`: `simpleComponentLibrary.ts` (feeds the hierarchical catalog), `shipDesignLibrary.ts`, plus the `ComponentTemplate` types in `types/componentLibrary.ts` | `concept-stage/data/*`, `concept-stage/types/componentLibrary.ts` |
+| Hardcoded example systems | Semantic `ComponentTemplate`s (canonical `SysmlDocument` + presentation map) authored with the library DSL; the canvas drag payload is projected from the document at drop time | `concept-stage/data/*`, `concept-stage/types/componentLibrary.ts`, `sysml/session/libraryAuthoring.ts` |
 
 > **Scope footnote — SSD import:** `importers/ssdParser.ts` is used only by `sidebar/DesignStageSidebar.svelte`
 > (design stage). It is **not** part of the concept stage, so routing it through the new SysML repository is out
@@ -241,7 +247,7 @@ requirements (excluded — resolved in §8, decision 6).
 
 Sizes: **S** ≤ 1 day, **M** ≤ 3 days, **L** ≤ 1 week (rough, single dev).
 
-### Phase 0 — Groundwork & decisions (S)
+### Phase 0 — Groundwork & decisions (S) — **[DONE]**
 - Create `concept-stage/sysml/` skeleton; use the existing `generateId` helper
   (`shared/identifiers.ts`, also exported from `$lib/helpers`) for element IDs. Decide only the prefix per
   metaclass (e.g. `pd-`, `pu-`, `pp-`, `ip-`), because the generated value is a fixed 6-character string.
@@ -256,7 +262,11 @@ Sizes: **S** ≤ 1 day, **M** ≤ 3 days, **L** ≤ 1 week (rough, single dev).
 `docs/normative/sysml-v2-20250201/` are used to seed the metaclass registry, archive metadata (`.project.json` /
 `.meta.json` shape) is verified against the official `.kpar`, and `npm run check` passes.
 
-### Phase 1 — Abstract-syntax core (M)
+> **Status (2026-09-08):** implemented — `concept-stage/sysml/model/metaclassRegistry.ts` +
+> `normativeConfig.ts` (subset registry seeded from the pinned XMI/JSON, `isSupportedMetaclass` gate),
+> `elements.ts` / `factories.ts`; tests `tests/unit/concept-stage-sysml-phase0.test.ts`.
+
+### Phase 1 — Abstract-syntax core (M) — **[DONE]**
 - `Element` base: `id`, `metaclass`, `name`, `ownerId`, `declaredShortName?`, `documentation?`.
 - `Namespaces`: `Package`, root namespace; qualified-name resolution (`Motor::motorA`).
 - `Definitions` + `Usages` classes per §4; `Membership`-style ownership links (owner→owned, typed by definition).
@@ -266,7 +276,11 @@ Sizes: **S** ≤ 1 day, **M** ≤ 3 days, **L** ≤ 1 week (rough, single dev).
 **Accept:** can construct: package → part definition (Motor) → two part usages typed by it → port usages;
 ownership graph resolves; qualified names unique per namespace by construction.
 
-### Phase 2 — Model repository + CRUD API (M)
+> **Status (2026-09-08):** implemented — `model/ownership.ts`, `namespaces.ts`, `relationships.ts`, `immutable.ts`
+> (plain-data elements, repository-owned mutation, WF001 name uniqueness); tests
+> `tests/unit/concept-stage-sysml-phase1*.test.ts`.
+
+### Phase 2 — Model repository + CRUD API (M) — **[DONE]**
 - `ModelRepository`: `create/read/update/delete` per metaclass, `list(namespace)`, `getElement(id)`,
   `getByQualifiedName`, referential integrity on delete (cascade or reject — decide: **reject with diagnostic**,
   cascade is a UI choice layered on top), change-event emitter (`subscribe`), and atomic transactions so a
@@ -281,9 +295,13 @@ ownership graph resolves; qualified names unique per namespace by construction.
 **Accept:** unit tests (Vitest) for CRUD, referential-integrity rejection, change notifications. This store
 *is* the Abstract-Syntax-Conformance API surface.
 
-### Phase 3 — Projection layer: keep the UI pixel-identical (L)
-- `modelToCanvas`: derive `Node[]`/`Edge[]` from the model (node id = stable `n_<modelId>`, handle ids derived
-  from port usage ids) so `portUtils.ts` handle-name scheme keeps working.
+> **Status (2026-09-08):** implemented — `repo/ModelRepository.ts` + `repo/diagnostics.ts` (CRUD, structured
+> `Diagnostic` errors, referential integrity, change-event emitter, transactions, `move`/`reown` re-ownership);
+> tests `tests/unit/concept-stage-sysml-phase2-repository.test.ts`.
+
+### Phase 3 — Projection layer: keep the UI pixel-identical (L) — **[DONE]**
+- `modelToCanvas`: derive `Node[]`/`Edge[]` from the model (node id = stable `n_<modelId>`, port handles derived
+  from port usage **names** to match the live `PortHandles`/`portUtils.ts` scheme — decision 19).
 - `canvasToModel`: map every current UI intent to repository calls — add node, rename, connect
   (`connectionType: 'flow'` → create the selected flow-related metaclass only after confirming the exact mapping;
   `'binding'` → create the appropriate binding relationship), delete edge, delete node, drag-into-package,
@@ -298,7 +316,12 @@ ownership graph resolves; qualified names unique per namespace by construction.
 **Accept:** all existing user flows produce identical canvas output before/after (golden snapshot tests on the
 projection); `nodeViewStore` round-trips nested content through the model.
 
-### Phase 4 — Well-formedness validator (M)
+> **Status (2026-09-08):** implemented — `projection/canvasToModel.ts`, `modelToCanvas.ts`, `projectView.ts`;
+> `session/rootAuthoring.ts`, `packageAuthoring.ts`, `conceptStageSemanticSession.ts` (scope intents, package
+> wrap/unwrap); UI wiring in `ConceptualStageEditor`, `ConceptNode`, `PackageNode`, `portUtils`, sliders. Tests
+> `tests/unit/concept-stage-sysml-phase3-{projection,nested,authoring,live,packages,seams}.test.ts`.
+
+### Phase 4 — Well-formedness validator (M) — **[DONE]**
 `Diagnostic { severity: 'error'|'warning', ruleId, elementId, message }`. Rules (rule ids stable for tooling):
 
 | Rule | Constraint |
@@ -324,6 +347,15 @@ not blocked by warnings; errors are surfaced but never destroy user data.
 **Accept:** unit tests per rule (positive + negative fixture); validator runs on every repository mutation and
 on load.
 
+> **Status (2026-09-08):** implemented — `sysml/validate/` (rules.ts: WF001–WF008 registry with the
+> `normative` / `tool-integrity` / `warning-heuristic` labels; validateDocument.ts runner; fixtures.ts:
+> compliance fixture format with positive + negative fixtures per rule). `ModelRepository` runs the rule engine
+> on every mutation (create/update/delete/move/transaction) and on construction; error-severity diagnostics
+> reject mutations (decision 8), warnings never block. Passive non-blocking “model health” badge in the sidebar
+> driven by a `modelHealth` svelte store refreshed on every repository change (session-scoped, reset on unbind).
+> Tests `tests/unit/concept-stage-sysml-phase4-validator.test.ts` (fixture matrix + per-rule + repository
+> integration + health-store). Decisions 22–24 recorded in §8.
+
 ### Phase 5 — Reworking the hardcoded libraries to the semantic structure (M)
 - Convert the hardcoded example systems in `concept-stage/data/simpleComponentLibrary.ts` (e.g. `basicPowertrain`,
   `maritimeCoolingSystem`), `concept-stage/data/shipDesignLibrary.ts`, and `concept-stage/types/componentLibrary.ts`
@@ -339,6 +371,19 @@ on load.
 **Accept:** the shipped library examples are emitted from, and round-trip through, the semantic model. `npm run
 check` and the projection tests render them identically to the current preview.
 
+> **Status (2026-09-09):** implemented — `sysml/session/libraryAuthoring.ts` (definitions/usages DSL builder
+> over the `ModelRepository`: root-owned `Definitions` package, typed usages, ports, mass attribute usages,
+> flow relationships; every create is WF001–WF008-validated). `data/simpleComponentLibrary.ts` +
+> `data/shipDesignLibrary.ts` re-authored as semantic `ComponentTemplate`s — no raw `{ nodes, edges }` payloads
+> remain; `types/componentLibrary.ts` / `types/shipDesign.ts` template types reworked to
+> `{ document, presentation }`. `utils/simpleInstantiation.ts` projects the semantic template to the legacy
+> canvas payload at drag time (fresh ids, offsets, package sizing — the drop path and preview stay
+> pixel-identical; the drag payload is plain JSON). `hierarchicalComponentLibrary.ts` keeps its
+> category/hierarchy vocabulary and now references the semantic templates. No `legacyToModel` migration and no
+> legacy dual-read exist: previously-persisted canvas content is never auto-converted (decisions 25–26). Tests
+> `tests/unit/concept-stage-sysml-phase5-libraries.test.ts` (WF validity of every example, per-example
+> projection snapshots against the legacy preview data, repository/JSON round-trips, instantiation behavior).
+
 ### Phase 6 — `.kpar` interchange (L)
 - `textualEmitter`: emit our subset in SysML textual syntax — `package`, `part def/usage`, `item def/usage`,
   `port def/usage`, `attribute def/usage` + literal values, `connection usage`/`flow connection usage` with
@@ -353,6 +398,18 @@ check` and the projection tests render them identically to the current preview.
   export-only. Revisit import only after the generated archive is externally validated.
 - Export button in the sidebar outer menu (decision 17) — no other UI change. No upload/import button until
   the import milestone is enabled.
+
+> **Implementation status (2026-09-09):** implemented as `sysml/export/` — `textualEmitter.ts` (one `.sysml`
+> file per top-level namespace: the model root plus each root-owned package; `flow <n> from <a> to <b>;`,
+> `connection <n> [:<T>] connect <a> to <b>;`, `bind <a> = <b>;` — syntax grounded in the official archive and
+> decision 27), `archiveLayout.ts` (`.project.json`/`.meta.json` builders, `METAMODEL_URI`), `kparExport.ts`
+> (validation-gated `exportDocumentToKpar`, deterministic `zipKparArchive` via jszip, browser
+> `downloadKparArchive`). The sidebar outer-menu export control (decision 17) downloads `<Model>.kpar` with a
+> success/blocked notification. Invalid documents are blocked before any archive is produced (WF error
+> severity); heuristic warnings pass. Tests `tests/unit/concept-stage-sysml-phase6-export.test.ts` (golden
+> emission, per-namespace files, exact `.project.json`/`.meta.json` shapes, byte-deterministic zips, no
+> presentation-only data in semantic files, invalid-export gate). External-checker validation of generated
+> exports remains the one open §9 item (no reference checker available in CI).
 
 > **Review recommendation:** make export-only the first interchange milestone. Do not build an importer before
 > an external SysML/KerML checker accepts the generated archive; importer work can otherwise hide invalid output.
@@ -403,7 +460,7 @@ CI — recommended but optional. (Round-trip import tests are deferred until the
 | Risk | Mitigation |
 |---|---|
 | Projection drift: canvas and model diverge | Single write path through `canvasToModel`; snapshot tests; validator on every mutation |
-| Handle-id scheme breaks on rename | Port identity = model id, not name; handle ids derive from ids (name changes only relabel) |
+| Handle-id scheme breaks on rename | Handles derive from port usage **names** (matching the live canvas scheme); renames sync both canvas and model, WF001 keeps names unique per namespace, and the projection recomputes handles so edges re-snap (decision 19) |
 | `.sysml` subset emitter produces non-conforming text | Keep emitter grammar table-driven from the same metaclass registry; round-trip + external checker tests |
 | Scope creep into design stage | Everything lives under `concept-stage/sysml/`; design stage keeps its current (VSSo/FMI) pipeline |
 | Undo/redo interplay | Repository emits inverse-able change records; reuse `editorHistoryNavigationStore` patterns |
@@ -453,6 +510,80 @@ CI — recommended but optional. (Round-trip import tests are deferred until the
 17. **Export UI location** — the `.sysml`/`.kpar` export control is added to the **sidebar outer menu** (header /
     outer chrome), outside the canvas, to keep the canvas UI unchanged.
 
+**Decisions recorded during implementation (2026-09-08):**
+
+18. **Package binding semantics** — canvas package nodes are visual overlays; the saved-package list
+    (`system.packages`, keyed by `canvasNodeId`) is the source of truth. Save = upsert exactly one entry per
+    canvas node **and** re-own the mapped usages under a model `Package` element (root-owned "Packages"
+    container). Deleting a list entry keeps the canvas node but reverts it to unsaved (gray/dashed) and unwraps
+    its members back to the model root; deleting the canvas node also removes the list entry. Saved packages
+    render blue/solid, unsaved gray/dashed. (Phase 3 "wrapping = re-ownership".)
+19. **Handle-id scheme** — canvas port handles are **name-based** (`n_<usage>-<side>-<portName>`) to match the
+    existing `PortHandles` rendering and the authoring endpoint parser; the projection emits the same strings so
+    model-projected edges snap to live handles. Boundary artifacts keep id-stable anchors
+    (`internal-port-…-source/-target`). Handle strings are presentation-only and are **never** serialized as
+    SysML relationship ends. (Phase 3 bullet updated accordingly.)
+20. **Session-scoped semantic document** — the semantic model is per-session: content enters through the
+    authoring path (seed/mirror intents), and the durable canvas↔saved-package binding survives reloads via
+    `system.packages`, but the model element graph is rebuilt in-session. Undo/redo restores canvas `Node`/`Edge`
+    arrays only (extends decisions 11–12; model-based history deferred). Persistence to `.kpar` is Phase 6.
+21. **Port-interface clearing** — setting a port's interface to *None* is canvas-only for now; the model keeps
+    interfaces as display-only presentation. Canvas↔model divergence on this single field is a known boundary to
+    resolve in the validator/emitter milestone (Phase 4/6), not silently claimed as conformance.
+22. **Rule labeling** — WF001–WF005 are labeled **normative** (traceable to the pinned `SysML.xmi`/`KerML.xmi`
+    constraints, e.g. `Membership.isDistinguishableFrom`, `PartUsage.validatePartUsagePartDefinition`,
+    `ConnectionUsage.checkConnectionUsageBinarySpecialization`, `BindingConnector.validateBindingConnectorIsBinary`);
+    WF006–WF008 are **tool-integrity** (repository/serialization invariants — dangling refs, single root,
+    non-empty names — never presented as SysML validation). Heuristic guidance (untyped part/item usages under
+    WF002, subset-limited binding type compatibility under WF005) is emitted at **warning** severity with the
+    message labeled heuristic, per the §5 review correction.
+23. **Create-path hardening** — `repository.create` now runs the full WF001–WF008 engine over the candidate
+    document (previously only the incoming element was checked), so duplicate names (WF001), containment (WF003)
+    and typing (WF002) violations are rejected at creation — the UI naming logic already interlocks via
+    decision 9. Untyped part/item usages remain creatable (SysML permits anonymous types); they surface only as
+    WF002 warnings.
+24. **Passive model health** — the sidebar “model health” badge (plan §5 Phase 4) is non-blocking and driven by
+    a `modelHealth` svelte store computed by `repository.validate()` on load and after every repository change.
+    Because error-severity diagnostics cannot exist in a committed document (decision 8), the badge in practice
+    reports the validator's heuristic warnings; it never gates saving or rendering.
+
+**Decisions recorded during implementation (2026-09-09):**
+
+25. **Semantic library templates** — the shipped example libraries are semantic `ComponentTemplate`s: a
+    WF-valid `SysmlDocument` plus a presentation map keyed by element id. Definitions live in a root-owned
+    `Definitions` package so definition names never collide with usage names in the root namespace (WF001;
+    e.g. the `Permanent Magnet Motor` definition vs. usage of the same name in `motorShaftPropellerDemo`). The
+    canvas drag payload is the serialized template; `instantiateSimpleComponent` projects it to the legacy
+    canvas shape (fresh ids, offsets, package sizing, handle rewriting) so the drop path and preview are
+    pixel-identical. Templates are independent and immutable; they JSON-round-trip through the drag `dataTransfer`
+    unchanged. There is **no** `legacyToModel` migration and no legacy dual-read: previously-persisted canvas
+    content is never auto-converted (plan §6), and user-authored systems keep entering the model through the
+    session authoring path (decision 20).
+26. **Metadata pairs are tool metadata; mass stays an attribute** — per-usage metadata key/value pairs (and
+    order-status-like fields) are tool metadata stored in the presentation-map entry (excluded from
+    interchange, plan §3), **not** attribute usages: a metadata key can collide with a port name inside the
+    same usage namespace (WF001) — the commercial-vessel `Auxiliary Generator` has both a `power` metadata key
+    and a `power` port. Mass values remain literal `AttributeUsage`s in the model (decision 4), and comments
+    stay element `documentation` (emitted as `Comment` on interchange).
+27. **Emitter syntax grounding** — the Phase 6 textual emitter uses the concrete syntax observed in the
+    official `Systems-Library.kpar` plus the language introduction / Pilot checker documentation: `bind <a> =
+    <b>;` and `connection [<name>] [:<T>] connect <a> to <b>;` match the official archive verbatim, and flow
+    usages use the `flow [<name>] [:<T>] from <a> to <b>;` form (SysON/OpenSysML Pilot-verified; the plan's
+    `FlowConnectionUsage` has no JSON `@type` in 20250201 and serializes as `FlowUsage`, per the registry
+    `serializesAs`). Names are escaped per KerML name notation: non-basic names (spaces, keyword collisions
+    like a port named `out`) are emitted as restricted names in single quotes with `\`/`'` escaped. KerML
+    textual bindings are anonymous — the binding's `name` field is not representable in the `bind` shorthand
+    and is not emitted. Port UI direction and interface labels are never emitted (decision 21). Exported
+    archives declare `usage: []` in `.project.json`: the emitted subset is self-contained (no `import`
+    statements), so no library dependencies are claimed.
+28. **Deterministic Clause 10 archives** — `kparExport` emits the exact layout confirmed from the official
+    `Systems-Library.kpar`: a project folder named after the model holding one `.sysml` file per top-level
+    namespace (root + root-owned packages), `.meta.json` (`index` namespace→file, `created`, `metamodel` =
+    `https://www.omg.org/spec/SysML/20250201`) and `.project.json` (`name`, `version`, `usage`). `created` is
+    injectable and zip entries carry that date, so identical input produces byte-identical archives
+    (deterministic UTF-8 output, stable membership ordering). The export is validation-gated: WF error
+    severity blocks the archive entirely; heuristic warnings never block (decision 8).
+
 These were raised earlier and are resolved by the decision record above (no action needed):
 
 - normative metamodel source → resolved by decision 2;
@@ -479,7 +610,10 @@ external-checker validation of generated exports) are implementation-time tasks,
   validate our own exports against a reference checker.
 - [x] Decide the public claim is a **documented supported subset** (decision 1). External-checker validation of
   generated exports remains an implementation-time gate, not a pre-implementation decision.
-- [ ] Decide when the internal legacy node/edge store fields become redundant and set a removal milestone.
+- [x] Decide when the internal legacy node/edge store fields become redundant and set a removal milestone.
+  Phase 5 removed them from the shipped library templates (semantic `ComponentTemplate`s project the canvas
+  payload at drag time); the legacy canvas node/edge fields remain only for user-authored, session-scoped
+  content (decision 20) and for the design-stage data contract.
 - [x] Decide that no user-authored legacy systems are auto-migrated; only the hardcoded example libraries are
   re-authored to the semantic model.
 - [x] Audit that all files/tools referenced by this plan are concept-stage or shared editor-core, and that no
@@ -493,9 +627,13 @@ external-checker validation of generated exports) are implementation-time tasks,
 - [x] Decide rejected mutations return structured `Diagnostic` objects (no exceptions for validation failures).
 - [x] Decide on full write-path cutover through the repository for all concept-stage components.
 - [x] Decide the `.sysml`/`.kpar` export control lives in the sidebar outer menu (canvas unchanged).
-- [ ] Resolve the explicit interface-catalog mapping and flow/binding metaclass mappings against the normative
-  model.
-- [ ] Add a compliance fixture format before implementing the validator.
+- [x] Resolve the explicit interface-catalog mapping and flow/binding metaclass mappings against the normative
+  model. Flow/binding serialization resolved in Phase 6: `FlowConnectionUsage` has no JSON `@type` in
+  `SysML.json` 20250201 and serializes as `FlowUsage` (`serializesAs` in the metaclass registry), emitted as
+  `flow <n> from <a> to <b>;`; binding connectors as `bind <a> = <b>;` (decision 27). The interface-catalog
+  mapping remains open (port interface labels stay presentation-only, decision 21).
+- [x] Add a compliance fixture format before implementing the validator (implemented as part of Phase 4:
+  `sysml/validate/fixtures.ts` — positive + negative fixtures per WF rule, driven by the Vitest suite).
 
 ## 10. Spec references
 

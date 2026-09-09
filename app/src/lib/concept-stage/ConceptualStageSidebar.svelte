@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import Tooltip from '$lib/Tooltip.svelte';
-    import { Component, Box, Library, FileText, Package, Grid2X2, Squircle, Weight } from '@lucide/svelte';
+    import { Component, Box, Library, FileText, Package, Grid2X2, Squircle, Weight, FileDown } from '@lucide/svelte';
     import { navigateToRoot } from './nodeViewStore';
     import { currentNodes, notification } from '$lib/stores/stores.svelte';
     import { get } from 'svelte/store';
@@ -12,6 +12,7 @@
     import ViewpointSelector from './viewpoints/ViewpointSelector.svelte';
     import MassCalculatorSlider from './MassCalculatorSlider.svelte';
     import { modelHealth, semanticSession, type ModelHealthState } from './sysml/session';
+    import { exportDocumentToKpar, zipKparArchive, downloadKparArchive, kparFileName } from './sysml/export';
     
     let isPackageOpen = $state(false);
     let isPartDefOpen = $state(false);
@@ -58,6 +59,28 @@
     function toggleTemplateSlider() {
         closeAllSliders();
         isTemplateSliderOpen = true;
+    }
+
+    // .sysml/.kpar export (plan §5 Phase 6, decision 17): outer-menu control,
+    // no canvas change. The archive is validation-gated — the repository never
+    // commits error-severity models, so in practice this always succeeds.
+    async function handleExportKpar() {
+        const session = get(semanticSession);
+        if (!session) {
+            notification.set({ message: 'Open a concept system to export its .kpar archive', type: 'info', duration: 4000 });
+            return;
+        }
+        const result = exportDocumentToKpar(session.repository.read());
+        if (!result.ok) {
+            const message = result.diagnostics[0]?.message ?? 'the model has validation errors';
+            notification.set({ message: `Export blocked: ${message}`, type: 'error', duration: 6000 });
+            return;
+        }
+        const { archive } = result;
+        const blob = await zipKparArchive(archive);
+        downloadKparArchive(blob, kparFileName(archive));
+        const fileCount = Object.keys(archive.files).length - 2; // .project.json + .meta.json
+        notification.set({ message: `Exported ${archive.folderName}.kpar (${fileCount} .sysml files)`, type: 'success', duration: 4000 });
     }
 
     // Passive "model health" badge (plan §5 Phase 4): non-blocking, reports
@@ -175,6 +198,17 @@
                 </div>
             </Tooltip>
         {/if}
+
+        <Tooltip text="Export .kpar" position="right">
+            <button
+                id="exportBtn"
+                class="menu-option"
+                aria-label="Export .kpar archive"
+                onclick={handleExportKpar}
+            >
+                <span class="option-icon"><FileDown /></span>
+            </button>
+        </Tooltip>
 
         <div class="separator" style="margin-top: auto;"></div>
     <div class="bottom-buttons">

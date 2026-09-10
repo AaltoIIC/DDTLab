@@ -8,7 +8,7 @@
     import RemovableEdge from './edges/RemovableEdge.svelte';
     import ConnectionTypeDropdown from './ConnectionTypeDropdown.svelte';
     import { get } from 'svelte/store';
-    import { currentNodes, currentEdges, addToHistory } from '$lib/stores/stores.svelte';
+    import { currentNodes, currentEdges, addToHistory, packageEntryForCanvasNode, upsertPackageEntryForCanvasNode } from '$lib/stores/stores.svelte';
     import { generateName } from '$lib/helpers';
     import { currentNodeView, navigationStack } from './nodeViewStore';
     import { mirrorConnectToScope, seedNodesIntoScope, seedRootCanvasToModel } from './sysml/session';
@@ -16,7 +16,7 @@
     import type { Port } from './interfaces';
     import { instantiateSimpleComponent } from './utils/simpleInstantiation';
     import { instantiateTemplate } from './utils/templateInstantiation';
-    import { onMount } from 'svelte';
+    import { onMount, untrack } from 'svelte';
     import { zoom } from 'd3-zoom';
     import { findPort } from './nodes/portUtils';
     import { activeViewpoint, activeViewpointDetails } from './viewpoints/viewpointStore';
@@ -93,6 +93,20 @@
             };
 
             // console.log('Drop position:', position);
+
+            // Reject drops that land inside a bound package — bound packages
+            // are closed to new content.
+            const allNodes = get(currentNodes);
+            const overBoundPkg = allNodes.find(
+                n => n.type === 'package' &&
+                     n.data?.bound === true &&
+                     n.width != null && n.height != null &&
+                     position.x >= n.position.x &&
+                     position.y >= n.position.y &&
+                     position.x <= n.position.x + n.width &&
+                     position.y <= n.position.y + n.height
+            );
+            if (overBoundPkg) return;
 
             let newNodes: Node[] = [];
             let newEdges: Edge[] = [];
@@ -309,6 +323,163 @@
         return node.type === 'package' ? 'gray' : '';
     }
 
+    // The sidebar sync below only needs to run when the node/edge id set
+    // changes (elements added/removed). Derived from the stores so drags,
+    // moves, renames, and selections — which change positions/names but not
+    // ids — never re-trigger the per-package scan; they cost only this cheap
+    // string join per store emit.
+    let packageMembershipSignature = $derived(
+        $currentNodes.map(n => n.id).join('|') + '~' + $currentEdges.map(e => e.id).join('|')
+    );
+    let lastSyncedSignature = '';
+
+    // Keep sidebar entries for bound packages in sync with the canvas:
+    // whenever the membership of a bound package changes (an element inside
+    // is deleted, undo/redo alters the contents, etc.) the saved entry's
+    // snapshot is refreshed so the sidebar shows the current contents —
+    // mirroring how renames sync the entry name.
+    $effect(() => {
+        // Reactive dependency: re-runs only when the id set actually changed.
+        const signature = packageMembershipSignature;
+        untrack(() => {
+            if (signature === lastSyncedSignature) return;
+            lastSyncedSignature = signature;
+
+            const nodes = get(currentNodes);
+            const edges = get(currentEdges);
+            for (const pkg of nodes) {
+            if (pkg.type !== 'package' || pkg.data?.bound !== true) continue;
+            const pkgW = pkg.width;
+            const pkgH = pkg.height;
+            if (pkgW == null || pkgH == null) continue;
+            const pkgX = pkg.position.x;
+            const pkgY = pkg.position.y;
+
+            const inNodes = nodes.filter(n =>
+                n.id !== pkg.id &&
+                n.position.x > pkgX &&
+                n.position.y > pkgY &&
+                n.position.x + (n.width ?? 0) < pkgX + pkgW &&
+                n.position.y + (n.height ?? 0) < pkgY + pkgH
+            );
+            const inIds = new Set(inNodes.map(n => n.id));
+            const inEdges = edges.filter(e => inIds.has(e.source) && inIds.has(e.target));
+
+            // Only rewrite the entry when its contents actually changed
+            // (fingerprint by node/edge ids), so unrelated node moves and
+            // the effect's own writes stay quiet.
+            const entry = packageEntryForCanvasNode(pkg.id);
+            const prevFp = [
+                ...(entry?.data?.nodes ?? []).map(n => n.id).sort(),
+                ...(entry?.data?.edges ?? []).map(e => e.id).sort()
+            ].join('|');
+            const nextFp = [
+                ...inNodes.map(n => n.id).sort(),
+                ...inEdges.map(e => e.id).sort()
+            ].join('|');
+
+            if (prevFp !== nextFp) {
+                upsertPackageEntryForCanvasNode(pkg.id, {
+                    name: String(pkg.data?.declaredName ?? 'Unnamed'),
+                    type: 'package',
+                    description: (pkg.data?.comment as string | undefined) ?? '',
+                    data: { nodes: inNodes, edges: inEdges }
+                });
+            }
+            }
+        });
+    });
+
+    // Lock nodes inside bound packages: set draggable=false so individual
+    // nodes cannot be dragged independently. Only the package itself can be
+    // moved, which carries its contents along. Reads $currentNodes (reactive)
+    // so the lock applies the moment a package becomes bound and follows
+    // package moves/resizes.
+    $effect(() => {
+        const nodes = $currentNodes;
+        let changed = false;
+        const updated = nodes.map(node => {
+            if (node.type === 'package') return node;
+            const parentPkg = nodes.find(
+                n => n.type === 'package' &&
+                     n.data?.bound === true &&
+                     n.width != null && n.height != null &&
+                     node.position.x >= n.position.x &&
+                     node.position.y >= n.position.y &&
+                     node.position.x + (node.width ?? 0) <= n.position.x + n.width &&
+                     node.position.y + (node.height ?? 0) <= n.position.y + n.height
+            );
+            const shouldBeDraggable = !parentPkg;
+            if (node.draggable !== shouldBeDraggable) {
+                changed = true;
+                return { ...node, draggable: shouldBeDraggable };
+            }
+            return node;
+        });
+        if (changed) currentNodes.set(updated);
+    });
+
+    // When a bound package is dragged, its inner nodes must follow it so they
+    // stay inside the package bounds (and keep their lock). Track the drag
+    // start geometry and apply the same delta to every node inside the
+    // package's rectangle.
+    let boundPackageDrag: {
+        packageId: string;
+        startX: number;
+        startY: number;
+        inner: { id: string; x: number; y: number }[];
+    } | null = $state(null);
+
+    function nodesInside(node: Node, candidates: Node[]) {
+        const nw = node.width;
+        const nh = node.height;
+        if (nw == null || nh == null) return [];
+        return candidates.filter(c =>
+            c.id !== node.id &&
+            c.position.x >= node.position.x &&
+            c.position.y >= node.position.y &&
+            c.position.x + (c.width ?? 0) <= node.position.x + nw &&
+            c.position.y + (c.height ?? 0) <= node.position.y + nh
+        );
+    }
+
+    function handleNodeDragStart(event: CustomEvent<{ targetNode: Node | null; nodes: Node[] }>) {
+        const target = event.detail.targetNode;
+        if (!target || target.type !== 'package' || target.data?.bound !== true) return;
+        const all = get(currentNodes);
+        const pkg = all.find(n => n.id === target.id);
+        if (!pkg) return;
+        const inner = nodesInside(pkg, all);
+        if (inner.length === 0) return;
+        boundPackageDrag = {
+            packageId: pkg.id,
+            startX: pkg.position.x,
+            startY: pkg.position.y,
+            inner: inner.map(n => ({ id: n.id, x: n.position.x, y: n.position.y }))
+        };
+    }
+
+    function handleNodeDrag(event: CustomEvent<{ targetNode: Node | null; nodes: Node[] }>) {
+        const drag = boundPackageDrag;
+        if (!drag) return;
+        const target = event.detail.targetNode;
+        if (!target || target.id !== drag.packageId) return;
+        const dx = target.position.x - drag.startX;
+        const dy = target.position.y - drag.startY;
+        if (dx === 0 && dy === 0) return;
+        currentNodes.update(nodes =>
+            nodes.map(n => {
+                const innerNode = drag.inner.find(i => i.id === n.id);
+                if (!innerNode) return n;
+                return { ...n, position: { x: innerNode.x + dx, y: innerNode.y + dy } };
+            })
+        );
+    }
+
+    function handleNodeDragStop() {
+        boundPackageDrag = null;
+    }
+
     // No need for effect anymore - nodes handle their own visibility
 </script>
 
@@ -325,6 +496,9 @@
                   type: 'default',
               }}
               onconnect={onConnect}
+              on:nodedragstart={handleNodeDragStart}
+              on:nodedrag={handleNodeDrag}
+              on:nodedragstop={handleNodeDragStop}
               fitView
               minZoom={0.1}
           >

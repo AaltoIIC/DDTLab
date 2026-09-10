@@ -20,7 +20,18 @@
     });
     
     let isDragging = $state(false);
-    let currentTemplates = $derived(isPackage ? currentPackages : templates);
+    let currentTemplates = $derived.by(() => {
+        if (isPackage) {
+            // Only show bound packages in the sidebar
+            return $currentPackages.filter((pkg) => {
+                const canvasNodeId = pkg.canvasNodeId;
+                if (!canvasNodeId) return true; // legacy entries without binding
+                const canvasNode = $currentNodes.find(n => n.id === canvasNodeId);
+                return canvasNode?.data?.bound === true;
+            });
+        }
+        return $templates;
+    });
     let selectedTemplate: ConceptTemplate | PackageTemplate | null = $state(null);
     
     function toggleCategory(category: string) {
@@ -109,6 +120,8 @@
             type: 'package',
             dragHandle: '.drag-handle',
             position: { x: 250, y: 100 + existingNodes.length * 150 },
+            width: 350,
+            height: 150,
             data: {
                 declaredName: generateName('New Package', existingNames),
                 comment: '',
@@ -168,21 +181,21 @@
                     <span class="chevron {expandedCategories.all ? 'expanded' : ''}">
                         <ChevronRight size={16} />
                     </span>
-                    <span>All {isPackage ? 'Packages' : 'Templates'} ({$currentTemplates.length})</span>
+                    <span>All {isPackage ? 'Packages' : 'Templates'} ({currentTemplates.length})</span>
                 </button>
                 {#if expandedCategories.all}
                     <div class="library-content" transition:slide={{ duration: 200 }}>
-                        {#if $currentTemplates.length === 0}
+                        {#if currentTemplates.length === 0}
                             <p class="placeholder-text">
                                 {#if isPackage}
-                                    No saved packages yet. Create a package and press the button in the top right corner to save the package and anything "inside" it.
+                                    No saved packages yet. Create a package and press the button in the top right corner to save the package and any nodes it contains.
                                 {:else}
                                     No saved templates yet. Create a design and click "Save as Template" to get started.
                                 {/if}
 
                             </p>
                         {:else}
-                            {#each $currentTemplates as template}
+                            {#each currentTemplates as template}
                                 <div 
                                     class="template-card"
                                     draggable="true"

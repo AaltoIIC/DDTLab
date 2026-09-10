@@ -1,7 +1,7 @@
 <script lang="ts">
     import { run } from 'svelte/legacy';
 
-        import { Package, X, MoveDiagonal2, Info, Save } from '@lucide/svelte';
+        import { Package, X, MoveDiagonal2, Info, Link2, Unlink } from '@lucide/svelte';
         import { useUpdateNodeInternals, NodeResizeControl, type Node, type Edge } from '@xyflow/svelte';
         import { currentNodes, currentEdges, currentPackages, addToHistory, upsertPackageEntryForCanvasNode, renamePackageEntryForCanvasNode, removePackageEntryForCanvasNode } from '$lib/stores/stores.svelte';
     import { deleteModelContentForLegacyNode, saveCanvasPackageMembers, deleteCanvasPackageMembers, renameCanvasPackageInModel } from '../sysml/session';
@@ -16,6 +16,10 @@
             declaredName: string;
             comment: string;
             id: string;
+            /** When true the package is bound to the SysML v2 semantic model.
+             *  Bound packages lock inner-node movement, reject new drops,
+             *  and surface in the sidebar. */
+            bound?: boolean;
             insideData: {
                 nodes: Node[];
                 inEdges: Edge[];
@@ -80,23 +84,17 @@
         $currentNodes.map(n => `${n.id}:${n.position.x},${n.position.y},${n.width},${n.height}`).join('|')
         );
 
-    // A canvas package node is "saved" when the saved-package list holds an
-    // entry bound to this canvas node (canvasNodeId === id, with a legacy
-    // fallback match by node id). Unsaved packages render in a neutral gray;
-    // saved ones take the blue "tied to the model" styling until they are
-    // deleted from the list again. Derived from the auto-subscribed store so
-    // the color flips immediately on save/unsave.
-    let saved = $derived(
-        $currentPackages.some(
-            (entry) => entry.canvasNodeId === id || entry.id === id
-        )
-    );
+    // A canvas package node is "bound" when its data.bound flag is set.
+    // Bound packages are tied to the SysML v2 semantic model, rendered with
+    // the solid-blue treatment and surfaced in the sidebar. Unbound packages
+    // remain in edit mode with the dashed-gray overlay.
+    let bound = $derived(data.bound === true);
 
     $effect(() => {
         // We want this to run whenever currentNodes changes
-        const trigger = geometryTrigger; 
+        const trigger = geometryTrigger;
 
-        // untrack prevents the effect from re-running if the updateNodeData 
+        // untrack prevents the effect from re-running if the updateNodeData
         // triggers a change notification (preventing infinite loops)
         untrack(() => {
             const { inNodes, inEdges, outEdges } = getInsideData(false);
@@ -196,22 +194,28 @@
         addToHistory();
     }
 
-    function handleSavePackage() {
+    function handleToggleBound() {
         const {inNodes: nodes, inEdges: edges} = getInsideData();
+        const newBound = !data.bound;
 
-        // Mirror the saved grouping into the semantic model: the mapped usage
-        // nodes inside the canvas rectangle are re-owned under a model Package
-        // element bound to this canvas node (no-op when no session is bound).
-        saveCanvasPackageMembers(id, data.declaredName, nodes);
+        if (newBound) {
+            // Bind: mirror the grouping into the semantic model and surface
+            // the package in the sidebar.
+            saveCanvasPackageMembers(id, data.declaredName, nodes);
+            upsertPackageEntryForCanvasNode(id, {
+                name: data.declaredName,
+                type: 'package',
+                description: data.comment,
+                data: { nodes, edges }
+            });
+        } else {
+            // Unbind: unwrap model members back to root and remove from
+            // the sidebar list.
+            deleteCanvasPackageMembers(id);
+            removePackageEntryForCanvasNode(id);
+        }
 
-        // The saved-package list is the source of truth: saving upserts the
-        // single entry bound to this canvas node (no duplicates on re-save).
-        upsertPackageEntryForCanvasNode(id, {
-            name: data.declaredName,
-            type: 'package',
-            description: data.comment,
-            data: { nodes, edges }
-        });
+        updateNodeData('bound', newBound);
         addToHistory();
     }
 
@@ -345,13 +349,12 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<div
-    class="package-node"
-    class:selected={selected}
-    class:hidden-by-viewpoint={isHiddenByViewpoint}
-    class:saved={saved}
->
+<!-- svelte-ignore a11y_click_events_have_key_events -->    <div
+        class="package-node"
+        class:selected={selected}
+        class:hidden-by-viewpoint={isHiddenByViewpoint}
+        class:bound={bound}
+    >
     <div class="drag-handle top" onpointerdown={() => selectInsideNodes()} oncontextmenu={handleContextMenu}></div>
     <div class="drag-handle bottom" onpointerdown={() => selectInsideNodes()} oncontextmenu={handleContextMenu}></div>
     <div class="drag-handle right" onpointerdown={() => selectInsideNodes()} oncontextmenu={handleContextMenu}></div>
@@ -388,7 +391,8 @@
                         isNameError = false;
                     }}
                 >
-                    {`${data.declaredName} (Package)`|| 'Unnamed'}
+                    {`${data.declaredName}` || 'Unnamed'}
+                    <span class="package-mode-tag">{bound ? '(SysML)' : '(Edit)'}</span>
                 </span>
             {/if}
 
@@ -405,14 +409,19 @@
                 </div>
             {/if}
         </div>
-        <div class="package-header-right">
-            <button
-                class="package-button save-color"
-                onclick={handleSavePackage}
-                title="Save package"
-            >
-                <Save size={18} strokeWidth={2.5}/>
-            </button>
+        <div class="package-header-right">                <button
+                    class="package-button"
+                    class:save-color={!bound}
+                    class:unbind-color={bound}
+                    onclick={handleToggleBound}
+                    title={bound ? 'Unbind from SysML model' : 'Bind to SysML model'}
+                >
+                    {#if bound}
+                        <Unlink size={18} strokeWidth={2.5}/>
+                    {:else}
+                        <Link2 size={18} strokeWidth={2.5}/>
+                    {/if}
+                </button>
             <button
                 class="package-button delete-color"
                 onclick={handleDelete}
@@ -457,11 +466,16 @@
                 {/if}
             {/if}
         </div>
-        <span class="resize-control">
-            <NodeResizeControl minWidth={350} minHeight={150} style="background: transparent; border: none;">
-                <MoveDiagonal2 size={22} />
-            </NodeResizeControl>
-        </span>
+        <!-- Bound packages are locked to their current size: resizing could
+             push interior nodes outside the package bounds, so the resize
+             handle is only available in edit mode. -->
+        {#if !bound}
+            <span class="resize-control">
+                <NodeResizeControl minWidth={350} minHeight={150} style="background: transparent; border: none;">
+                    <MoveDiagonal2 size={22} />
+                </NodeResizeControl>
+            </span>
+        {/if}
     </div>
 
     <!-- Context Menu -->
@@ -599,21 +613,20 @@
         border-color: #0055ff; 
     }
 
-    /* Saved packages (bound to the saved-package list) take a light blue
-       "tied to a real package" treatment; unsaved "New Package" overlays
-       stay neutral gray until saved again. */
-    .package-node.saved {
+    /* Bound packages (SysML v2 semantic model) take a solid blue treatment;
+       unbound packages stay in dashed-gray edit mode. */
+    .package-node.bound {
         border-style: solid;
         border-color: rgba(37, 99, 235, 0.75);
         background-color: rgba(219, 234, 254, 0.35);
         color: #1e40af;
     }
 
-    .package-node.saved:hover {
+    .package-node.bound:hover {
         border-color: rgba(29, 78, 216, 0.9);
     }
 
-    .package-node.saved.selected {
+    .package-node.bound.selected {
         border-color: #0055ff;
     }
 
@@ -728,6 +741,13 @@
         white-space: nowrap;
     }
 
+    .package-mode-tag {
+        font-size: 12px;
+        font-weight: 500;
+        opacity: 0.7;
+        margin-left: 4px;
+    }
+
     .resize-control {
         position: relative;
         bottom: 19px;
@@ -749,9 +769,22 @@
         justify-content: center;
     }
 
+    .save-color {
+        color: #9ca3af;
+    }
+
     .save-color:hover {
         background-color: #e2e9fe;
         color: #2675dc;
+    }
+
+    .unbind-color {
+        color: #2675dc;
+    }
+
+    .unbind-color:hover {
+        background-color: #dbeafe;
+        color: #1d4ed8;
     }
 
     .delete-color:hover {

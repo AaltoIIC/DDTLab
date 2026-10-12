@@ -1,7 +1,9 @@
 import { error, json } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url }) => {
+	if (env.ENABLE_LOCAL_SIMULATION_TOOLS !== 'true') return new Response(null, { status: 404 });
 	const catalogUrl = url.searchParams.get('url');
 
 	if (!catalogUrl) {

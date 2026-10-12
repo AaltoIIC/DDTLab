@@ -62,9 +62,7 @@ export function getCatalogApiBaseUrl(): string {
 }
 
 function getCatalogApiHeaders(): HeadersInit {
-    const apiKey = env.PUBLIC_CATALOG_API_KEY;
     return {
-        ...(apiKey ? { 'X-API-Key': apiKey } : {}),
         'Cache-Control': 'no-cache',
         Pragma: 'no-cache'
     };

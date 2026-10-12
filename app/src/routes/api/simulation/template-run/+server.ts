@@ -1,4 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -6,11 +7,13 @@ import { join } from 'node:path';
 const DEFAULT_PYTHON = 'python-client/python_venv/bin/python';
 
 export const POST: RequestHandler = async () => {
+	if (env.ENABLE_LOCAL_SIMULATION_TOOLS !== 'true') return new Response(null, { status: 404 });
 	const result = await runBridge(['launch'], 90000);
 	return json(result.body, { status: result.status });
 };
 
 export const GET: RequestHandler = async ({ url }) => {
+	if (env.ENABLE_LOCAL_SIMULATION_TOOLS !== 'true') return new Response(null, { status: 404 });
 	const jobId = url.searchParams.get('jobId')?.trim();
 	if (!jobId) {
 		return json({ ok: false, message: 'jobId is required' }, { status: 400 });

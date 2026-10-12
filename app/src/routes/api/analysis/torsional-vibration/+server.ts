@@ -2,12 +2,14 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { execFile } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { env } from '$env/dynamic/private';
 
 
 // Use environment variable for Python executable, defaults to 'python3'
 const DEFAULT_PYTHON = process.platform === 'win32' ? 'python' : 'python3';
 
 export const POST: RequestHandler = async ({ request }) => {
+	if (env.ENABLE_LOCAL_SIMULATION_TOOLS !== 'true') return new Response(null, { status: 404 });
 	const payload = await request.json().catch(() => null);
 	if (!payload || typeof payload !== 'object') {
 		return json({ ok: false, message: 'Request body is required' }, { status: 400 });

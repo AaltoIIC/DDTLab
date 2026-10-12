@@ -33,6 +33,20 @@ Required runtime configuration:
 
 Put a reverse proxy (for example, the existing deployment's HTTPS ingress) in front of Node, configure it to pass the correct `ORIGIN` and preserve request bodies, and restrict direct network access to the Node listener. Do not expose a direct Node port that bypasses the intended network controls. The app still has API routes for Python-based local simulation and caller-supplied CKAN catalog fetching; these return 404 unless `ENABLE_LOCAL_SIMULATION_TOOLS=true` is explicitly set. Keep that flag false in public production deployments unless those tools are deliberately secured and needed.
 
+## Docker deployment
+
+`Dockerfile`, `.dockerignore` and `docker-compose.yml` in this directory build and run the app with adapter-node:
+
+```bash
+cp .env.example .env   # fill in the real upstream URLs, keys and ORIGIN
+docker compose up -d --build
+```
+
+- The compose file resolves `build.context` and `env_file: .env` relative to its own directory, so it stays next to `package.json`. `.env` is read at container start and is never copied into the image (see `.dockerignore`); changing a value needs only `docker compose up -d`.
+- Both networks are `external` and must already exist: `caddy-web` (the reverse proxy's network, where Caddy reaches the app as `ddtlab-app:3000`) and `oem-interface_default` (the OEM interface project's network, where `CATALOG_API_URL`/`OEM_INTERFACE_URL` can use a service name such as `http://catalog-api:8000`). Set `CADDY_NETWORK` or `OEM_NETWORK` in `.env` if the host names them differently.
+- No host port is published, so the Node listener is reachable only through the reverse proxy; make sure that proxy forwards 25 MB request bodies (`BODY_SIZE_LIMIT=25M`).
+- The runtime image contains only `build/` and `package.json` (no `node_modules`, no Python client), so the Python-based local simulation tools cannot run inside it; keep `ENABLE_LOCAL_SIMULATION_TOOLS=false`.
+
 ## Deployment follow-up
 
-The current deployment environment must be changed outside this repository: replace static hosting with a Node process, inject the runtime variables above, allow the 25 MB request size through the reverse proxy, set the public `ORIGIN`, and restrict the Node listener to the reverse proxy/network. Update the repository's Developer Docs wiki deployment instructions to match these requirements as well.
+The current deployment environment must be changed outside this repository: replace static hosting with a Node process (see Docker deployment above), inject the runtime variables above, allow the 25 MB request size through the reverse proxy, set the public `ORIGIN`, and restrict the Node listener to the reverse proxy/network. Update the repository's Developer Docs wiki deployment instructions to match these requirements as well.

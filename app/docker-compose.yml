@@ -1,0 +1,49 @@
+# Production compose file for the DDTLab app. Build context and .env are both
+# resolved relative to this file, so it can stay inside app/:
+#
+#   cp .env.example .env   # then fill in the real values
+#   docker compose up -d --build
+#
+# Runtime configuration is read from .env at container start (never baked into
+# the image), so changing a value only needs `docker compose up -d`.
+#
+# Both networks must already exist on the host. Set CADDY_NETWORK / OEM_NETWORK
+# in .env if they are named differently (check `docker network ls`).
+
+name: ddtlab
+
+services:
+  ddtlab-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ddtlab-app:latest
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    expose:
+      - '3000'
+    networks:
+      - caddy-web
+      - oem-net
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+networks:
+  caddy-web:
+    external: true
+    name: ${CADDY_NETWORK:-caddy-web}
+  # Network of the OEM interface compose project, reachable as a service name in OEM_INTERFACE_URL.
+  oem-net:
+    external: true
+    name: ${OEM_NETWORK:-oem-interface_default}

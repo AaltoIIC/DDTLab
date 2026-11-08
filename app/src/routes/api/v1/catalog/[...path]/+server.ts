@@ -4,31 +4,36 @@ import type { RequestHandler } from './$types';
 
 export const trailingSlash = 'ignore';
 
-const forward: RequestHandler = async ({ request, params, url, fetch }) => {
+// The UI only reads these three list endpoints. Keeping the allowlist tight
+// also prevents `..` traversal to other routes on the catalog API.
+const ALLOWED_PATHS = new Set(['fmus', 'components', 'fmu-groups']);
+
+const forward: RequestHandler = async ({ params, url, fetch }) => {
 	const baseUrl = env.CATALOG_API_URL?.trim();
 	if (!baseUrl) {
 		console.error('Missing required environment variable CATALOG_API_URL');
 		return json({ message: 'Catalog API is not configured (missing CATALOG_API_URL)' }, { status: 500 });
 	}
 
-	const target = new URL(`api/v1/catalog/${params.path}`, `${baseUrl.replace(/\/+$/, '')}/`);
+	// `params.path` is decoded, so only accept the known list endpoints instead
+	// of interpolating the value into the upstream URL.
+	const path = params.path.replace(/\/+$/, '');
+	if (!ALLOWED_PATHS.has(path)) {
+		return json({ message: 'Unknown catalog endpoint' }, { status: 404 });
+	}
+
+	const target = new URL(`api/v1/catalog/${path}`, `${baseUrl.replace(/\/+$/, '')}/`);
 	target.search = url.search;
 
 	const headers = new Headers();
-	const contentType = request.headers.get('content-type');
-	if (contentType) headers.set('content-type', contentType);
 	const apiKey = env.CATALOG_API_KEY?.trim();
 	if (apiKey) headers.set('X-API-Key', apiKey);
 
-	const body = request.method === 'GET' || request.method === 'HEAD'
-		? undefined
-		: await request.arrayBuffer();
 	let response: Response;
 	try {
 		response = await fetch(target, {
-			method: request.method,
-			headers,
-			body
+			method: 'GET',
+			headers
 		});
 	} catch (cause) {
 		console.error('Catalog API upstream request failed:', cause);
@@ -42,7 +47,5 @@ const forward: RequestHandler = async ({ request, params, url, fetch }) => {
 	});
 };
 
+// Read-only: the app never writes through this proxy.
 export const GET = forward;
-export const POST = forward;
-export const DELETE = forward;
-export const PATCH = forward;
